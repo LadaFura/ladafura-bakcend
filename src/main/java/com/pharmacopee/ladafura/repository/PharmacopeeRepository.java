@@ -20,6 +20,10 @@ public interface PharmacopeeRepository extends JpaRepository<Pharmacopee, Long> 
 
     Optional<Pharmacopee> findByUtilisateurId(Long utilisateurId);
 
+    Optional<Pharmacopee> findByUtilisateurFirebaseUid(String firebaseUid);
+
+    Optional<Pharmacopee> findByUtilisateurEmail(String email);
+
     long countByStatut(StatutPharmacopee statut);
 
     List<Pharmacopee> findByNomContainingIgnoreCase(String keyword);
