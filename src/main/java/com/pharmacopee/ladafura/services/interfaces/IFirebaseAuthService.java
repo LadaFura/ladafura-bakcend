@@ -41,4 +41,43 @@ public interface IFirebaseAuthService {
      * @throws FirebaseAuthException Si l'utilisateur n'existe pas dans Firebase
      */
     UserRecord getFirebaseUser(String firebaseUid) throws FirebaseAuthException;
+
+    /**
+     * Crée un compte utilisateur dans Firebase Authentication.
+     *
+     * @param email       Email de l'utilisateur
+     * @param password    Mot de passe temporaire ou initial
+     * @param displayName Nom complet de l'utilisateur
+     * @return Le firebaseUid généré par Firebase
+     */
+    String createUser(String email, String password, String displayName);
+
+    /**
+     * Attribue un rôle sous forme de Custom Claim dans le token Firebase.
+     *
+     * @param uid  L'identifiant Firebase UID
+     * @param role Le rôle (ex: ADMINISTRATEUR, AGENT_COLLECTE, PHARMACOPEE, POPULATION)
+     */
+    void setRole(String uid, String role);
+
+    /**
+     * Désactive un compte utilisateur dans Firebase Authentication.
+     *
+     * @param uid L'identifiant Firebase UID
+     */
+    void disableUser(String uid);
+
+    /**
+     * Réactive un compte utilisateur dans Firebase Authentication.
+     *
+     * @param uid L'identifiant Firebase UID
+     */
+    void enableUser(String uid);
+
+    /**
+     * Supprime un compte utilisateur dans Firebase Authentication.
+     *
+     * @param uid L'identifiant Firebase UID
+     */
+    void deleteUser(String uid);
 }

@@ -1,15 +1,16 @@
 package com.pharmacopee.ladafura.repository;
 
-import com.pharmacopee.ladafura.Models.Utilisateur;
-import com.pharmacopee.ladafura.enums.Role;
-import com.pharmacopee.ladafura.enums.StatutUtilisateur;
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
-import java.util.Optional;
+import com.pharmacopee.ladafura.Models.Utilisateur;
+import com.pharmacopee.ladafura.enums.Role;
+import com.pharmacopee.ladafura.enums.StatutUtilisateur;
 
 @Repository
 public interface UtilisateurRepository extends JpaRepository<Utilisateur, Long> {

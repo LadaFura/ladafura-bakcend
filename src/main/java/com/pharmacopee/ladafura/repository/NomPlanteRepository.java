@@ -1,10 +1,11 @@
 package com.pharmacopee.ladafura.repository;
 
-import com.pharmacopee.ladafura.Models.NomPlante;
+import java.util.List;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
+import com.pharmacopee.ladafura.Models.NomPlante;
 
 @Repository
 public interface NomPlanteRepository extends JpaRepository<NomPlante, Long> {

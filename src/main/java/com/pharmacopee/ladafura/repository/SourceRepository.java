@@ -1,10 +1,11 @@
 package com.pharmacopee.ladafura.repository;
 
-import com.pharmacopee.ladafura.Models.Source;
+import java.util.List;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
+import com.pharmacopee.ladafura.Models.Source;
 
 @Repository
 public interface SourceRepository extends JpaRepository<Source, Long> {
