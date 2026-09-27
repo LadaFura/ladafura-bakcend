@@ -17,6 +17,8 @@ public interface DisponibiliteProduitRepository extends JpaRepository<Disponibil
 
     Page<DisponibiliteProduit> findByPharmacopeeId(Long pharmacopeeId, Pageable pageable);
 
+    Page<DisponibiliteProduit> findByPharmacopeeIdAndDisponible(Long pharmacopeeId, Boolean disponible, Pageable pageable);
+
     List<DisponibiliteProduit> findByProduitId(Long produitId);
 
     List<DisponibiliteProduit> findByProduitIdAndDisponibleTrue(Long produitId);
