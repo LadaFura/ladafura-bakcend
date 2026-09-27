@@ -26,6 +26,7 @@ public class Maladie {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Builder.Default
     @ManyToMany(mappedBy = "maladies")
     @JsonIgnore
     private Set<Plante> plantes = new HashSet<>();

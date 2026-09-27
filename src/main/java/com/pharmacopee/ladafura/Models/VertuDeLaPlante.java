@@ -31,6 +31,7 @@ public class VertuDeLaPlante {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private StatutValidation statut = StatutValidation.BROUILLON;

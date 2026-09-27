@@ -29,6 +29,7 @@ public class Pharmacopee {
 
     private String telephone;
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private StatutPharmacopee statut = StatutPharmacopee.EN_ATTENTE;
@@ -41,13 +42,16 @@ public class Pharmacopee {
     @JoinColumn(name = "localisation_id")
     private Localisation localisation;
 
+    @Builder.Default
     @OneToMany(mappedBy = "pharmacopee", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ModeRetrait> modesRetrait = new ArrayList<>();
 
+    @Builder.Default
     @OneToMany(mappedBy = "pharmacopee", cascade = CascadeType.ALL)
     @JsonIgnore
     private List<DisponibiliteProduit> disponibilites = new ArrayList<>();
 
+    @Builder.Default
     @OneToMany(mappedBy = "pharmacopee")
     @JsonIgnore
     private List<Commande> commandes = new ArrayList<>();
