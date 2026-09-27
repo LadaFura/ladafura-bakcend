@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 
+import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
@@ -45,6 +46,7 @@ public class FirebaseConfig {
             try (InputStream serviceAccountStream = resource.getInputStream()) {
                 FirebaseOptions options = FirebaseOptions.builder()
                         .setCredentials(GoogleCredentials.fromStream(serviceAccountStream))
+                        .setHttpTransport(new NetHttpTransport())
                         .build();
 
                 FirebaseApp app = FirebaseApp.initializeApp(options);
