@@ -39,6 +39,8 @@ public class DisponibiliteProduit {
     @Builder.Default
     private Integer quantiteStock = 0;
 
+    private Double prix;
+
     @Builder.Default
     @Column(nullable = false)
     private LocalDateTime dateMiseAJour = LocalDateTime.now();
