@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
@@ -35,7 +36,7 @@ import lombok.extern.slf4j.Slf4j;
 public class FirebaseAuthenticationFilter extends OncePerRequestFilter {
 
     private final IFirebaseAuthService firebaseAuthService;
-    private final UtilisateurRepository utilisateurRepository;
+    private final ObjectProvider<UtilisateurRepository> utilisateurRepositoryProvider;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
@@ -130,22 +131,26 @@ public class FirebaseAuthenticationFilter extends OncePerRequestFilter {
         }
 
         // 3. Fallback : Vérification dans MySQL si le custom claim n'est pas encore dans le jeton actuel
-        if (authorities.isEmpty() && utilisateurRepository != null) {
-            try {
-                utilisateurRepository.findByFirebaseUid(decodedToken.getUid())
-                        .or(() -> decodedToken.getEmail() != null ? utilisateurRepository.findByEmail(decodedToken.getEmail()) : java.util.Optional.empty())
-                        .ifPresent(u -> {
-                            if (u.getRole() != null) {
-                                String roleName = u.getRole().name();
-                                if (!roleName.startsWith("ROLE_")) {
-                                    roleName = "ROLE_" + roleName;
+        if (authorities.isEmpty() || (authorities.size() == 1 && "ROLE_USER".equals(authorities.get(0).getAuthority()))) {
+            UtilisateurRepository repo = utilisateurRepositoryProvider.getIfAvailable();
+            if (repo != null) {
+                try {
+                    repo.findByFirebaseUid(decodedToken.getUid())
+                            .or(() -> decodedToken.getEmail() != null ? repo.findByEmail(decodedToken.getEmail()) : java.util.Optional.empty())
+                            .ifPresent(u -> {
+                                if (u.getRole() != null) {
+                                    authorities.clear();
+                                    String roleName = u.getRole().name();
+                                    if (!roleName.startsWith("ROLE_")) {
+                                        roleName = "ROLE_" + roleName;
+                                    }
+                                    authorities.add(new SimpleGrantedAuthority(roleName));
+                                    log.debug("Rôle chargé depuis MySQL : {}", roleName);
                                 }
-                                authorities.add(new SimpleGrantedAuthority(roleName));
-                                log.debug("Rôle chargé depuis MySQL : {}", roleName);
-                            }
-                        });
-            } catch (Exception ex) {
-                log.warn("Impossible de récupérer le rôle depuis la base de données : {}", ex.getMessage());
+                            });
+                } catch (Exception ex) {
+                    log.warn("Impossible de récupérer le rôle depuis la base de données : {}", ex.getMessage());
+                }
             }
         }
 
