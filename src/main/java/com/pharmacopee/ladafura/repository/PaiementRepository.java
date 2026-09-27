@@ -28,4 +28,25 @@ public interface PaiementRepository extends JpaRepository<Paiement, Long> {
 
     @Query("SELECT COALESCE(SUM(p.montant), 0.0) FROM Paiement p WHERE p.statut = :statut")
     Double sumMontantByStatut(@Param("statut") StatutPaiement statut);
+
+    Page<Paiement> findByCommandePharmacopeeId(Long pharmacopeeId, Pageable pageable);
+
+    Page<Paiement> findByCommandePharmacopeeIdAndStatut(Long pharmacopeeId, StatutPaiement statut, Pageable pageable);
+
+    Page<Paiement> findByCommandePharmacopeeIdAndMethode(Long pharmacopeeId, com.pharmacopee.ladafura.enums.MethodePaiement methode, Pageable pageable);
+
+    Optional<Paiement> findByIdAndCommandePharmacopeeId(Long id, Long pharmacopeeId);
+
+    Optional<Paiement> findByCommandeIdAndCommandePharmacopeeId(Long commandeId, Long pharmacopeeId);
+
+    long countByCommandePharmacopeeIdAndStatut(Long pharmacopeeId, StatutPaiement statut);
+
+    @Query("SELECT COALESCE(SUM(p.montant), 0.0) FROM Paiement p WHERE p.commande.pharmacopee.id = :pharmacopeeId AND p.statut = :statut")
+    Double sumMontantByPharmacopeeIdAndStatut(@Param("pharmacopeeId") Long pharmacopeeId, @Param("statut") StatutPaiement statut);
+
+    @Query("SELECT COALESCE(SUM(p.montant), 0.0) FROM Paiement p WHERE p.commande.pharmacopee.id = :pharmacopeeId AND p.methode = :methode AND p.statut = :statut")
+    Double sumMontantByPharmacopeeIdAndMethodeAndStatut(
+            @Param("pharmacopeeId") Long pharmacopeeId,
+            @Param("methode") com.pharmacopee.ladafura.enums.MethodePaiement methode,
+            @Param("statut") StatutPaiement statut);
 }
