@@ -1,8 +1,13 @@
 package com.pharmacopee.ladafura.dto.admin.produit;
 
 import com.pharmacopee.ladafura.enums.StatutProduit;
+
 import jakarta.validation.constraints.NotNull;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
 @Setter

@@ -43,7 +43,9 @@ public class Utilisateur {
     @Column(nullable = false, unique = true)
     private String email;
 
-    @Column(nullable = false)
+    @Column(unique = true, length = 128)
+    private String firebaseUid;
+
     private String motDePasse;
 
     private String telephone;

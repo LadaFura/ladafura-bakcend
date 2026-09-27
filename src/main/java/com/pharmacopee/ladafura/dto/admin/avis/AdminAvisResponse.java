@@ -1,9 +1,14 @@
 package com.pharmacopee.ladafura.dto.admin.avis;
 
-import com.pharmacopee.ladafura.enums.StatutAvis;
-import lombok.*;
-
 import java.time.LocalDateTime;
+
+import com.pharmacopee.ladafura.enums.StatutAvis;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
 @Setter

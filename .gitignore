@@ -158,4 +158,8 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
+# Firebase Service Account Credentials (Confidential)
+firebase-service-account*.json
+*service-account*.json
+
 # End of https://www.toptal.com/developers/gitignore/api/java,windows,macos,visualstudiocode,maven

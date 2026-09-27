@@ -1,13 +1,18 @@
 package com.pharmacopee.ladafura.dto.admin.plante;
 
-import com.pharmacopee.ladafura.enums.StatutPlante;
-import jakarta.validation.constraints.NotBlank;
-import lombok.*;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import com.pharmacopee.ladafura.enums.StatutPlante;
+
+import jakarta.validation.constraints.NotBlank;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
 @Setter

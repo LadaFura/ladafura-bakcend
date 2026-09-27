@@ -1,7 +1,12 @@
 package com.pharmacopee.ladafura.dto.admin.plante;
 
 import com.pharmacopee.ladafura.enums.StatutValidation;
-import lombok.*;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
 @Setter

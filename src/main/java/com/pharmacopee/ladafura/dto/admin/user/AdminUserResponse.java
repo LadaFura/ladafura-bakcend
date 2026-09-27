@@ -1,10 +1,15 @@
 package com.pharmacopee.ladafura.dto.admin.user;
 
+import java.time.LocalDateTime;
+
 import com.pharmacopee.ladafura.enums.Role;
 import com.pharmacopee.ladafura.enums.StatutUtilisateur;
-import lombok.*;
 
-import java.time.LocalDateTime;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
 @Setter

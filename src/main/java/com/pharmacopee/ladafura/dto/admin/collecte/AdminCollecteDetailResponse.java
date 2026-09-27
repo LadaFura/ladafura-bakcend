@@ -1,12 +1,17 @@
 package com.pharmacopee.ladafura.dto.admin.collecte;
 
-import com.pharmacopee.ladafura.dto.admin.plante.AdminVertuResponse;
-import com.pharmacopee.ladafura.enums.StatutCollecte;
-import lombok.*;
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.pharmacopee.ladafura.dto.admin.plante.AdminVertuResponse;
+import com.pharmacopee.ladafura.enums.StatutCollecte;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
 @Setter
