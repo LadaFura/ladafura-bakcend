@@ -36,6 +36,15 @@ public interface CommandeRepository extends JpaRepository<Commande, Long> {
 
     long countByPharmacopeeId(Long pharmacopeeId);
 
+    Page<Commande> findByPharmacopeeIdAndStatut(Long pharmacopeeId, StatutCommande statut, Pageable pageable);
+
+    Optional<Commande> findByIdAndPharmacopeeId(Long id, Long pharmacopeeId);
+
+    long countByPharmacopeeIdAndStatut(Long pharmacopeeId, StatutCommande statut);
+
+    @Query("SELECT COALESCE(SUM(c.montantTotal), 0.0) FROM Commande c WHERE c.pharmacopee.id = :pharmacopeeId AND c.statut IN (:statuts)")
+    Double sumMontantTotalByPharmacopeeIdAndStatuts(@Param("pharmacopeeId") Long pharmacopeeId, @Param("statuts") List<StatutCommande> statuts);
+
     @Query("SELECT COALESCE(SUM(c.montantTotal), 0.0) FROM Commande c WHERE c.statut = :statut")
     Double sumMontantTotalByStatut(@Param("statut") StatutCommande statut);
 
