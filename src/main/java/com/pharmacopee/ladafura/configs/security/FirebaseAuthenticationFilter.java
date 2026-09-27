@@ -19,6 +19,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.FirebaseToken;
+import com.pharmacopee.ladafura.repository.UtilisateurRepository;
 import com.pharmacopee.ladafura.services.interfaces.IFirebaseAuthService;
 
 import jakarta.servlet.FilterChain;
@@ -34,6 +35,7 @@ import lombok.extern.slf4j.Slf4j;
 public class FirebaseAuthenticationFilter extends OncePerRequestFilter {
 
     private final IFirebaseAuthService firebaseAuthService;
+    private final UtilisateurRepository utilisateurRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
@@ -49,7 +51,23 @@ public class FirebaseAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        String idToken = authHeader.substring(7);
+        String idToken = authHeader.substring(7).trim();
+
+        // Extraction automatique au cas où l'utilisateur a collé la réponse JSON entière de Firebase dans Postman ou Swagger
+        if (idToken.startsWith("{")) {
+            try {
+                var jsonNode = objectMapper.readTree(idToken);
+                if (jsonNode.has("idToken")) {
+                    idToken = jsonNode.get("idToken").asText().trim();
+                    log.info("Token JWT extrait automatiquement depuis l'objet JSON fourni dans Authorization");
+                }
+            } catch (Exception e) {
+                log.debug("Impossible de parser le header Authorization comme JSON : {}", e.getMessage());
+            }
+        }
+        if (idToken.startsWith("\"") && idToken.endsWith("\"") && idToken.length() > 1) {
+            idToken = idToken.substring(1, idToken.length() - 1).trim();
+        }
 
         try {
             // Vérification de la signature cryptographique du jeton auprès de Firebase
@@ -58,7 +76,7 @@ public class FirebaseAuthenticationFilter extends OncePerRequestFilter {
             String uid = decodedToken.getUid();
             String email = decodedToken.getEmail();
 
-            // Extraction des rôles depuis les Custom Claims de Firebase
+            // Extraction des rôles depuis les Custom Claims de Firebase ou la base MySQL
             List<GrantedAuthority> authorities = extractAuthorities(decodedToken);
 
             // Création de l'objet d'authentification pour le contexte Spring Security
@@ -111,7 +129,27 @@ public class FirebaseAuthenticationFilter extends OncePerRequestFilter {
             authorities.add(new SimpleGrantedAuthority("ROLE_ADMINISTRATEUR"));
         }
 
-        // 3. Rôle de base accordé par défaut à tout utilisateur Firebase authentifié valide
+        // 3. Fallback : Vérification dans MySQL si le custom claim n'est pas encore dans le jeton actuel
+        if (authorities.isEmpty() && utilisateurRepository != null) {
+            try {
+                utilisateurRepository.findByFirebaseUid(decodedToken.getUid())
+                        .or(() -> decodedToken.getEmail() != null ? utilisateurRepository.findByEmail(decodedToken.getEmail()) : java.util.Optional.empty())
+                        .ifPresent(u -> {
+                            if (u.getRole() != null) {
+                                String roleName = u.getRole().name();
+                                if (!roleName.startsWith("ROLE_")) {
+                                    roleName = "ROLE_" + roleName;
+                                }
+                                authorities.add(new SimpleGrantedAuthority(roleName));
+                                log.debug("Rôle chargé depuis MySQL : {}", roleName);
+                            }
+                        });
+            } catch (Exception ex) {
+                log.warn("Impossible de récupérer le rôle depuis la base de données : {}", ex.getMessage());
+            }
+        }
+
+        // 4. Rôle de base accordé par défaut à tout utilisateur Firebase authentifié valide
         if (authorities.isEmpty()) {
             authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
         }
