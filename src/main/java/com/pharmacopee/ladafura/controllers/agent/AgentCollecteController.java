@@ -32,12 +32,11 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import lombok.extern.slf4j.Slf4j;
 
 @RestController
 @RequestMapping("/api/v1/agent/collectes")
-@RequiredArgsConstructor
 @Slf4j
 @PreAuthorize("hasAuthority('ROLE_AGENT_COLLECTE')")
 @Tag(name = "Agent - Gestion des Collectes", description = "Endpoints de gestion du cycle de vie des collectes terrain (création, brouillon, modification, consultation, soumission)")
@@ -45,6 +44,11 @@ import lombok.extern.slf4j.Slf4j;
 public class AgentCollecteController {
 
     private final IAgentCollecteService collecteService;
+
+    @Autowired
+    public AgentCollecteController(IAgentCollecteService collecteService) {
+        this.collecteService = collecteService;
+    }
 
     @GetMapping
     @Operation(summary = "Lister ses propres collectes avec pagination et filtre par statut",
