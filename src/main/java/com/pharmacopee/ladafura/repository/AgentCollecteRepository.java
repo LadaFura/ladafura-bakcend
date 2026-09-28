@@ -13,4 +13,8 @@ public interface AgentCollecteRepository extends JpaRepository<AgentCollecte, Lo
     Optional<AgentCollecte> findByMatricule(String matricule);
 
     boolean existsByMatricule(String matricule);
+
+    Optional<AgentCollecte> findByFirebaseUid(String firebaseUid);
+
+    Optional<AgentCollecte> findByEmail(String email);
 }
