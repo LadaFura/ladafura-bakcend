@@ -1,6 +1,7 @@
 package com.pharmacopee.ladafura.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -16,6 +17,8 @@ import com.pharmacopee.ladafura.enums.StatutProduit;
 public interface ProduitRepository extends JpaRepository<Produit, Long> {
 
     List<Produit> findByStatut(StatutProduit statut);
+
+    Optional<Produit> findByIdAndStatut(Long id, StatutProduit statut);
 
     Page<Produit> findByStatut(StatutProduit statut, Pageable pageable);
 

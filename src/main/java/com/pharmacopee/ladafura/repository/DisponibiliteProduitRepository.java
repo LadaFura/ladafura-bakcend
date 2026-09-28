@@ -23,6 +23,9 @@ public interface DisponibiliteProduitRepository extends JpaRepository<Disponibil
 
     List<DisponibiliteProduit> findByProduitIdAndDisponibleTrue(Long produitId);
 
+    @org.springframework.data.jpa.repository.Query("SELECT d FROM DisponibiliteProduit d JOIN FETCH d.pharmacopee ph LEFT JOIN FETCH ph.localisation WHERE d.produit.id = :produitId AND ph.statut = com.pharmacopee.ladafura.enums.StatutPharmacopee.VALIDEE")
+    List<DisponibiliteProduit> findOffresValideesByProduitId(@org.springframework.data.repository.query.Param("produitId") Long produitId);
+
     Optional<DisponibiliteProduit> findByPharmacopeeIdAndProduitId(Long pharmacopeeId, Long produitId);
 
     boolean existsByPharmacopeeIdAndProduitId(Long pharmacopeeId, Long produitId);

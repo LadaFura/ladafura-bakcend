@@ -83,7 +83,8 @@ public class SecurityConfig {
                                 "/api/v1/population/auth/register",
                                 "/api/v1/population/auth/sync",
                                 "/api/v1/population/recherche/**",
-                                "/api/v1/population/plantes/**"
+                                "/api/v1/population/plantes/**",
+                                "/api/v1/population/produits/**"
                         ).permitAll()
                         .requestMatchers("/api/v1/population/**").hasRole("POPULATION")
 
