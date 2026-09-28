@@ -43,7 +43,11 @@ public interface PaiementRepository extends JpaRepository<Paiement, Long> {
 
     Page<Paiement> findByCommandeUtilisateurId(Long utilisateurId, Pageable pageable);
 
+    List<Paiement> findByCommandeUtilisateurId(Long utilisateurId);
+
     Page<Paiement> findByCommandeUtilisateurIdAndStatut(Long utilisateurId, StatutPaiement statut, Pageable pageable);
+
+    List<Paiement> findByCommandeUtilisateurIdAndStatut(Long utilisateurId, StatutPaiement statut);
 
     long countByCommandePharmacopeeIdAndStatut(Long pharmacopeeId, StatutPaiement statut);
 

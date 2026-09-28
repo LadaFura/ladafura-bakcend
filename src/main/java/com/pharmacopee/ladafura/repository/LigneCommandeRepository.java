@@ -18,4 +18,7 @@ public interface LigneCommandeRepository extends JpaRepository<LigneCommande, Lo
 
     @org.springframework.data.jpa.repository.Query("SELECT COUNT(lc) > 0 FROM LigneCommande lc WHERE lc.commande.utilisateur.id = :utilisateurId AND lc.produit.id = :produitId AND lc.commande.statut IN (com.pharmacopee.ladafura.enums.StatutCommande.LIVREE, com.pharmacopee.ladafura.enums.StatutCommande.RETIREE)")
     boolean hasUserPurchasedAndReceivedProduct(@org.springframework.data.repository.query.Param("utilisateurId") Long utilisateurId, @org.springframework.data.repository.query.Param("produitId") Long produitId);
+
+    @org.springframework.data.jpa.repository.Query("SELECT lc FROM LigneCommande lc WHERE lc.commande.utilisateur.id = :utilisateurId AND lc.commande.statut IN (com.pharmacopee.ladafura.enums.StatutCommande.LIVREE, com.pharmacopee.ladafura.enums.StatutCommande.RETIREE) ORDER BY lc.commande.dateCommande DESC")
+    List<LigneCommande> findPurchasedLinesByUtilisateurId(@org.springframework.data.repository.query.Param("utilisateurId") Long utilisateurId);
 }
