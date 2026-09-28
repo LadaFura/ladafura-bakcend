@@ -87,7 +87,8 @@ public class SecurityConfig {
                                 "/api/v1/population/produits/**",
                                 "/api/v1/population/pharmacopees/**",
                                 "/api/v1/population/carte/**",
-                                "/api/v1/population/retrait/**"
+                                "/api/v1/population/retrait/**",
+                                "/api/v1/population/paiements/methodes"
                         ).permitAll()
                         .requestMatchers("/api/v1/population/**").hasRole("POPULATION")
 

@@ -39,6 +39,12 @@ public interface PaiementRepository extends JpaRepository<Paiement, Long> {
 
     Optional<Paiement> findByCommandeIdAndCommandePharmacopeeId(Long commandeId, Long pharmacopeeId);
 
+    Optional<Paiement> findByCommandeIdAndCommandeUtilisateurId(Long commandeId, Long utilisateurId);
+
+    Page<Paiement> findByCommandeUtilisateurId(Long utilisateurId, Pageable pageable);
+
+    Page<Paiement> findByCommandeUtilisateurIdAndStatut(Long utilisateurId, StatutPaiement statut, Pageable pageable);
+
     long countByCommandePharmacopeeIdAndStatut(Long pharmacopeeId, StatutPaiement statut);
 
     @Query("SELECT COALESCE(SUM(p.montant), 0.0) FROM Paiement p WHERE p.commande.pharmacopee.id = :pharmacopeeId AND p.statut = :statut")
