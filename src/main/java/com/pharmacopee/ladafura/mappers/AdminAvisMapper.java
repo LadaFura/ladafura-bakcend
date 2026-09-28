@@ -1,33 +1,39 @@
 package com.pharmacopee.ladafura.mappers;
 
-import org.mapstruct.AfterMapping;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
+import org.springframework.stereotype.Component;
 
 import com.pharmacopee.ladafura.Models.Avis;
 import com.pharmacopee.ladafura.dto.admin.avis.AdminAvisResponse;
 
-@Mapper(componentModel = "spring")
-public interface AdminAvisMapper {
+@Component
+public class AdminAvisMapper {
 
-    @Mapping(target = "utilisateurId", ignore = true)
-    @Mapping(target = "nomCompletUtilisateur", ignore = true)
-    @Mapping(target = "emailUtilisateur", ignore = true)
-    @Mapping(target = "produitId", ignore = true)
-    @Mapping(target = "nomProduit", ignore = true)
-    AdminAvisResponse toDto(Avis avis);
+    public AdminAvisResponse toDto(Avis avis) {
+        if (avis == null) {
+            return null;
+        }
 
-    @AfterMapping
-    default void enrichAvisResponse(Avis avis, @MappingTarget AdminAvisResponse response) {
+        AdminAvisResponse response = AdminAvisResponse.builder()
+                .id(avis.getId())
+                .note(avis.getNote())
+                .commentaire(avis.getCommentaire())
+                .dateAvis(avis.getDateAvis())
+                .statut(avis.getStatut())
+                .build();
+
         if (avis.getUtilisateur() != null) {
             response.setUtilisateurId(avis.getUtilisateur().getId());
-            response.setNomCompletUtilisateur(avis.getUtilisateur().getPrenom() + " " + avis.getUtilisateur().getNom());
+            String prenom = avis.getUtilisateur().getPrenom() != null ? avis.getUtilisateur().getPrenom() : "";
+            String nom = avis.getUtilisateur().getNom() != null ? avis.getUtilisateur().getNom() : "";
+            response.setNomCompletUtilisateur((prenom + " " + nom).trim());
             response.setEmailUtilisateur(avis.getUtilisateur().getEmail());
         }
+
         if (avis.getProduit() != null) {
             response.setProduitId(avis.getProduit().getId());
             response.setNomProduit(avis.getProduit().getNom());
         }
+
+        return response;
     }
 }
