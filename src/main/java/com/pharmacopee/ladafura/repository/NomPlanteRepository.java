@@ -15,4 +15,10 @@ public interface NomPlanteRepository extends JpaRepository<NomPlante, Long> {
     List<NomPlante> findByNomContainingIgnoreCase(String nom);
 
     List<NomPlante> findByLangueIgnoreCase(String langue);
+
+    List<NomPlante> findByNomContainingIgnoreCaseAndLangueIgnoreCase(String nom, String langue);
+
+    boolean existsByPlanteIdAndNomIgnoreCaseAndLangueIgnoreCase(Long planteId, String nom, String langue);
+
+    java.util.Optional<NomPlante> findByIdAndPlanteId(Long id, Long planteId);
 }
