@@ -15,5 +15,7 @@ public interface LignePanierRepository extends JpaRepository<LignePanier, Long> 
 
     Optional<LignePanier> findByPanierIdAndProduitId(Long panierId, Long produitId);
 
+    Optional<LignePanier> findByIdAndPanierId(Long id, Long panierId);
+
     void deleteByPanierId(Long panierId);
 }
