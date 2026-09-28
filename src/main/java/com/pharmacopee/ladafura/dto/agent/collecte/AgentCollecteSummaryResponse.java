@@ -55,4 +55,7 @@ public class AgentCollecteSummaryResponse {
 
     @Schema(description = "Nombre de vertus ou connaissances traditionnelles associées", example = "2")
     private int nombreVertus;
+
+    @Schema(description = "Nom scientifique de la plante principale associée", example = "Combretum micranthum")
+    private String nomScientifiquePlante;
 }

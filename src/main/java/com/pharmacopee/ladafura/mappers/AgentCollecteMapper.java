@@ -3,6 +3,7 @@ package com.pharmacopee.ladafura.mappers;
 import org.springframework.stereotype.Component;
 
 import com.pharmacopee.ladafura.Models.Collecte;
+import com.pharmacopee.ladafura.Models.VertuDeLaPlante;
 import com.pharmacopee.ladafura.dto.agent.collecte.AgentCollecteDetailResponse;
 import com.pharmacopee.ladafura.dto.agent.collecte.AgentCollecteSummaryResponse;
 import com.pharmacopee.ladafura.enums.StatutCollecte;
@@ -34,6 +35,13 @@ public class AgentCollecteMapper {
         }
 
         builder.nombreVertus(collecte.getVertus() != null ? collecte.getVertus().size() : 0);
+
+        if (collecte.getVertus() != null && !collecte.getVertus().isEmpty()) {
+            VertuDeLaPlante firstVertu = collecte.getVertus().get(0);
+            if (firstVertu != null && firstVertu.getPlante() != null) {
+                builder.nomScientifiquePlante(firstVertu.getPlante().getNomScientifique());
+            }
+        }
 
         return builder.build();
     }
