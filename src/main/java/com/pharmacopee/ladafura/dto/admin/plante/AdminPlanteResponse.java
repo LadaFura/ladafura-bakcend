@@ -22,6 +22,7 @@ public class AdminPlanteResponse {
     private String nomScientifique;
     private String description;
     private String photoUrl;
+    private String image;
     private StatutPlante statut;
 
     @Builder.Default
