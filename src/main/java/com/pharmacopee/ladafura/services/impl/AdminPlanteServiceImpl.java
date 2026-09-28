@@ -68,12 +68,10 @@ public class AdminPlanteServiceImpl implements IAdminPlanteService {
             throw new ConflictException("Plante", "nomScientifique", request.getNomScientifique());
         }
 
-        String imageVal = request.getImage() != null ? request.getImage() : request.getPhotoUrl();
         Plante plante = Plante.builder()
                 .nomScientifique(request.getNomScientifique().trim())
                 .description(request.getDescription())
-                .photoUrl(request.getPhotoUrl() != null ? request.getPhotoUrl() : imageVal)
-                .image(imageVal)
+                .photoUrl(request.getPhotoUrl())
                 .statut(request.getStatut() != null ? request.getStatut() : StatutPlante.BROUILLON)
                 .build();
 
@@ -107,15 +105,7 @@ public class AdminPlanteServiceImpl implements IAdminPlanteService {
 
         plante.setNomScientifique(request.getNomScientifique().trim());
         plante.setDescription(request.getDescription());
-        if (request.getImage() != null) {
-            plante.setImage(request.getImage());
-        }
-        if (request.getPhotoUrl() != null) {
-            plante.setPhotoUrl(request.getPhotoUrl());
-            if (plante.getImage() == null) {
-                plante.setImage(request.getPhotoUrl());
-            }
-        }
+        plante.setPhotoUrl(request.getPhotoUrl());
         if (request.getStatut() != null) {
             plante.setStatut(request.getStatut());
         }

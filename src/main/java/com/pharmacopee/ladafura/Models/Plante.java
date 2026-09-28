@@ -48,9 +48,6 @@ public class Plante {
 
     private String photoUrl;
 
-    @Column(name = "image", nullable = true)
-    private String image;
-
     @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

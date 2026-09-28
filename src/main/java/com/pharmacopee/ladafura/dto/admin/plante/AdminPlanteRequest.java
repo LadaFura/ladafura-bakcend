@@ -28,8 +28,6 @@ public class AdminPlanteRequest {
 
     private String photoUrl;
 
-    private String image;
-
     @Builder.Default
     private StatutPlante statut = StatutPlante.BROUILLON;
 
