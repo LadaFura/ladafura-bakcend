@@ -5,10 +5,12 @@ import java.util.List;
 import org.jspecify.annotations.Nullable;
 
 import com.pharmacopee.ladafura.Models.Plante;
+import com.pharmacopee.ladafura.dto.requestes.PlanteDtoRequeste;
+import com.pharmacopee.ladafura.dto.responses.PlanteDtoResponse;
 
 public interface PlanteService {
 
-    List<Plante> getAllPlantes();
+    List<PlanteDtoResponse> getAllPlantes();
 
     Plante getPlanteById(Long id);
 
@@ -17,6 +19,6 @@ public interface PlanteService {
     void deletePlante(Long id);
 
     @Nullable
-    Object createPlante(Plante plante);
+    PlanteDtoResponse createPlante(PlanteDtoRequeste planteDto);
 
 }

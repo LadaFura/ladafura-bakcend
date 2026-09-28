@@ -1,11 +1,16 @@
 package com.pharmacopee.ladafura.dto.responses;
 import com.pharmacopee.ladafura.Enums.StatutPlante;
 
+import jakarta.persistence.metamodel.StaticMetamodel;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-@Data 
-@Builder 
+@Getter 
+@Setter
+@Builder
+@NoArgsConstructor
 public class PlanteDtoResponse {
     
     private Long id;

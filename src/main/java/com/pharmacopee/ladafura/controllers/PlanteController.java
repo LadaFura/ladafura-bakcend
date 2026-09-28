@@ -1,15 +1,24 @@
 package com.pharmacopee.ladafura.controllers;
 
-import com.pharmacopee.ladafura.Models.Plante;
-import com.pharmacopee.ladafura.services.interfaces.PlanteService;
-import lombok.RequiredArgsConstructor;
+import java.util.List;
 
-import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
+import com.pharmacopee.ladafura.Models.Plante;
+import com.pharmacopee.ladafura.dto.requestes.PlanteDtoRequeste;
+import com.pharmacopee.ladafura.dto.responses.PlanteDtoResponse;
+import com.pharmacopee.ladafura.services.interfaces.PlanteService;
+
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/plantes")
@@ -20,7 +29,7 @@ public class PlanteController {
 
     // Récupérer toutes les plantes
     @GetMapping
-    public ResponseEntity<List<Plante>> getAllPlantes() {
+    public ResponseEntity<List<PlanteDtoResponse>> getAllPlantes() {
         return ResponseEntity.ok(
                 planteService.getAllPlantes()
         );
@@ -38,8 +47,8 @@ public class PlanteController {
 
     // Créer une plante
     @PostMapping
-    public ResponseEntity<@Nullable Object> createPlante(
-            @RequestBody Plante plante) {
+    public ResponseEntity<PlanteDtoResponse> createPlante(
+            @RequestBody PlanteDtoRequeste plante) {
 
         return ResponseEntity.status(HttpStatus.CREATED).body(planteService.createPlante(plante));
     }
