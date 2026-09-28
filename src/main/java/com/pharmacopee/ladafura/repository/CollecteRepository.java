@@ -21,6 +21,10 @@ public interface CollecteRepository extends JpaRepository<Collecte, Long> {
 
     Page<Collecte> findByAgentCollecteId(Long agentId, Pageable pageable);
 
+    Page<Collecte> findByAgentCollecteIdAndStatut(Long agentId, StatutCollecte statut, Pageable pageable);
+
+    List<Collecte> findByAgentCollecteIdAndStatut(Long agentId, StatutCollecte statut);
+
     List<Collecte> findBySourceId(Long sourceId);
 
     long countByStatut(StatutCollecte statut);
