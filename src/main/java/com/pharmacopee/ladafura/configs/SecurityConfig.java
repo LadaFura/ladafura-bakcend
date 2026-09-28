@@ -1,9 +1,8 @@
 package com.pharmacopee.ladafura.configs;
 
-import com.pharmacopee.ladafura.configs.security.CustomAccessDeniedHandler;
-import com.pharmacopee.ladafura.configs.security.CustomAuthenticationEntryPoint;
-import com.pharmacopee.ladafura.configs.security.FirebaseAuthenticationFilter;
-import lombok.RequiredArgsConstructor;
+import java.util.Arrays;
+import java.util.List;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -18,8 +17,11 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.Arrays;
-import java.util.List;
+import com.pharmacopee.ladafura.configs.security.CustomAccessDeniedHandler;
+import com.pharmacopee.ladafura.configs.security.CustomAuthenticationEntryPoint;
+import com.pharmacopee.ladafura.configs.security.FirebaseAuthenticationFilter;
+
+import lombok.RequiredArgsConstructor;
 
 @Configuration
 @EnableWebSecurity

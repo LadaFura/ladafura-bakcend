@@ -24,6 +24,8 @@ public interface CommandeRepository extends JpaRepository<Commande, Long> {
 
     Page<Commande> findByUtilisateurId(Long utilisateurId, Pageable pageable);
 
+    long countByUtilisateurId(Long utilisateurId);
+
     List<Commande> findByPharmacopeeId(Long pharmacopeeId);
 
     Page<Commande> findByPharmacopeeId(Long pharmacopeeId, Pageable pageable);
