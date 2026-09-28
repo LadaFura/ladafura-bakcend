@@ -82,7 +82,8 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/v1/population/auth/register",
                                 "/api/v1/population/auth/sync",
-                                "/api/v1/population/recherche/**"
+                                "/api/v1/population/recherche/**",
+                                "/api/v1/population/plantes/**"
                         ).permitAll()
                         .requestMatchers("/api/v1/population/**").hasRole("POPULATION")
 

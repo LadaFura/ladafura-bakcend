@@ -18,6 +18,8 @@ public interface PlanteRepository extends JpaRepository<Plante, Long> {
 
     Optional<Plante> findByNomScientifiqueIgnoreCase(String nomScientifique);
 
+    Optional<Plante> findByIdAndStatut(Long id, StatutPlante statut);
+
     boolean existsByNomScientifiqueIgnoreCase(String nomScientifique);
 
     List<Plante> findByStatut(StatutPlante statut);

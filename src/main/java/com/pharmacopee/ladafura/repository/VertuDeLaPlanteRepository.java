@@ -15,6 +15,8 @@ public interface VertuDeLaPlanteRepository extends JpaRepository<VertuDeLaPlante
 
     List<VertuDeLaPlante> findByPlanteId(Long planteId);
 
+    List<VertuDeLaPlante> findByPlanteIdAndStatut(Long planteId, StatutValidation statut);
+
     List<VertuDeLaPlante> findByCollecteId(Long collecteId);
 
     java.util.Optional<VertuDeLaPlante> findByCollecteIdAndPlanteId(Long collecteId, Long planteId);
