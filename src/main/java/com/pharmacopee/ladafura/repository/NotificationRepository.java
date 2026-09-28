@@ -37,4 +37,27 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     @Modifying
     @Query("UPDATE Notification n SET n.lue = true, n.dateLecture = CURRENT_TIMESTAMP WHERE n.pharmacopee.id = :pharmacopeeId AND n.lue = false")
     void markAllAsReadByPharmacopeeId(@Param("pharmacopeeId") Long pharmacopeeId);
+
+    // Méthodes pour les utilisateurs (dont AgentCollecte)
+    Page<Notification> findByUtilisateurId(Long utilisateurId, Pageable pageable);
+
+    Page<Notification> findByUtilisateurIdAndLue(Long utilisateurId, Boolean lue, Pageable pageable);
+
+    Page<Notification> findByUtilisateurIdAndType(Long utilisateurId, TypeNotification type, Pageable pageable);
+
+    Page<Notification> findByUtilisateurIdAndLueAndType(Long utilisateurId, Boolean lue, TypeNotification type, Pageable pageable);
+
+    Optional<Notification> findByIdAndUtilisateurId(Long id, Long utilisateurId);
+
+    long countByUtilisateurId(Long utilisateurId);
+
+    long countByUtilisateurIdAndLueFalse(Long utilisateurId);
+
+    long countByUtilisateurIdAndLueTrue(Long utilisateurId);
+
+    long countByUtilisateurIdAndType(Long utilisateurId, TypeNotification type);
+
+    @Modifying
+    @Query("UPDATE Notification n SET n.lue = true, n.dateLecture = CURRENT_TIMESTAMP WHERE n.utilisateur.id = :utilisateurId AND n.lue = false")
+    void markAllAsReadByUtilisateurId(@Param("utilisateurId") Long utilisateurId);
 }
