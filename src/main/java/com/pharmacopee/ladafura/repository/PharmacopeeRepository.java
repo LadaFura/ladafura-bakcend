@@ -18,6 +18,8 @@ public interface PharmacopeeRepository extends JpaRepository<Pharmacopee, Long> 
 
     List<Pharmacopee> findByStatut(StatutPharmacopee statut);
 
+    Optional<Pharmacopee> findByIdAndStatut(Long id, StatutPharmacopee statut);
+
     Page<Pharmacopee> findByStatut(StatutPharmacopee statut, Pageable pageable);
 
     Optional<Pharmacopee> findByUtilisateurId(Long utilisateurId);

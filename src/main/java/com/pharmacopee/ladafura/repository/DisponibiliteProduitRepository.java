@@ -31,4 +31,14 @@ public interface DisponibiliteProduitRepository extends JpaRepository<Disponibil
     boolean existsByPharmacopeeIdAndProduitId(Long pharmacopeeId, Long produitId);
 
     long countByPharmacopeeId(Long pharmacopeeId);
+
+    @org.springframework.data.jpa.repository.Query(value = "SELECT d FROM DisponibiliteProduit d JOIN FETCH d.produit p LEFT JOIN FETCH p.categorie WHERE d.pharmacopee.id = :pharmacopeeId AND p.statut = com.pharmacopee.ladafura.enums.StatutProduit.VALIDE AND (:disponibleOnly IS NULL OR :disponibleOnly = false OR d.disponible = true)",
+           countQuery = "SELECT COUNT(d) FROM DisponibiliteProduit d WHERE d.pharmacopee.id = :pharmacopeeId AND d.produit.statut = com.pharmacopee.ladafura.enums.StatutProduit.VALIDE AND (:disponibleOnly IS NULL OR :disponibleOnly = false OR d.disponible = true)")
+    Page<DisponibiliteProduit> findProduitsByPharmacopeeId(
+            @org.springframework.data.repository.query.Param("pharmacopeeId") Long pharmacopeeId,
+            @org.springframework.data.repository.query.Param("disponibleOnly") Boolean disponibleOnly,
+            Pageable pageable);
+
+    @org.springframework.data.jpa.repository.Query("SELECT COUNT(d) FROM DisponibiliteProduit d WHERE d.pharmacopee.id = :pharmacopeeId AND d.produit.statut = com.pharmacopee.ladafura.enums.StatutProduit.VALIDE")
+    long countProduitsValidesByPharmacopeeId(@org.springframework.data.repository.query.Param("pharmacopeeId") Long pharmacopeeId);
 }
