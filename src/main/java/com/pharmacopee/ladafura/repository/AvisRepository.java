@@ -21,6 +21,16 @@ public interface AvisRepository extends JpaRepository<Avis, Long> {
 
     List<Avis> findByUtilisateurId(Long utilisateurId);
 
+    Page<Avis> findByUtilisateurId(Long utilisateurId, Pageable pageable);
+
+    Page<Avis> findByUtilisateurIdAndStatut(Long utilisateurId, StatutAvis statut, Pageable pageable);
+
+    java.util.Optional<Avis> findByIdAndUtilisateurId(Long id, Long utilisateurId);
+
+    boolean existsByUtilisateurIdAndProduitId(Long utilisateurId, Long produitId);
+
+    java.util.Optional<Avis> findByUtilisateurIdAndProduitId(Long utilisateurId, Long produitId);
+
     List<Avis> findByStatut(StatutAvis statut);
 
     Page<Avis> findByStatut(StatutAvis statut, Pageable pageable);
