@@ -1,7 +1,7 @@
 package com.pharmacopee.ladafura.enums;
 
-public enum StatutUtilisateur {
-    ACTIF,
-    INACTIF,
-    SUSPENDU
+public enum StatutUtilisateur{
+ACTIF,
+INACTIF,
+SUSPENDU
 }

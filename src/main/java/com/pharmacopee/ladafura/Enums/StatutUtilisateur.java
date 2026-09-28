@@ -1,4 +1,4 @@
-package com.pharmacopee.ladafura.Enums;
+package com.pharmacopee.ladafura.enums;
 
 public enum StatutUtilisateur{
 ACTIF,
