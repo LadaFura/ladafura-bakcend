@@ -33,7 +33,6 @@ import com.pharmacopee.ladafura.enums.StatutCollecte;
 import com.pharmacopee.ladafura.enums.StatutValidation;
 import com.pharmacopee.ladafura.exceptions.BadRequestException;
 import com.pharmacopee.ladafura.exceptions.ForbiddenException;
-import com.pharmacopee.ladafura.exceptions.ResourceNotFoundException;
 import com.pharmacopee.ladafura.repository.CollecteRepository;
 import com.pharmacopee.ladafura.repository.MaladieRepository;
 import com.pharmacopee.ladafura.repository.PlanteRepository;
