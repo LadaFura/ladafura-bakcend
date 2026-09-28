@@ -29,4 +29,9 @@ public interface PlanteRepository extends JpaRepository<Plante, Long> {
             "WHERE LOWER(p.nomScientifique) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
             "OR LOWER(n.nom) LIKE LOWER(CONCAT('%', :keyword, '%'))")
     List<Plante> searchByNomScientifiqueOrNomVernaculaire(@Param("keyword") String keyword);
+
+    @Query("SELECT DISTINCT p FROM Plante p LEFT JOIN p.nomsPlante n " +
+            "WHERE LOWER(p.nomScientifique) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+            "OR LOWER(n.nom) LIKE LOWER(CONCAT('%', :keyword, '%'))")
+    Page<Plante> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
 }
