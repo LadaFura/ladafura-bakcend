@@ -81,7 +81,8 @@ public class SecurityConfig {
                         // 7. Endpoints de la population
                         .requestMatchers(
                                 "/api/v1/population/auth/register",
-                                "/api/v1/population/auth/sync"
+                                "/api/v1/population/auth/sync",
+                                "/api/v1/population/recherche/**"
                         ).permitAll()
                         .requestMatchers("/api/v1/population/**").hasRole("POPULATION")
 
