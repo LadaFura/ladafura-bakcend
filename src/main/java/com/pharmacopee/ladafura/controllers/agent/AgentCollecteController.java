@@ -3,8 +3,11 @@ package com.pharmacopee.ladafura.controllers.agent;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -23,6 +26,7 @@ import com.pharmacopee.ladafura.enums.StatutCollecte;
 import com.pharmacopee.ladafura.services.interfaces.IAgentCollecteService;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -35,7 +39,8 @@ import lombok.extern.slf4j.Slf4j;
 @RequestMapping("/api/v1/agent/collectes")
 @RequiredArgsConstructor
 @Slf4j
-@Tag(name = "Agent de Collecte - Gestion des Collectes", description = "Endpoints de gestion du cycle de vie des collectes terrain (création, brouillon, modification, consultation, soumission)")
+@PreAuthorize("hasAuthority('ROLE_AGENT_COLLECTE')")
+@Tag(name = "Agent - Gestion des Collectes", description = "Endpoints de gestion du cycle de vie des collectes terrain (création, brouillon, modification, consultation, soumission)")
 @SecurityRequirement(name = "bearerAuth")
 public class AgentCollecteController {
 
@@ -46,8 +51,9 @@ public class AgentCollecteController {
                description = "Permet à l'agent connecté de consulter l'ensemble de ses fiches de collecte. Filtre possible par statut (BROUILLON, SOUMISE, EN_EXAMEN, VALIDEE, REJETEE).")
     @ApiResponse(responseCode = "200", description = "Liste paginée des collectes de l'agent récupérée avec succès")
     public ResponseEntity<Page<AgentCollecteSummaryResponse>> getMyCollectes(
+            @Parameter(description = "Filtre optionnel par statut de la collecte (BROUILLON, SOUMISE, EN_EXAMEN, VALIDEE, REJETEE)")
             @RequestParam(required = false) StatutCollecte statut,
-            @ParameterObject Pageable pageable) {
+            @ParameterObject @PageableDefault(sort = "dateCollecte", direction = Sort.Direction.DESC) Pageable pageable) {
         log.info("Requête de consultation des collectes de l'agent (statut={})", statut);
         return ResponseEntity.ok(collecteService.getMyCollectes(statut, pageable));
     }
