@@ -76,7 +76,14 @@ public class SecurityConfig {
                         // 6. Endpoints des pharmacopées
                         .requestMatchers("/api/v1/pharmacopee/**").hasRole("PHARMACOPEE")
 
-                        // 7. Tout autre endpoint nécessite d'être authentifié
+                        // 7. Endpoints de la population
+                        .requestMatchers(
+                                "/api/v1/population/auth/register",
+                                "/api/v1/population/auth/sync"
+                        ).permitAll()
+                        .requestMatchers("/api/v1/population/**").hasRole("POPULATION")
+
+                        // 8. Tout autre endpoint nécessite d'être authentifié
                         .anyRequest().authenticated()
                 )
 
