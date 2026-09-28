@@ -1,21 +1,20 @@
 package com.pharmacopee.ladafura.services;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import static org.mockito.ArgumentMatchers.any;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.pharmacopee.ladafura.Models.NomPlante;
@@ -23,7 +22,6 @@ import com.pharmacopee.ladafura.Models.Plante;
 import com.pharmacopee.ladafura.dto.agent.vernaculaire.AgentNomVernaculaireRequest;
 import com.pharmacopee.ladafura.dto.agent.vernaculaire.AgentNomVernaculaireResponse;
 import com.pharmacopee.ladafura.exceptions.ConflictException;
-import com.pharmacopee.ladafura.exceptions.ResourceNotFoundException;
 import com.pharmacopee.ladafura.repository.NomPlanteRepository;
 import com.pharmacopee.ladafura.repository.PlanteRepository;
 import com.pharmacopee.ladafura.services.impl.AgentNomVernaculaireServiceImpl;
