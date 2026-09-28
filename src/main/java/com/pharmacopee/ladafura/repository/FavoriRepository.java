@@ -36,4 +36,18 @@ public interface FavoriRepository extends JpaRepository<Favori, Long> {
     void deleteByUtilisateurIdAndPharmacopeeId(Long utilisateurId, Long pharmacopeeId);
 
     long countByUtilisateurId(Long utilisateurId);
+
+    Page<Favori> findByUtilisateurIdAndPlanteIsNotNull(Long utilisateurId, Pageable pageable);
+
+    Page<Favori> findByUtilisateurIdAndProduitIsNotNull(Long utilisateurId, Pageable pageable);
+
+    Page<Favori> findByUtilisateurIdAndPharmacopeeIsNotNull(Long utilisateurId, Pageable pageable);
+
+    long countByUtilisateurIdAndPlanteIsNotNull(Long utilisateurId);
+
+    long countByUtilisateurIdAndProduitIsNotNull(Long utilisateurId);
+
+    long countByUtilisateurIdAndPharmacopeeIsNotNull(Long utilisateurId);
+
+    Optional<Favori> findByIdAndUtilisateurId(Long id, Long utilisateurId);
 }
