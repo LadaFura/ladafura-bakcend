@@ -1,8 +1,9 @@
 package com.pharmacopee.ladafura.Models;
-import java.util.Date;
 
-import com.pharmacopee.ladafura.Enums.Role;
-import com.pharmacopee.ladafura.Enums.StatutUtilisateur;
+import java.time.LocalDateTime;
+
+import com.pharmacopee.ladafura.enums.Role;
+import com.pharmacopee.ladafura.enums.StatutUtilisateur;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -11,20 +12,24 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Inheritance;
+import jakarta.persistence.InheritanceType;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-
 @Entity
-@Getter 
-@Setter 
-
 @Table(name = "utilisateurs")
+@Inheritance(strategy = InheritanceType.JOINED)
+@Getter
+@Setter
 @NoArgsConstructor
-
+@AllArgsConstructor
 public class Utilisateur {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -38,18 +43,31 @@ public class Utilisateur {
     @Column(nullable = false, unique = true)
     private String email;
 
-    @Column(nullable = false)
+    @Column(unique = true, length = 128)
+    private String firebaseUid;
+
     private String motDePasse;
 
     private String telephone;
 
-    private String adresse;
-
-@Enumerated(EnumType.STRING)
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private Role role;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private StatutUtilisateur statut = StatutUtilisateur.ACTIF;
 
-    private StatutUtilisateur statut;
+    @Column(nullable = false)
+    private LocalDateTime dateCreation = LocalDateTime.now();
 
-    private Date dateCreation;
+    @PrePersist
+    public void prePersist() {
+        if (this.dateCreation == null) {
+            this.dateCreation = LocalDateTime.now();
+        }
+        if (this.statut == null) {
+            this.statut = StatutUtilisateur.ACTIF;
+        }
+    }
 }

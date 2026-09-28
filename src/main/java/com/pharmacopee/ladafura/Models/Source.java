@@ -1,44 +1,34 @@
 package com.pharmacopee.ladafura.Models;
 
-import com.pharmacopee.ladafura.Models.Source;
+import java.util.ArrayList;
+import java.util.List;
 
-import jakarta.persistence.Column;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-@Entity 
-@Table(name = "Source")
+@Entity
+@Table(name = "sources_connaissances")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class Source {
- @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class Source extends Utilisateur {
 
-    @Column(nullable = false)
-    private String nom;
+    private String specialite;
 
-    @Column(nullable = false)
-    private String prenom;
+    private Integer anneesExperience;
 
-    public Object getDescription() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getDescription'");
-    }
+    private String adresse;
 
-    public void setDescription(Object description) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'setDescription'");
-    }
+    @OneToMany(mappedBy = "source", cascade = CascadeType.ALL)
+    @JsonIgnore
+    private List<Collecte> collectes = new ArrayList<>();
 }

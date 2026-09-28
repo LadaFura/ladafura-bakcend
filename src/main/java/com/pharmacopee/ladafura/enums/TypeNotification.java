@@ -1,0 +1,14 @@
+package com.pharmacopee.ladafura.enums;
+
+public enum TypeNotification {
+    COMMANDE_NOUVELLE,
+    COMMANDE_STATUT,
+    REFERENCEMENT,
+    AVIS_NOUVEAU,
+    STOCK_ALERTE,
+    INFO_IMPORTANTE,
+    COLLECTE_VALIDEE,
+    COLLECTE_REJETEE,
+    COLLECTE_CORRECTION,
+    COLLECTE_STATUT
+}
