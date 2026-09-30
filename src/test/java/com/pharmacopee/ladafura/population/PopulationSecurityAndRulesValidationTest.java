@@ -1,8 +1,6 @@
 package com.pharmacopee.ladafura.population;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -11,14 +9,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import static org.mockito.ArgumentMatchers.any;
 import org.mockito.Mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.pharmacopee.ladafura.Models.Avis;
 import com.pharmacopee.ladafura.Models.Commande;
 import com.pharmacopee.ladafura.Models.DisponibiliteProduit;
 import com.pharmacopee.ladafura.Models.LigneCommande;
@@ -31,7 +27,6 @@ import com.pharmacopee.ladafura.Models.Utilisateur;
 import com.pharmacopee.ladafura.dto.population.avis.PopulationCreateAvisRequest;
 import com.pharmacopee.ladafura.dto.population.commande.PopulationCreateCommandeRequest;
 import com.pharmacopee.ladafura.dto.population.paiement.PopulationProcessPaiementRequest;
-import com.pharmacopee.ladafura.dto.population.panier.PopulationAddToCartRequest;
 import com.pharmacopee.ladafura.enums.MethodePaiement;
 import com.pharmacopee.ladafura.enums.Role;
 import com.pharmacopee.ladafura.enums.StatutCommande;
