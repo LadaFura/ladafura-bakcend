@@ -70,6 +70,27 @@ public class FirebaseAuthenticationFilter extends OncePerRequestFilter {
             idToken = idToken.substring(1, idToken.length() - 1).trim();
         }
 
+        // Pré-validation : un JWT valide doit comporter 3 parties séparées par un point (header.payload.signature)
+        String[] jwtParts = idToken.split("\\.");
+        if (jwtParts.length != 3) {
+            log.warn("Jeton Bearer fourni invalide : format JWT attendu (3 parties) mais reçu : '{}'",
+                    idToken.length() > 30 ? idToken.substring(0, 30) + "..." : idToken);
+            SecurityContextHolder.clearContext();
+
+            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+
+            Map<String, Object> errorDetails = new HashMap<>();
+            errorDetails.put("timestamp", LocalDateTime.now().toString());
+            errorDetails.put("status", HttpServletResponse.SC_UNAUTHORIZED);
+            errorDetails.put("error", "Unauthorized");
+            errorDetails.put("message", "Le jeton d'authentification fourni n'est pas un JWT Firebase valide.");
+            errorDetails.put("path", request.getRequestURI());
+
+            objectMapper.writeValue(response.getOutputStream(), errorDetails);
+            return;
+        }
+
         try {
             // Vérification de la signature cryptographique du jeton auprès de Firebase
             FirebaseToken decodedToken = firebaseAuthService.verifyIdToken(idToken);
@@ -94,7 +115,7 @@ public class FirebaseAuthenticationFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
 
         } catch (FirebaseAuthException e) {
-            log.error("Échec de validation du token Firebase : {}", e.getMessage());
+            log.warn("Échec de validation du token Firebase : {}", e.getMessage());
             SecurityContextHolder.clearContext();
 
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
@@ -105,6 +126,21 @@ public class FirebaseAuthenticationFilter extends OncePerRequestFilter {
             errorDetails.put("status", HttpServletResponse.SC_UNAUTHORIZED);
             errorDetails.put("error", "Unauthorized");
             errorDetails.put("message", "Le jeton d'authentification Firebase est invalide ou a expiré : " + e.getMessage());
+            errorDetails.put("path", request.getRequestURI());
+
+            objectMapper.writeValue(response.getOutputStream(), errorDetails);
+        } catch (Exception e) {
+            log.error("Erreur inattendue lors de la validation du token : {}", e.getMessage());
+            SecurityContextHolder.clearContext();
+
+            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+
+            Map<String, Object> errorDetails = new HashMap<>();
+            errorDetails.put("timestamp", LocalDateTime.now().toString());
+            errorDetails.put("status", HttpServletResponse.SC_UNAUTHORIZED);
+            errorDetails.put("error", "Unauthorized");
+            errorDetails.put("message", "Jeton d'authentification invalide.");
             errorDetails.put("path", request.getRequestURI());
 
             objectMapper.writeValue(response.getOutputStream(), errorDetails);
