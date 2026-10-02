@@ -1,4 +1,4 @@
-package com.pharmacopee.ladafura.dto.admin.pharmacopee;
+package com.pharmacopee.ladafura.dto.admin.user;
 
 import com.pharmacopee.ladafura.enums.StatutPharmacopee;
 
@@ -13,7 +13,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class AdminPharmacopeeSummaryResponse {
+public class AdminUserPharmacopeeResponse {
 
     private Long id;
     private String nom;
@@ -23,7 +23,5 @@ public class AdminPharmacopeeSummaryResponse {
     private String cercle;
     private String commune;
     private String localite;
-    private String nomProprietaire;
-    private Integer nbPraticiens;
-    private Integer nbProduits;
+    private Boolean estTitulairePrincipal;
 }

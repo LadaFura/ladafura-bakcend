@@ -305,7 +305,7 @@ public class PharmacopeeCommandeServiceImpl implements IPharmacopeeCommandeServi
             ModeRetrait m = c.getModeRetrait();
             String libelle = m.getType() == TypeModeRetrait.LIVRAISON
                     ? "Livraison à domicile"
-                    : "Retrait en officine (Pickup)";
+                    : "Retrait en pharmacopée (Pickup)";
             retraitResp = ModeRetraitResponse.builder()
                     .id(m.getId())
                     .type(m.getType())

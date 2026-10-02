@@ -13,6 +13,7 @@ import com.pharmacopee.ladafura.Models.CompositionProduit;
 import com.pharmacopee.ladafura.Models.Produit;
 import com.pharmacopee.ladafura.dto.admin.produit.AdminCategorieResponse;
 import com.pharmacopee.ladafura.dto.admin.produit.AdminCompositionProduitDto;
+import com.pharmacopee.ladafura.dto.admin.produit.AdminProduitDisponibiliteDto;
 import com.pharmacopee.ladafura.dto.admin.produit.AdminProduitResponse;
 import com.pharmacopee.ladafura.enums.StatutAvis;
 
@@ -25,6 +26,7 @@ public interface AdminProduitMapper {
     @Mapping(target = "nbDisponibilites", ignore = true)
     @Mapping(target = "noteMoyenne", ignore = true)
     @Mapping(target = "nbAvis", ignore = true)
+    @Mapping(target = "pointsDeVente", ignore = true)
     AdminProduitResponse toDto(Produit produit);
 
     @Mapping(source = "plante.id", target = "planteId")
@@ -45,7 +47,25 @@ public interface AdminProduitMapper {
                     .map(this::toCompositionDto)
                     .collect(Collectors.toList()));
         }
-        response.setNbDisponibilites(produit.getDisponibilites() != null ? produit.getDisponibilites().size() : 0);
+        if (produit.getDisponibilites() != null && !produit.getDisponibilites().isEmpty()) {
+            response.setNbDisponibilites(produit.getDisponibilites().size());
+            response.setPointsDeVente(produit.getDisponibilites().stream()
+                    .map(d -> AdminProduitDisponibiliteDto.builder()
+                            .id(d.getId())
+                            .pharmacopeeId(d.getPharmacopee() != null ? d.getPharmacopee().getId() : null)
+                            .pharmacopeeNom(d.getPharmacopee() != null ? d.getPharmacopee().getNom() : null)
+                            .telephone(d.getPharmacopee() != null ? d.getPharmacopee().getTelephone() : null)
+                            .commune(d.getPharmacopee() != null && d.getPharmacopee().getLocalisation() != null ? d.getPharmacopee().getLocalisation().getCommune() : null)
+                            .region(d.getPharmacopee() != null && d.getPharmacopee().getLocalisation() != null ? d.getPharmacopee().getLocalisation().getRegion() : null)
+                            .quantiteStock(d.getQuantiteStock())
+                            .prix(d.getPrix() != null ? d.getPrix() : produit.getPrix())
+                            .disponible(d.getDisponible())
+                            .build())
+                    .collect(Collectors.toList()));
+        } else {
+            response.setNbDisponibilites(0);
+        }
+
         if (produit.getAvis() != null && !produit.getAvis().isEmpty()) {
             response.setNbAvis(produit.getAvis().size());
             double avg = produit.getAvis().stream()

@@ -41,6 +41,11 @@ public class AdminPharmacopeeDetailResponse {
     @Builder.Default
     private List<AdminModeRetraitResponse> modesRetrait = new ArrayList<>();
 
+    // Praticiens affectés (Praticien Principal + Collaborateurs)
+    @Builder.Default
+    private List<AdminPraticienAffilieResponse> praticiens = new ArrayList<>();
+
+    private Integer nbPraticiens;
     private Integer nbProduits;
     private Integer nbCommandes;
 }

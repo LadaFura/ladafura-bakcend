@@ -21,6 +21,7 @@ public interface AdminPharmacopeeMapper {
     @Mapping(target = "commune", ignore = true)
     @Mapping(target = "localite", ignore = true)
     @Mapping(target = "nomProprietaire", ignore = true)
+    @Mapping(target = "nbPraticiens", ignore = true)
     @Mapping(target = "nbProduits", ignore = true)
     AdminPharmacopeeSummaryResponse toSummaryDto(Pharmacopee pharmacopee);
 
@@ -34,6 +35,8 @@ public interface AdminPharmacopeeMapper {
     @Mapping(target = "nomCompletProprietaire", ignore = true)
     @Mapping(target = "emailProprietaire", ignore = true)
     @Mapping(target = "modesRetrait", ignore = true)
+    @Mapping(target = "praticiens", ignore = true)
+    @Mapping(target = "nbPraticiens", ignore = true)
     @Mapping(target = "nbProduits", ignore = true)
     @Mapping(target = "nbCommandes", ignore = true)
     AdminPharmacopeeDetailResponse toDetailDto(Pharmacopee pharmacopee);
@@ -51,6 +54,14 @@ public interface AdminPharmacopeeMapper {
         if (pharmacopee.getUtilisateur() != null) {
             summary.setNomProprietaire(pharmacopee.getUtilisateur().getPrenom() + " " + pharmacopee.getUtilisateur().getNom());
         }
+
+        int countPraticiens = 0;
+        if (pharmacopee.getPraticiens() != null && !pharmacopee.getPraticiens().isEmpty()) {
+            countPraticiens = pharmacopee.getPraticiens().size();
+        } else if (pharmacopee.getUtilisateur() != null) {
+            countPraticiens = 1;
+        }
+        summary.setNbPraticiens(countPraticiens);
         summary.setNbProduits(pharmacopee.getDisponibilites() != null ? pharmacopee.getDisponibilites().size() : 0);
     }
 
@@ -74,6 +85,42 @@ public interface AdminPharmacopeeMapper {
                     .map(this::toModeRetraitDto)
                     .collect(Collectors.toList()));
         }
+
+        java.util.Map<Long, com.pharmacopee.ladafura.dto.admin.pharmacopee.AdminPraticienAffilieResponse> map = new java.util.LinkedHashMap<>();
+
+        // Praticien titulaire / principal
+        if (pharmacopee.getUtilisateur() != null) {
+            var u = pharmacopee.getUtilisateur();
+            map.put(u.getId(), com.pharmacopee.ladafura.dto.admin.pharmacopee.AdminPraticienAffilieResponse.builder()
+                    .id(u.getId())
+                    .nom(u.getNom())
+                    .prenom(u.getPrenom())
+                    .email(u.getEmail())
+                    .telephone(u.getTelephone())
+                    .specialite("Praticien Principal")
+                    .estPraticienPrincipal(true)
+                    .build());
+        }
+
+        // Praticiens affectés via relation
+        if (pharmacopee.getPraticiens() != null) {
+            for (com.pharmacopee.ladafura.Models.Praticien pr : pharmacopee.getPraticiens()) {
+                boolean isPrincipal = (pharmacopee.getUtilisateur() != null && pharmacopee.getUtilisateur().getId().equals(pr.getId()))
+                        || (pr.getEstPraticienPrincipal() != null && pr.getEstPraticienPrincipal());
+                map.put(pr.getId(), com.pharmacopee.ladafura.dto.admin.pharmacopee.AdminPraticienAffilieResponse.builder()
+                        .id(pr.getId())
+                        .nom(pr.getNom())
+                        .prenom(pr.getPrenom())
+                        .email(pr.getEmail())
+                        .telephone(pr.getTelephone())
+                        .specialite(pr.getSpecialite() != null ? pr.getSpecialite() : (isPrincipal ? "Praticien Principal" : "Praticien Collaborateur"))
+                        .estPraticienPrincipal(isPrincipal)
+                        .build());
+            }
+        }
+
+        detail.setPraticiens(new java.util.ArrayList<>(map.values()));
+        detail.setNbPraticiens(map.size());
         detail.setNbProduits(pharmacopee.getDisponibilites() != null ? pharmacopee.getDisponibilites().size() : 0);
         detail.setNbCommandes(pharmacopee.getCommandes() != null ? pharmacopee.getCommandes().size() : 0);
     }

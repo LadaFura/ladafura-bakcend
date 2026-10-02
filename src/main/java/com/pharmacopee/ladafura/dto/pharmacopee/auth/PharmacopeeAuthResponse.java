@@ -55,4 +55,26 @@ public class PharmacopeeAuthResponse {
 
     @Schema(description = "Indique si la pharmacopée est validée et autorisée aux opérations commerciales", example = "true")
     private boolean validee;
+
+    @Schema(description = "Liste de toutes les structures rattachées au praticien / utilisateur")
+    @Builder.Default
+    private java.util.List<PharmacopeeItemSummaryDto> structures = new java.util.ArrayList<>();
+
+    @Schema(description = "Formule d'abonnement active", example = "GRATUIT")
+    private String planAbonnement;
+
+    @Schema(description = "Nombre maximal de structures autorisées par l'abonnement", example = "1")
+    private Integer quotaMaxStructures;
+
+    @Schema(description = "Nombre de structures actuellement créées", example = "1")
+    private Integer structuresActuelles;
+
+    @Schema(description = "Indique si l'utilisateur a le droit d'ajouter une structure supplémentaire", example = "false")
+    private boolean peutCreerStructure;
+
+    @Schema(description = "Indique si l'utilisateur est le praticien principal (habilité à basculer entre ses structures)", example = "true")
+    private boolean estPraticienPrincipal;
+
+    @Schema(description = "Titre officiel du praticien dans l'établissement", example = "Praticien Principal")
+    private String titrePraticien;
 }

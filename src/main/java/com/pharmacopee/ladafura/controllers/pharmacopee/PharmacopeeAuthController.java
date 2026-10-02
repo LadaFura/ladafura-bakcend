@@ -38,4 +38,11 @@ public class PharmacopeeAuthController {
         log.info("Requête de consultation d'identité reçue pour le compte pharmacopée connecté");
         return ResponseEntity.ok(pharmacopeeAuthService.getMe());
     }
+
+    @GetMapping("/structures")
+    @Operation(summary = "Lister toutes les structures rattachées au praticien",
+               description = "Renvoie la liste des structures affiliées avec leur statut et le quota disponible.")
+    public ResponseEntity<java.util.List<com.pharmacopee.ladafura.dto.pharmacopee.auth.PharmacopeeItemSummaryDto>> getMyStructures() {
+        return ResponseEntity.ok(pharmacopeeAuthService.getMe().getStructures());
+    }
 }
