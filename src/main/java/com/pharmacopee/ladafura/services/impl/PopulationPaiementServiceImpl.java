@@ -97,7 +97,7 @@ public class PopulationPaiementServiceImpl implements IPopulationPaiementService
                 commandeRepository.save(commande);
             }
             message = "Option de paiement en espèces sélectionnée. Vous réglerez la somme de "
-                    + commande.getMontantTotal() + " FCFA lors de la livraison ou au comptoir de l'officine.";
+                    + commande.getMontantTotal() + " FCFA lors de la livraison ou au comptoir de la pharmacopée.";
         } else if (simulerReussite) {
             paiement.setStatut(StatutPaiement.REUSSI);
             if (commande.getStatut() == StatutCommande.EN_ATTENTE) {

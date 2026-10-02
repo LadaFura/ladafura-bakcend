@@ -45,4 +45,9 @@ public class AdminCreateUserRequest {
     private String specialite;
     private Integer anneesExperience;
     private String adresse;
+
+    // Champs spécifiques si l'utilisateur est une Pharmacopée / Praticien
+    private Boolean estPraticienPrincipal;
+    private String typePharmacopee;
+    private String numeroAgrement;
 }

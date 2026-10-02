@@ -2,6 +2,7 @@ package com.pharmacopee.ladafura.dto.admin.pharmacopee;
 
 import com.pharmacopee.ladafura.enums.StatutPharmacopee;
 
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -13,17 +14,26 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class AdminPharmacopeeSummaryResponse {
+public class AdminUpdatePharmacopeeRequest {
 
-    private Long id;
+    @Size(min = 2, max = 150, message = "Le nom doit comporter entre 2 et 150 caractères")
     private String nom;
+
+    private String description;
+
     private String telephone;
+
     private StatutPharmacopee statut;
+
+    private Long utilisateurId;
+
+    private java.util.List<Long> praticienIds;
+
+    // Localisation
     private String region;
     private String cercle;
     private String commune;
     private String localite;
-    private String nomProprietaire;
-    private Integer nbPraticiens;
-    private Integer nbProduits;
+    private Double latitude;
+    private Double longitude;
 }

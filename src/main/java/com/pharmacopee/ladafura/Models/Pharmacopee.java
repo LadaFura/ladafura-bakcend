@@ -16,6 +16,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
@@ -52,9 +53,14 @@ public class Pharmacopee {
     @Column(nullable = false)
     private StatutPharmacopee statut = StatutPharmacopee.EN_ATTENTE;
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "utilisateur_id")
     private Utilisateur utilisateur;
+
+    @Builder.Default
+    @ManyToMany(mappedBy = "pharmacopees", fetch = FetchType.LAZY)
+    @JsonIgnore
+    private List<Praticien> praticiens = new ArrayList<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "localisation_id")

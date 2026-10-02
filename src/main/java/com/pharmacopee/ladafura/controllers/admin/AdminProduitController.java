@@ -59,6 +59,34 @@ public class AdminProduitController {
         return ResponseEntity.ok(produitService.getProduitById(id));
     }
 
+    @PostMapping
+    @Operation(summary = "Créer un nouveau produit", description = "Ajoute un nouveau produit ou remède traditionnel au catalogue national.")
+    @ApiResponse(responseCode = "201", description = "Produit créé avec succès")
+    @ApiResponse(responseCode = "400", description = "Données invalides")
+    public ResponseEntity<AdminProduitResponse> createProduit(@Valid @RequestBody com.pharmacopee.ladafura.dto.admin.produit.AdminCreateProduitRequest request) {
+        AdminProduitResponse created = produitService.createProduit(request);
+        return new ResponseEntity<>(created, HttpStatus.CREATED);
+    }
+
+    @PutMapping("/{id}")
+    @Operation(summary = "Mettre à jour un produit", description = "Modifie les caractéristiques, prix, catégorie ou composition d'un produit.")
+    @ApiResponse(responseCode = "200", description = "Produit mis à jour avec succès")
+    @ApiResponse(responseCode = "404", description = "Produit introuvable")
+    public ResponseEntity<AdminProduitResponse> updateProduit(
+            @PathVariable Long id,
+            @Valid @RequestBody com.pharmacopee.ladafura.dto.admin.produit.AdminUpdateProduitRequest request) {
+        return ResponseEntity.ok(produitService.updateProduit(id, request));
+    }
+
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Supprimer un produit", description = "Supprime définitivement un produit du catalogue.")
+    @ApiResponse(responseCode = "204", description = "Produit supprimé avec succès")
+    @ApiResponse(responseCode = "404", description = "Produit introuvable")
+    public ResponseEntity<Void> deleteProduit(@PathVariable Long id) {
+        produitService.deleteProduit(id);
+        return ResponseEntity.noContent().build();
+    }
+
     @PatchMapping("/{id}/moderate")
     @Operation(summary = "Modérer un produit", description = "Permet d'approuver ou rejeter la mise en vente d'un produit traditionnel.")
     @ApiResponse(responseCode = "200", description = "Statut du produit mis à jour avec succès")

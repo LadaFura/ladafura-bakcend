@@ -1,6 +1,7 @@
 package com.pharmacopee.ladafura.dto.admin.user;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import com.pharmacopee.ladafura.enums.Role;
 import com.pharmacopee.ladafura.enums.StatutUtilisateur;
@@ -35,4 +36,10 @@ public class AdminUserResponse {
     private String specialite;
     private Integer anneesExperience;
     private String adresse;
+
+    // Profil spécifique Pharmacopée / Praticien
+    private Boolean estPraticienPrincipal;
+    private String typePharmacopee;
+    private String numeroAgrement;
+    private List<AdminUserPharmacopeeResponse> pharmacopees;
 }

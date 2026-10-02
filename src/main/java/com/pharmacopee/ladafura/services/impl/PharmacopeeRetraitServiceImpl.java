@@ -151,7 +151,7 @@ public class PharmacopeeRetraitServiceImpl implements IPharmacopeeRetraitService
     private ModeRetraitResponse mapToResponse(ModeRetrait mode) {
         String libelle = mode.getType() == TypeModeRetrait.LIVRAISON
                 ? "Livraison à domicile"
-                : "Retrait en officine (Pickup)";
+                : "Retrait en pharmacopée (Pickup)";
 
         return ModeRetraitResponse.builder()
                 .id(mode.getId())

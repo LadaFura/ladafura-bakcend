@@ -1,10 +1,10 @@
 package com.pharmacopee.ladafura.dto.admin.produit;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import com.pharmacopee.ladafura.enums.StatutProduit;
 
+import jakarta.validation.constraints.PositiveOrZero;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -16,27 +16,24 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class AdminProduitResponse {
+public class AdminUpdateProduitRequest {
 
-    private Long id;
     private String nom;
+
     private String description;
+
     private String forme;
+
     private String composition;
+
+    @PositiveOrZero(message = "Le prix doit être positif ou nul")
     private Double prix;
+
     private String photoUrl;
+
     private StatutProduit statut;
 
     private Long categorieId;
-    private String categorieNom;
 
-    @Builder.Default
-    private List<AdminCompositionProduitDto> compositions = new ArrayList<>();
-
-    private Integer nbDisponibilites;
-    private Double noteMoyenne;
-    private Integer nbAvis;
-
-    @Builder.Default
-    private List<AdminProduitDisponibiliteDto> pointsDeVente = new ArrayList<>();
+    private List<AdminCompositionRequestDto> compositions;
 }

@@ -28,4 +28,9 @@ public class AdminUpdateUserRequest {
     private String specialite;
     private Integer anneesExperience;
     private String adresse;
+
+    // Champs spécifiques Pharmacopée / Praticien
+    private Boolean estPraticienPrincipal;
+    private String typePharmacopee;
+    private String numeroAgrement;
 }

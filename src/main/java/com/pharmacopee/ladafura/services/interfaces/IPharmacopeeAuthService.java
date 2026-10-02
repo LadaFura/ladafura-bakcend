@@ -19,7 +19,12 @@ public interface IPharmacopeeAuthService {
     Pharmacopee getCurrentPharmacopee();
 
     /**
-     * Renvoie le profil résumé d'authentification de la pharmacopée connectée.
+     * Récupère la liste de toutes les structures associées à l'utilisateur / praticien connecté.
+     */
+    java.util.List<Pharmacopee> getMyPharmacopees();
+
+    /**
+     * Renvoie le profil résumé d'authentification de la pharmacopée connectée avec structures et quotas.
      */
     PharmacopeeAuthResponse getMe();
 

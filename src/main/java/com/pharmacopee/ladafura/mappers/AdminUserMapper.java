@@ -18,6 +18,10 @@ public interface AdminUserMapper {
     @Mapping(target = "specialite", ignore = true)
     @Mapping(target = "anneesExperience", ignore = true)
     @Mapping(target = "adresse", ignore = true)
+    @Mapping(target = "estPraticienPrincipal", ignore = true)
+    @Mapping(target = "typePharmacopee", ignore = true)
+    @Mapping(target = "numeroAgrement", ignore = true)
+    @Mapping(target = "pharmacopees", ignore = true)
     AdminUserResponse toDto(Utilisateur utilisateur);
 
     @AfterMapping
@@ -29,6 +33,12 @@ public interface AdminUserMapper {
             response.setSpecialite(source.getSpecialite());
             response.setAnneesExperience(source.getAnneesExperience());
             response.setAdresse(source.getAdresse());
+        } else if (utilisateur instanceof com.pharmacopee.ladafura.Models.Praticien praticien) {
+            response.setSpecialite(praticien.getSpecialite());
+            response.setNumeroAgrement(praticien.getNumeroAgrement());
+            boolean isPrincipal = praticien.getEstPraticienPrincipal() == null || praticien.getEstPraticienPrincipal();
+            response.setEstPraticienPrincipal(isPrincipal);
+            response.setTypePharmacopee(isPrincipal ? "Principale" : "Collaborateur");
         }
     }
 }

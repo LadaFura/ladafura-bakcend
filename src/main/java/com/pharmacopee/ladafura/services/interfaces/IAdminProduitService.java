@@ -17,6 +17,12 @@ public interface IAdminProduitService {
 
     AdminProduitResponse getProduitById(Long id);
 
+    AdminProduitResponse createProduit(com.pharmacopee.ladafura.dto.admin.produit.AdminCreateProduitRequest request);
+
+    AdminProduitResponse updateProduit(Long id, com.pharmacopee.ladafura.dto.admin.produit.AdminUpdateProduitRequest request);
+
+    void deleteProduit(Long id);
+
     AdminProduitResponse moderateProduit(Long id, AdminModerateProduitRequest request);
 
     List<AdminCategorieResponse> getAllCategories();
