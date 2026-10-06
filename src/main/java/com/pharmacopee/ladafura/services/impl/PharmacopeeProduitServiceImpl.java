@@ -35,7 +35,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 @Transactional
 public class PharmacopeeProduitServiceImpl implements IPharmacopeeProduitService {
@@ -45,6 +44,19 @@ public class PharmacopeeProduitServiceImpl implements IPharmacopeeProduitService
     private final ProduitRepository produitRepository;
     private final CategorieProduitRepository categorieProduitRepository;
     private final PlanteRepository planteRepository;
+
+    public PharmacopeeProduitServiceImpl(
+            IPharmacopeeAuthService pharmacopeeAuthService,
+            DisponibiliteProduitRepository disponibiliteProduitRepository,
+            ProduitRepository produitRepository,
+            CategorieProduitRepository categorieProduitRepository,
+            PlanteRepository planteRepository) {
+        this.pharmacopeeAuthService = pharmacopeeAuthService;
+        this.disponibiliteProduitRepository = disponibiliteProduitRepository;
+        this.produitRepository = produitRepository;
+        this.categorieProduitRepository = categorieProduitRepository;
+        this.planteRepository = planteRepository;
+    }
 
     @Override
     @Transactional(readOnly = true)
