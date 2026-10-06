@@ -35,7 +35,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 @Transactional
 public class PharmacopeeProduitServiceImpl implements IPharmacopeeProduitService {
@@ -45,6 +44,19 @@ public class PharmacopeeProduitServiceImpl implements IPharmacopeeProduitService
     private final ProduitRepository produitRepository;
     private final CategorieProduitRepository categorieProduitRepository;
     private final PlanteRepository planteRepository;
+
+    public PharmacopeeProduitServiceImpl(
+            IPharmacopeeAuthService pharmacopeeAuthService,
+            DisponibiliteProduitRepository disponibiliteProduitRepository,
+            ProduitRepository produitRepository,
+            CategorieProduitRepository categorieProduitRepository,
+            PlanteRepository planteRepository) {
+        this.pharmacopeeAuthService = pharmacopeeAuthService;
+        this.disponibiliteProduitRepository = disponibiliteProduitRepository;
+        this.produitRepository = produitRepository;
+        this.categorieProduitRepository = categorieProduitRepository;
+        this.planteRepository = planteRepository;
+    }
 
     @Override
     @Transactional(readOnly = true)
@@ -201,7 +213,21 @@ public class PharmacopeeProduitServiceImpl implements IPharmacopeeProduitService
                 .compositions(new ArrayList<>())
                 .build();
 
-        if (request.getPlanteIds() != null && !request.getPlanteIds().isEmpty()) {
+        if (request.getCompositions() != null && !request.getCompositions().isEmpty()) {
+            for (var compDto : request.getCompositions()) {
+                if (compDto.getPlanteId() != null) {
+                    Plante plante = planteRepository.findById(compDto.getPlanteId())
+                            .orElseThrow(() -> new ResourceNotFoundException("Plante", "id", compDto.getPlanteId()));
+                    CompositionProduit cp = CompositionProduit.builder()
+                            .produit(produit)
+                            .plante(plante)
+                            .quantite(compDto.getQuantite())
+                            .unite(compDto.getUnite())
+                            .build();
+                    produit.getCompositions().add(cp);
+                }
+            }
+        } else if (request.getPlanteIds() != null && !request.getPlanteIds().isEmpty()) {
             for (Long planteId : request.getPlanteIds()) {
                 Plante plante = planteRepository.findById(planteId)
                         .orElseThrow(() -> new ResourceNotFoundException("Plante", "id", planteId));

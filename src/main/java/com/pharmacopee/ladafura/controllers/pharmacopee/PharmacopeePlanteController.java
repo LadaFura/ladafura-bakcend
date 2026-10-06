@@ -27,6 +27,11 @@ public class PharmacopeePlanteController {
 
     private final IPharmacopeePlanteService pharmacopeePlanteService;
 
+    @GetMapping
+    public ResponseEntity<List<PharmacopeePlanteDto>> getAllPlantes() {
+        return ResponseEntity.ok(pharmacopeePlanteService.getAllPlantes());
+    }
+
     @GetMapping("/search")
     public ResponseEntity<List<PharmacopeePlanteDto>> searchPlantes(@RequestParam String query) {
         return ResponseEntity.ok(pharmacopeePlanteService.searchPlantes(query));
