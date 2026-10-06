@@ -19,7 +19,6 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
-import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -47,6 +46,9 @@ public class Pharmacopee {
     private String description;
 
     private String telephone;
+
+    @Column(name = "photo_url")
+    private String photoUrl;
 
     @Builder.Default
     @Enumerated(EnumType.STRING)
@@ -79,4 +81,9 @@ public class Pharmacopee {
     @OneToMany(mappedBy = "pharmacopee")
     @JsonIgnore
     private List<Commande> commandes = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "pharmacopee", cascade = CascadeType.ALL)
+    @JsonIgnore
+    private List<Avis> avis = new ArrayList<>();
 }

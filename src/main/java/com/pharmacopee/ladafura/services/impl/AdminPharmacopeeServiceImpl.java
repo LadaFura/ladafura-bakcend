@@ -88,6 +88,7 @@ public class AdminPharmacopeeServiceImpl implements IAdminPharmacopeeService {
                 .nom(request.getNom().trim())
                 .description(request.getDescription())
                 .telephone(request.getTelephone() != null ? request.getTelephone().trim() : null)
+                .photoUrl(request.getPhotoUrl())
                 .statut(request.getStatut() != null ? request.getStatut() : StatutPharmacopee.EN_ATTENTE)
                 .localisation(loc)
                 .utilisateur(proprietaire)
@@ -116,6 +117,9 @@ public class AdminPharmacopeeServiceImpl implements IAdminPharmacopeeService {
         }
         if (request.getTelephone() != null) {
             pharmacopee.setTelephone(request.getTelephone().trim());
+        }
+        if (request.getPhotoUrl() != null) {
+            pharmacopee.setPhotoUrl(request.getPhotoUrl().isBlank() ? null : request.getPhotoUrl());
         }
         if (request.getStatut() != null) {
             pharmacopee.setStatut(request.getStatut());

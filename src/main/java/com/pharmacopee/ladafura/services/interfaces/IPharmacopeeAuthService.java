@@ -39,4 +39,5 @@ public interface IPharmacopeeAuthService {
      * Lève une ForbiddenException si la pharmacopée est EN_ATTENTE, SUSPENDU ou REJETE.
      */
     void verifyPharmacopeeValidated();
+    void verifyPraticienPrincipal();
 }

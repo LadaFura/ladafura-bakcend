@@ -40,4 +40,9 @@ public interface IPharmacopeeProduitService {
      * Retire un produit de la pharmacopée (supprime la liaison DisponibiliteProduit).
      */
     void retirerProduit(Long produitId);
+
+    /**
+     * Propose un nouveau remède ou produit pour validation administrative.
+     */
+    PharmacopeeProduitResponse proposerProduit(com.pharmacopee.ladafura.dto.pharmacopee.produit.ProposerProduitRequest request);
 }

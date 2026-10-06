@@ -28,13 +28,15 @@ public class AdminAvisServiceImpl implements IAdminAvisService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<AdminAvisResponse> getAllAvis(StatutAvis statut, Long produitId, Pageable pageable) {
-        log.info("Récupération paginée des avis (statut={}, produitId={})", statut, produitId);
+    public Page<AdminAvisResponse> getAllAvis(StatutAvis statut, Long pharmacopeeId, Pageable pageable) {
+        log.info("Récupération paginée des avis (statut={}, pharmacopeeId={})", statut, pharmacopeeId);
         Page<Avis> page;
-        if (statut != null) {
+        if (statut != null && pharmacopeeId != null) {
+            page = avisRepository.findByPharmacopeeIdAndStatut(pharmacopeeId, statut, pageable);
+        } else if (statut != null) {
             page = avisRepository.findByStatut(statut, pageable);
-        } else if (produitId != null) {
-            page = avisRepository.findByProduitId(produitId, pageable);
+        } else if (pharmacopeeId != null) {
+            page = avisRepository.findByPharmacopeeId(pharmacopeeId, pageable);
         } else {
             page = avisRepository.findAll(pageable);
         }

@@ -20,17 +20,17 @@ public class PopulationAvisResponse {
     @Schema(description = "Identifiant de l'avis", example = "12")
     private Long id;
 
-    @Schema(description = "Identifiant du produit évalué", example = "5")
-    private Long produitId;
+    @Schema(description = "Identifiant de la pharmacopée évaluée", example = "1")
+    private Long pharmacopeeId;
 
-    @Schema(description = "Nom du produit", example = "Sirop d'Artemisia")
-    private String nomProduit;
+    @Schema(description = "Nom de la pharmacopée", example = "danaya")
+    private String nomPharmacopee;
 
-    @Schema(description = "Forme galénique", example = "Sirop 250ml")
-    private String formeProduit;
+    @Schema(description = "Réponse de l'officine")
+    private String reponseOfficine;
 
-    @Schema(description = "Photo du produit", example = "https://storage.ladafura.ml/produits/artemisia.jpg")
-    private String photoProduitUrl;
+    @Schema(description = "Date de réponse de l'officine")
+    private LocalDateTime dateReponse;
 
     @Schema(description = "Note attribuée (1 à 5)", example = "5")
     private Integer note;

@@ -27,4 +27,6 @@ public class AdminCollecteSummaryResponse {
     private String cercle;
     private String localite;
     private Integer nbVertus;
+    private String photoUrl;
+    private String audioUrl;
 }

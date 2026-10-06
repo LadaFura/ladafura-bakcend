@@ -191,7 +191,7 @@ class PopulationEndToEndFlowIntegrationTest {
                 authService, paiementRepository, commandeRepository, paiementMapper);
 
         avisService = new PopulationAvisServiceImpl(
-                authService, avisRepository, produitRepository, ligneCommandeRepository, avisMapper);
+                authService, avisRepository, pharmacopeeRepository, commandeRepository, avisMapper);
 
         favoriService = new PopulationFavoriServiceImpl(
                 favoriRepository, planteRepository, produitRepository, pharmacopeeRepository, authService, favoriMapper);
@@ -296,17 +296,18 @@ class PopulationEndToEndFlowIntegrationTest {
         // --- 4. TRANSITION VERS COMMANDE LIVRÉE ---
         nouvelleCommande.setStatut(StatutCommande.LIVREE);
 
-        // --- 5. AVIS POST-ACHAT VÉRIFIÉ SUR LE PRODUIT ---
-        when(produitRepository.findById(200L)).thenReturn(Optional.of(produit));
-        when(ligneCommandeRepository.hasUserPurchasedAndReceivedProduct(100L, 200L)).thenReturn(true);
-        when(avisRepository.existsByUtilisateurIdAndProduitId(100L, 200L)).thenReturn(false);
+        // --- 5. AVIS POST-ACHAT VÉRIFIÉ SUR LA PHARMACOPÉE ---
+        when(pharmacopeeRepository.findById(10L)).thenReturn(Optional.of(pharmacopee));
+        when(commandeRepository.existsByUtilisateurIdAndPharmacopeeIdAndStatutIn(
+                eq(100L), eq(10L), any())).thenReturn(true);
+        when(avisRepository.existsByUtilisateurIdAndPharmacopeeId(100L, 10L)).thenReturn(false);
 
         Avis nouvelAvis = Avis.builder()
                 .id(900L)
                 .utilisateur(citoyen)
-                .produit(produit)
+                .pharmacopee(pharmacopee)
                 .note(5)
-                .commentaire("Remède traditionnel très puissant contre la toux et les fièvres saisonnières.")
+                .commentaire("Accueil chaleureux et remède traditionnel très puissant contre la toux.")
                 .statut(StatutAvis.EN_ATTENTE)
                 .dateAvis(LocalDateTime.now())
                 .build();
@@ -314,15 +315,15 @@ class PopulationEndToEndFlowIntegrationTest {
         when(avisRepository.save(any(Avis.class))).thenReturn(nouvelAvis);
 
         PopulationCreateAvisRequest avisReq = PopulationCreateAvisRequest.builder()
-                .produitId(200L)
+                .pharmacopeeId(10L)
                 .note(5)
-                .commentaire("Remède traditionnel très puissant contre la toux et les fièvres saisonnières.")
+                .commentaire("Accueil chaleureux et remède traditionnel très puissant contre la toux.")
                 .build();
 
         var avisResp = avisService.creerAvis(avisReq);
         assertThat(avisResp).isNotNull();
         assertThat(avisResp.getNote()).isEqualTo(5);
-        assertThat(avisResp.getProduitId()).isEqualTo(200L);
+        assertThat(avisResp.getPharmacopeeId()).isEqualTo(10L);
 
         // --- 6. GESTION DES FAVORIS ---
         when(favoriRepository.findByUtilisateurIdAndProduitId(100L, 200L)).thenReturn(Optional.empty());

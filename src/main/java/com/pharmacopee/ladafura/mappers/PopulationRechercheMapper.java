@@ -81,7 +81,8 @@ public class PopulationRechercheMapper {
                 .id(pharmacopee.getId())
                 .nom(pharmacopee.getNom())
                 .description(pharmacopee.getDescription())
-                .telephone(pharmacopee.getTelephone());
+                .telephone(pharmacopee.getTelephone())
+                .photoUrl(pharmacopee.getPhotoUrl());
 
         if (pharmacopee.getLocalisation() != null) {
             builder.region(pharmacopee.getLocalisation().getRegion())

@@ -60,4 +60,7 @@ public class PopulationCartePharmacopeeItem {
 
     @Schema(description = "Nombre total d'avis validés", example = "24")
     private long nombreAvis;
+
+    @Schema(description = "URL de la photo ou bannière de l'officine", example = "/uploads/pharmacopees/officine.jpg")
+    private String photoUrl;
 }

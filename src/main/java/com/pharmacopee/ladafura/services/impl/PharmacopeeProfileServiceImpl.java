@@ -49,6 +49,9 @@ public class PharmacopeeProfileServiceImpl implements IPharmacopeeProfileService
         pharmacopee.setNom(request.getNom().trim());
         pharmacopee.setDescription(request.getDescription());
         pharmacopee.setTelephone(request.getTelephone().trim());
+        if (request.getPhotoUrl() != null) {
+            pharmacopee.setPhotoUrl(request.getPhotoUrl().isBlank() ? null : request.getPhotoUrl());
+        }
 
         // Mise à jour du téléphone personnel du responsable
         if (request.getTelephoneResponsable() != null) {
@@ -76,6 +79,7 @@ public class PharmacopeeProfileServiceImpl implements IPharmacopeeProfileService
                 .nom(p.getNom())
                 .description(p.getDescription())
                 .telephone(p.getTelephone())
+                .photoUrl(p.getPhotoUrl())
                 .statut(p.getStatut())
                 .validee(p.getStatut() == StatutPharmacopee.VALIDEE);
 

@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.pharmacopee.ladafura.dto.pharmacopee.avis.PharmacopeeAvisItemResponse;
 import com.pharmacopee.ladafura.dto.pharmacopee.avis.PharmacopeeAvisSummaryResponse;
-import com.pharmacopee.ladafura.dto.pharmacopee.avis.PharmacopeeProduitAvisResponse;
 import com.pharmacopee.ladafura.services.interfaces.IPharmacopeeAvisService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -59,22 +58,7 @@ public class PharmacopeeAvisController {
         return ResponseEntity.ok(avisService.getSummary());
     }
 
-    @Operation(summary = "Consulter les avis et la note moyenne d'un produit spécifique",
-               description = "Renvoie la note moyenne et les avis publiés pour un produit faisant partie du catalogue de l'officine.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Avis du produit récupérés avec succès"),
-            @ApiResponse(responseCode = "401", description = "Non authentifié"),
-            @ApiResponse(responseCode = "403", description = "Accès refusé"),
-            @ApiResponse(responseCode = "404", description = "Produit non trouvé ou non associé à votre officine")
-    })
-    @GetMapping("/produit/{produitId}")
-    public ResponseEntity<PharmacopeeProduitAvisResponse> getAvisByProduit(
-            @Parameter(description = "Identifiant du produit", example = "5")
-            @PathVariable Long produitId,
-            @ParameterObject Pageable pageable) {
-        log.info("Requête GET /api/v1/pharmacopee/avis/produit/{} reçue", produitId);
-        return ResponseEntity.ok(avisService.getAvisByProduit(produitId, pageable));
-    }
+    // Endpoint produit/{produitId} supprimé car les avis sont désormais rattachés à la pharmacopée directement.
 
     @Operation(summary = "Consulter le détail d'un avis client",
                description = "Renvoie les détails complets d'une évaluation spécifique.")
@@ -91,4 +75,16 @@ public class PharmacopeeAvisController {
         log.info("Requête GET /api/v1/pharmacopee/avis/{} reçue", id);
         return ResponseEntity.ok(avisService.getAvisDetail(id));
     }
+
+    @org.springframework.web.bind.annotation.PostMapping("/{id}/repondre")
+    public ResponseEntity<PharmacopeeAvisItemResponse> repondreAvis(
+            @PathVariable Long id,
+            @org.springframework.web.bind.annotation.RequestBody ReponseAvisRequest request) {
+        return ResponseEntity.ok(avisService.repondreAvis(id, request.getReponse()));
+    }
+}
+class ReponseAvisRequest {
+    private String reponse;
+    public String getReponse() { return reponse; }
+    public void setReponse(String reponse) { this.reponse = reponse; }
 }

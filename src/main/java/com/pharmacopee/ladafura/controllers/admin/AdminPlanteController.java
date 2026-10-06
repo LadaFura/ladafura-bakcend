@@ -56,6 +56,14 @@ public class AdminPlanteController {
         return ResponseEntity.ok(planteService.getPlanteById(id));
     }
 
+    @GetMapping("/{id}/vertus")
+    @Operation(summary = "Lister les vertus traditionnelles d'une plante", description = "Retourne l'ensemble des connaissances et vertus traditionnelles répertoriées pour cette plante.")
+    @ApiResponse(responseCode = "200", description = "Liste des vertus traditionnelles")
+    @ApiResponse(responseCode = "404", description = "Plante introuvable")
+    public ResponseEntity<java.util.List<AdminVertuResponse>> getVertusByPlanteId(@PathVariable Long id) {
+        return ResponseEntity.ok(planteService.getVertusByPlanteId(id));
+    }
+
     @PostMapping
     @Operation(summary = "Créer une nouvelle fiche de plante", description = "Enregistre une nouvelle plante médicinale dans l'herbier national.")
     @ApiResponse(responseCode = "201", description = "Plante créée avec succès")

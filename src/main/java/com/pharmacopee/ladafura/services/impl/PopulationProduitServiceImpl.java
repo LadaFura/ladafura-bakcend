@@ -40,7 +40,6 @@ public class PopulationProduitServiceImpl implements IPopulationProduitService {
     private final CompositionProduitRepository compositionProduitRepository;
     private final DisponibiliteProduitRepository disponibiliteProduitRepository;
     private final ModeRetraitRepository modeRetraitRepository;
-    private final AvisRepository avisRepository;
     private final PopulationProduitMapper mapper;
 
     @Override
@@ -55,9 +54,7 @@ public class PopulationProduitServiceImpl implements IPopulationProduitService {
 
         return page.map(produit -> {
             List<DisponibiliteProduit> disponibilites = disponibiliteProduitRepository.findOffresValideesByProduitId(produit.getId());
-            Double noteMoyenne = avisRepository.findAverageNoteByProduitIdAndStatut(produit.getId(), StatutAvis.PUBLIE);
-            long nombreAvis = avisRepository.countByProduitIdAndStatut(produit.getId(), StatutAvis.PUBLIE);
-            return mapper.toSummaryResponse(produit, disponibilites, noteMoyenne, nombreAvis);
+            return mapper.toSummaryResponse(produit, disponibilites, null, 0L);
         });
     }
 
@@ -81,10 +78,7 @@ public class PopulationProduitServiceImpl implements IPopulationProduitService {
                         (existing, replacement) -> existing
                 ));
 
-        Double noteMoyenne = avisRepository.findAverageNoteByProduitIdAndStatut(id, StatutAvis.PUBLIE);
-        long nombreAvis = avisRepository.countByProduitIdAndStatut(id, StatutAvis.PUBLIE);
-
-        return mapper.toDetailResponse(produit, compositions, disponibilites, modesRetraitByPhId, noteMoyenne, nombreAvis);
+        return mapper.toDetailResponse(produit, compositions, disponibilites, modesRetraitByPhId, null, 0L);
     }
 
     @Override

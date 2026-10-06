@@ -36,11 +36,11 @@ class PopulationAvisControllerTest {
     private PopulationAvisController avisController;
 
     @Test
-    @DisplayName("GET /api/v1/population/avis/eligibilite/{produitId} - 200 OK")
+    @DisplayName("GET /api/v1/population/avis/pharmacopee/{pharmacopeeId}/eligibilite - 200 OK")
     void verifierEligibiliteAvis_200OK() {
         PopulationEligibiliteAvisResponse responseDto = PopulationEligibiliteAvisResponse.builder()
-                .produitId(5L)
-                .nomProduit("Sirop d'Artemisia")
+                .pharmacopeeId(5L)
+                .nomPharmacopee("Danaya Tradithérapie")
                 .eligible(true)
                 .dejaEvalue(false)
                 .message("Éligible")
@@ -60,14 +60,14 @@ class PopulationAvisControllerTest {
     @DisplayName("POST /api/v1/population/avis - 201 Created")
     void creerAvis_201Created() {
         PopulationCreateAvisRequest request = PopulationCreateAvisRequest.builder()
-                .produitId(5L)
+                .pharmacopeeId(5L)
                 .note(5)
-                .commentaire("Excellent")
+                .commentaire("Excellent service")
                 .build();
 
         PopulationAvisResponse responseDto = PopulationAvisResponse.builder()
                 .id(1L)
-                .produitId(5L)
+                .pharmacopeeId(5L)
                 .note(5)
                 .statut(StatutAvis.EN_ATTENTE)
                 .build();
@@ -142,7 +142,7 @@ class PopulationAvisControllerTest {
         PopulationAvisResponse responseDto = PopulationAvisResponse.builder()
                 .id(1L)
                 .note(5)
-                .nomProduit("Artemisia")
+                .nomPharmacopee("Danaya Tradithérapie")
                 .build();
 
         when(avisService.getAvisDetail(1L)).thenReturn(responseDto);

@@ -87,8 +87,8 @@ public class PopulationFavoriMapper {
             return null;
         }
         List<DisponibiliteProduit> disponibilites = disponibiliteProduitRepository.findOffresValideesByProduitId(produit.getId());
-        Double noteMoyenne = avisRepository.findAverageNoteByProduitIdAndStatut(produit.getId(), StatutAvis.PUBLIE);
-        long nombreAvis = avisRepository.countByProduitIdAndStatut(produit.getId(), StatutAvis.PUBLIE);
+        Double noteMoyenne = avisRepository.findAverageNoteByPharmacopeeIdAndStatut(produit.getId(), StatutAvis.PUBLIE);
+        long nombreAvis = avisRepository.countByPharmacopeeIdAndStatut(produit.getId(), StatutAvis.PUBLIE);
         return produitMapper.toSummaryResponse(produit, disponibilites, noteMoyenne, nombreAvis);
     }
 

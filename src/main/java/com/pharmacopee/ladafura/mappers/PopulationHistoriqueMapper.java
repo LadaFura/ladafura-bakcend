@@ -62,7 +62,7 @@ public class PopulationHistoriqueMapper {
     public PopulationJournalActiviteItem mapAvis(Avis a) {
         if (a == null) return null;
 
-        String prodNom = a.getProduit() != null ? a.getProduit().getNom() : "Produit";
+        String prodNom = a.getPharmacopee() != null ? a.getPharmacopee().getNom() : "Produit";
 
         return PopulationJournalActiviteItem.builder()
                 .id("AVIS-" + a.getId())

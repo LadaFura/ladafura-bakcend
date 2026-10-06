@@ -12,9 +12,14 @@ import com.pharmacopee.ladafura.enums.StatutAvis;
 public interface IPopulationAvisService {
 
     /**
-     * Vérifie si l'utilisateur est éligible pour déposer un avis sur ce produit (commande livrée ou retirée).
+     * Vérifie si l'utilisateur est éligible pour déposer un avis sur cette pharmacopée (commande livrée ou retirée).
      */
-    PopulationEligibiliteAvisResponse verifierEligibiliteAvis(Long produitId);
+    PopulationEligibiliteAvisResponse verifierEligibiliteAvis(Long pharmacopeeId);
+
+    /**
+     * Récupère la liste paginée des avis publiés d'une pharmacopée pour la consultation publique.
+     */
+    Page<PopulationAvisResponse> getAvisByPharmacopee(Long pharmacopeeId, Pageable pageable);
 
     /**
      * Crée et soumet un nouvel avis client vérifié (statut EN_ATTENTE de modération par l'administrateur).

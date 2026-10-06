@@ -56,4 +56,6 @@ public interface CommandeRepository extends JpaRepository<Commande, Long> {
 
     @Query("SELECT COALESCE(SUM(c.montantTotal), 0.0) FROM Commande c")
     Double sumAllMontantTotal();
+
+    boolean existsByUtilisateurIdAndPharmacopeeIdAndStatutIn(Long utilisateurId, Long pharmacopeeId, java.util.Collection<StatutCommande> statuts);
 }

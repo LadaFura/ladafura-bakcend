@@ -35,13 +35,13 @@ public class AdminAvisController {
     private final IAdminAvisService avisService;
 
     @GetMapping
-    @Operation(summary = "Lister les avis clients avec pagination et filtres", description = "Filtrage par statut d'avis (EN_ATTENTE, PUBLIE, REJETE, MASQUE) et par produit.")
+    @Operation(summary = "Lister les avis clients avec pagination et filtres", description = "Filtrage par statut d'avis (EN_ATTENTE, PUBLIE, REJETE, MASQUE) et par pharmacopée.")
     @ApiResponse(responseCode = "200", description = "Liste paginée des avis")
     public ResponseEntity<Page<AdminAvisResponse>> getAllAvis(
             @RequestParam(required = false) StatutAvis statut,
-            @RequestParam(required = false) Long produitId,
+            @RequestParam(required = false) Long pharmacopeeId,
             @ParameterObject Pageable pageable) {
-        return ResponseEntity.ok(avisService.getAllAvis(statut, produitId, pageable));
+        return ResponseEntity.ok(avisService.getAllAvis(statut, pharmacopeeId, pageable));
     }
 
     @PatchMapping("/{id}/moderate")

@@ -11,6 +11,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import static org.mockito.Mockito.verify;
@@ -23,7 +24,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 import com.pharmacopee.ladafura.Models.Avis;
-import com.pharmacopee.ladafura.Models.Produit;
+import com.pharmacopee.ladafura.Models.Pharmacopee;
 import com.pharmacopee.ladafura.Models.Utilisateur;
 import com.pharmacopee.ladafura.dto.population.avis.PopulationAvisResponse;
 import com.pharmacopee.ladafura.dto.population.avis.PopulationCreateAvisRequest;
@@ -31,14 +32,14 @@ import com.pharmacopee.ladafura.dto.population.avis.PopulationEligibiliteAvisRes
 import com.pharmacopee.ladafura.dto.population.avis.PopulationUpdateAvisRequest;
 import com.pharmacopee.ladafura.enums.Role;
 import com.pharmacopee.ladafura.enums.StatutAvis;
-import com.pharmacopee.ladafura.enums.StatutProduit;
+import com.pharmacopee.ladafura.enums.StatutCommande;
+import com.pharmacopee.ladafura.enums.StatutPharmacopee;
 import com.pharmacopee.ladafura.enums.StatutUtilisateur;
 import com.pharmacopee.ladafura.exceptions.BadRequestException;
-import com.pharmacopee.ladafura.exceptions.ResourceNotFoundException;
 import com.pharmacopee.ladafura.mappers.PopulationAvisMapper;
 import com.pharmacopee.ladafura.repository.AvisRepository;
-import com.pharmacopee.ladafura.repository.LigneCommandeRepository;
-import com.pharmacopee.ladafura.repository.ProduitRepository;
+import com.pharmacopee.ladafura.repository.CommandeRepository;
+import com.pharmacopee.ladafura.repository.PharmacopeeRepository;
 import com.pharmacopee.ladafura.services.impl.PopulationAvisServiceImpl;
 import com.pharmacopee.ladafura.services.interfaces.IPopulationAuthService;
 
@@ -52,10 +53,10 @@ class PopulationAvisServiceImplTest {
     private AvisRepository avisRepository;
 
     @Mock
-    private ProduitRepository produitRepository;
+    private PharmacopeeRepository pharmacopeeRepository;
 
     @Mock
-    private LigneCommandeRepository ligneCommandeRepository;
+    private CommandeRepository commandeRepository;
 
     @Spy
     private PopulationAvisMapper mapper = new PopulationAvisMapper();
@@ -64,7 +65,7 @@ class PopulationAvisServiceImplTest {
     private PopulationAvisServiceImpl avisService;
 
     private Utilisateur currentUser;
-    private Produit produit;
+    private Pharmacopee pharmacopee;
     private Avis avis;
 
     @BeforeEach
@@ -77,20 +78,18 @@ class PopulationAvisServiceImplTest {
         currentUser.setRole(Role.POPULATION);
         currentUser.setStatut(StatutUtilisateur.ACTIF);
 
-        produit = Produit.builder()
+        pharmacopee = Pharmacopee.builder()
                 .id(5L)
-                .nom("Sirop d'Artemisia")
-                .forme("Sirop 250ml")
-                .prix(2500.0)
-                .statut(StatutProduit.VALIDE)
+                .nom("Danaya Tradithérapie")
+                .statut(StatutPharmacopee.VALIDEE)
                 .build();
 
         avis = Avis.builder()
                 .id(1L)
-                .produit(produit)
+                .pharmacopee(pharmacopee)
                 .utilisateur(currentUser)
                 .note(5)
-                .commentaire("Excellent produit naturel.")
+                .commentaire("Excellente expérience et accueil chaleureux.")
                 .statut(StatutAvis.EN_ATTENTE)
                 .dateAvis(LocalDateTime.now())
                 .build();
@@ -100,9 +99,10 @@ class PopulationAvisServiceImplTest {
     @DisplayName("verifierEligibiliteAvis - Éligible et pas encore d'avis")
     void verifierEligibiliteAvis_Eligible() {
         when(populationAuthService.getCurrentPopulationUser()).thenReturn(currentUser);
-        when(produitRepository.findById(5L)).thenReturn(Optional.of(produit));
-        when(ligneCommandeRepository.hasUserPurchasedAndReceivedProduct(10L, 5L)).thenReturn(true);
-        when(avisRepository.findByUtilisateurIdAndProduitId(10L, 5L)).thenReturn(Optional.empty());
+        when(pharmacopeeRepository.findById(5L)).thenReturn(Optional.of(pharmacopee));
+        when(commandeRepository.existsByUtilisateurIdAndPharmacopeeIdAndStatutIn(
+                eq(10L), eq(5L), any())).thenReturn(true);
+        when(avisRepository.findByUtilisateurIdAndPharmacopeeId(10L, 5L)).thenReturn(Optional.empty());
 
         PopulationEligibiliteAvisResponse response = avisService.verifierEligibiliteAvis(5L);
 
@@ -113,33 +113,35 @@ class PopulationAvisServiceImplTest {
     }
 
     @Test
-    @DisplayName("verifierEligibiliteAvis - Non éligible (produit jamais commandé ou non reçu)")
+    @DisplayName("verifierEligibiliteAvis - Non éligible (jamais commandé auprès de cette pharmacopée)")
     void verifierEligibiliteAvis_NotEligible() {
         when(populationAuthService.getCurrentPopulationUser()).thenReturn(currentUser);
-        when(produitRepository.findById(5L)).thenReturn(Optional.of(produit));
-        when(ligneCommandeRepository.hasUserPurchasedAndReceivedProduct(10L, 5L)).thenReturn(false);
-        when(avisRepository.findByUtilisateurIdAndProduitId(10L, 5L)).thenReturn(Optional.empty());
+        when(pharmacopeeRepository.findById(5L)).thenReturn(Optional.of(pharmacopee));
+        when(commandeRepository.existsByUtilisateurIdAndPharmacopeeIdAndStatutIn(
+                eq(10L), eq(5L), any())).thenReturn(false);
+        when(avisRepository.findByUtilisateurIdAndPharmacopeeId(10L, 5L)).thenReturn(Optional.empty());
 
         PopulationEligibiliteAvisResponse response = avisService.verifierEligibiliteAvis(5L);
 
         assertThat(response).isNotNull();
         assertThat(response.getEligible()).isFalse();
-        assertThat(response.getMessage()).contains("devez avoir commandé et réceptionné");
+        assertThat(response.getMessage()).contains("Vous devez avoir commandé auprès de cette pharmacopée");
     }
 
     @Test
     @DisplayName("creerAvis - Création avec succès au statut EN_ATTENTE")
     void creerAvis_Success() {
         PopulationCreateAvisRequest request = PopulationCreateAvisRequest.builder()
-                .produitId(5L)
+                .pharmacopeeId(5L)
                 .note(5)
-                .commentaire("Très bon produit")
+                .commentaire("Très bon accueil et service")
                 .build();
 
         when(populationAuthService.getCurrentPopulationUser()).thenReturn(currentUser);
-        when(produitRepository.findById(5L)).thenReturn(Optional.of(produit));
-        when(ligneCommandeRepository.hasUserPurchasedAndReceivedProduct(10L, 5L)).thenReturn(true);
-        when(avisRepository.existsByUtilisateurIdAndProduitId(10L, 5L)).thenReturn(false);
+        when(pharmacopeeRepository.findById(5L)).thenReturn(Optional.of(pharmacopee));
+        when(commandeRepository.existsByUtilisateurIdAndPharmacopeeIdAndStatutIn(
+                eq(10L), eq(5L), any())).thenReturn(true);
+        when(avisRepository.existsByUtilisateurIdAndPharmacopeeId(10L, 5L)).thenReturn(false);
         when(avisRepository.save(any(Avis.class))).thenAnswer(invocation -> {
             Avis a = invocation.getArgument(0);
             a.setId(100L);
@@ -160,32 +162,34 @@ class PopulationAvisServiceImplTest {
     @DisplayName("creerAvis - Non éligible lance BadRequestException")
     void creerAvis_NotEligible() {
         PopulationCreateAvisRequest request = PopulationCreateAvisRequest.builder()
-                .produitId(5L)
+                .pharmacopeeId(5L)
                 .note(5)
                 .commentaire("Super")
                 .build();
 
         when(populationAuthService.getCurrentPopulationUser()).thenReturn(currentUser);
-        when(produitRepository.findById(5L)).thenReturn(Optional.of(produit));
-        when(ligneCommandeRepository.hasUserPurchasedAndReceivedProduct(10L, 5L)).thenReturn(false);
+        when(pharmacopeeRepository.findById(5L)).thenReturn(Optional.of(pharmacopee));
+        when(commandeRepository.existsByUtilisateurIdAndPharmacopeeIdAndStatutIn(
+                eq(10L), eq(5L), any())).thenReturn(false);
 
         assertThatThrownBy(() -> avisService.creerAvis(request))
                 .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("devez avoir commandé et réceptionné");
+                .hasMessageContaining("Vous devez avoir passé au moins une commande livrée auprès de cette pharmacopée");
     }
 
     @Test
     @DisplayName("creerAvis - Avis déjà existant lance BadRequestException")
     void creerAvis_AlreadyExists() {
         PopulationCreateAvisRequest request = PopulationCreateAvisRequest.builder()
-                .produitId(5L)
+                .pharmacopeeId(5L)
                 .note(5)
                 .build();
 
         when(populationAuthService.getCurrentPopulationUser()).thenReturn(currentUser);
-        when(produitRepository.findById(5L)).thenReturn(Optional.of(produit));
-        when(ligneCommandeRepository.hasUserPurchasedAndReceivedProduct(10L, 5L)).thenReturn(true);
-        when(avisRepository.existsByUtilisateurIdAndProduitId(10L, 5L)).thenReturn(true);
+        when(pharmacopeeRepository.findById(5L)).thenReturn(Optional.of(pharmacopee));
+        when(commandeRepository.existsByUtilisateurIdAndPharmacopeeIdAndStatutIn(
+                eq(10L), eq(5L), any())).thenReturn(true);
+        when(avisRepository.existsByUtilisateurIdAndPharmacopeeId(10L, 5L)).thenReturn(true);
 
         assertThatThrownBy(() -> avisService.creerAvis(request))
                 .isInstanceOf(BadRequestException.class)
@@ -250,6 +254,6 @@ class PopulationAvisServiceImplTest {
 
         assertThat(response).isNotNull();
         assertThat(response.getId()).isEqualTo(1L);
-        assertThat(response.getNomProduit()).isEqualTo("Sirop d'Artemisia");
+        assertThat(response.getNomPharmacopee()).isEqualTo("Danaya Tradithérapie");
     }
 }

@@ -10,6 +10,8 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -60,10 +62,11 @@ public class SecurityConfig {
                                 "/swagger-ui.html"
                         ).permitAll()
 
-                        // 2. Endpoints publics généraux et consultation
+                        // 2. Endpoints publics généraux, consultation et fichiers statiques (images)
                         .requestMatchers(
                                 "/api/v1/public/**",
-                                "/api/v1/auth/**"
+                                "/api/v1/auth/**",
+                                "/uploads/**"
                         ).permitAll()
 
                         // 3. Autoriser les requêtes préliminaires CORS OPTIONS
@@ -74,6 +77,8 @@ public class SecurityConfig {
 
                         // 5. Endpoints des agents de collecte
                         .requestMatchers("/api/v1/agent/**").hasRole("AGENT_COLLECTE")
+                        .requestMatchers("/api/v1/agent/**").hasRole("AGENT_COLLECTE")
+
 
                         // 6. Endpoints des pharmacopées
                         .requestMatchers("/api/v1/pharmacopee/**").hasRole("PHARMACOPEE")
@@ -88,7 +93,8 @@ public class SecurityConfig {
                                 "/api/v1/population/pharmacopees/**",
                                 "/api/v1/population/carte/**",
                                 "/api/v1/population/retrait/**",
-                                "/api/v1/population/paiements/methodes"
+                                "/api/v1/population/paiements/methodes",
+                                "/api/v1/population/avis/pharmacopee/**"
                         ).permitAll()
                         .requestMatchers("/api/v1/population/**").hasRole("POPULATION")
 
@@ -112,8 +118,9 @@ public class SecurityConfig {
         // Méthodes HTTP autorisées
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
 
-        // En-têtes autorisés (notamment Authorization)
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin"));
+        // En-têtes autorisés (notamment Authorization et X-Pharmacopee-Id)
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin", "X-Pharmacopee-Id"));
+        configuration.setExposedHeaders(Arrays.asList("Authorization", "X-Pharmacopee-Id"));
 
         // Autoriser l'envoi d'identifiants
         configuration.setAllowCredentials(true);
@@ -124,5 +131,10 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
     }
 }

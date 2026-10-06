@@ -9,6 +9,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import org.mockito.Mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -146,7 +148,7 @@ class PopulationSecurityAndRulesValidationTest {
                 authService, paiementRepository, commandeRepository, paiementMapper);
 
         avisService = new PopulationAvisServiceImpl(
-                authService, avisRepository, produitRepository, ligneCommandeRepository, avisMapper);
+                authService, avisRepository, pharmacopeeRepository, commandeRepository, avisMapper);
     }
 
     @Test
@@ -221,40 +223,42 @@ class PopulationSecurityAndRulesValidationTest {
     }
 
     @Test
-    @DisplayName("Avis Client - Refus strict si l'utilisateur n'a jamais acheté ni reçu le produit")
+    @DisplayName("Avis Client - Refus strict si l'utilisateur n'a jamais commandé auprès de la pharmacopée")
     void avis_rejectWhenUserHasNotPurchasedProduct() {
         when(authService.getCurrentPopulationUser()).thenReturn(citoyenA);
-        when(produitRepository.findById(100L)).thenReturn(Optional.of(produit));
-        when(ligneCommandeRepository.hasUserPurchasedAndReceivedProduct(10L, 100L)).thenReturn(false);
+        when(pharmacopeeRepository.findById(1L)).thenReturn(Optional.of(pharmacopee));
+        when(commandeRepository.existsByUtilisateurIdAndPharmacopeeIdAndStatutIn(
+                eq(10L), eq(1L), any())).thenReturn(false);
 
         PopulationCreateAvisRequest req = PopulationCreateAvisRequest.builder()
-                .produitId(100L)
+                .pharmacopeeId(1L)
                 .note(4)
                 .commentaire("Je donne un avis sans avoir commandé.")
                 .build();
 
         assertThatThrownBy(() -> avisService.creerAvis(req))
                 .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("Vous devez avoir commandé et réceptionné ce produit");
+                .hasMessageContaining("Vous devez avoir passé au moins une commande livrée auprès de cette pharmacopée");
     }
 
     @Test
-    @DisplayName("Avis Client - Refus du doublon si l'utilisateur a déjà déposé un avis sur le même produit")
+    @DisplayName("Avis Client - Refus du doublon si l'utilisateur a déjà déposé un avis sur la même pharmacopée")
     void avis_rejectDuplicateReview() {
         when(authService.getCurrentPopulationUser()).thenReturn(citoyenA);
-        when(produitRepository.findById(100L)).thenReturn(Optional.of(produit));
-        when(ligneCommandeRepository.hasUserPurchasedAndReceivedProduct(10L, 100L)).thenReturn(true);
-        when(avisRepository.existsByUtilisateurIdAndProduitId(10L, 100L)).thenReturn(true);
+        when(pharmacopeeRepository.findById(1L)).thenReturn(Optional.of(pharmacopee));
+        when(commandeRepository.existsByUtilisateurIdAndPharmacopeeIdAndStatutIn(
+                eq(10L), eq(1L), any())).thenReturn(true);
+        when(avisRepository.existsByUtilisateurIdAndPharmacopeeId(10L, 1L)).thenReturn(true);
 
         PopulationCreateAvisRequest req = PopulationCreateAvisRequest.builder()
-                .produitId(100L)
+                .pharmacopeeId(1L)
                 .note(5)
-                .commentaire("Deuxième avis sur le même produit.")
+                .commentaire("Deuxième avis sur la même pharmacopée.")
                 .build();
 
         assertThatThrownBy(() -> avisService.creerAvis(req))
                 .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("Vous avez déjà déposé un avis pour ce produit");
+                .hasMessageContaining("Vous avez déjà déposé un avis");
     }
 
     @Test

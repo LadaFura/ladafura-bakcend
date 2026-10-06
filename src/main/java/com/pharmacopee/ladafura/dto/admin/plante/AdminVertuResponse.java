@@ -25,4 +25,9 @@ public class AdminVertuResponse {
 
     private Long planteId;
     private String planteNomScientifique;
+
+    private Long collecteId;
+    private String sourceNomComplet;
+    private String sourceSpecialite;
+    private String localisation;
 }
