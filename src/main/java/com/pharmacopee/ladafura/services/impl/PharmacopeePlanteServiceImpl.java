@@ -19,12 +19,18 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class PharmacopeePlanteServiceImpl implements IPharmacopeePlanteService {
 
     private final PlanteRepository planteRepository;
     private final IPharmacopeeAuthService pharmacopeeAuthService;
+
+    public PharmacopeePlanteServiceImpl(
+            PlanteRepository planteRepository,
+            IPharmacopeeAuthService pharmacopeeAuthService) {
+        this.planteRepository = planteRepository;
+        this.pharmacopeeAuthService = pharmacopeeAuthService;
+    }
 
     @Override
     @Transactional(readOnly = true)
