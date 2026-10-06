@@ -241,7 +241,9 @@ public class PopulationHistoriqueServiceImpl implements IPopulationHistoriqueSer
             int quantiteTotale = lcList.stream().mapToInt(lc -> lc.getQuantite() != null ? lc.getQuantite() : 0).sum();
             double montantTotal = lcList.stream().mapToDouble(lc -> lc.getSousTotal() != null ? lc.getSousTotal() : 0.0).sum();
 
-            Optional<Avis> avisOpt = avisRepository.findByUtilisateurIdAndProduitId(userId, produitId);
+            Long pharmacopeeId = derniereCommande != null && derniereCommande.getPharmacopee() != null ? derniereCommande.getPharmacopee().getId() : null;
+            String pharmacopeeNom = derniereCommande != null && derniereCommande.getPharmacopee() != null ? derniereCommande.getPharmacopee().getNom() : null;
+            Optional<Avis> avisOpt = pharmacopeeId != null ? avisRepository.findByUtilisateurIdAndPharmacopeeId(userId, pharmacopeeId) : Optional.empty();
 
             items.add(PopulationProduitAcheteItem.builder()
                     .produitId(produitId)
@@ -253,8 +255,8 @@ public class PopulationHistoriqueServiceImpl implements IPopulationHistoriqueSer
                     .montantTotalDepense(montantTotal)
                     .dateDernierAchat(derniereCommande != null ? derniereCommande.getDateCommande() : null)
                     .dernierNumeroCommande(derniereCommande != null ? derniereCommande.getNumero() : null)
-                    .dernierePharmacopeeId(derniereCommande != null && derniereCommande.getPharmacopee() != null ? derniereCommande.getPharmacopee().getId() : null)
-                    .dernierePharmacopeeNom(derniereCommande != null && derniereCommande.getPharmacopee() != null ? derniereCommande.getPharmacopee().getNom() : null)
+                    .dernierePharmacopeeId(pharmacopeeId)
+                    .dernierePharmacopeeNom(pharmacopeeNom)
                     .dejaEvalue(avisOpt.isPresent())
                     .avisId(avisOpt.map(Avis::getId).orElse(null))
                     .build());

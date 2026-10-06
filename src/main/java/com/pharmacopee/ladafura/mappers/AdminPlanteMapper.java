@@ -31,6 +31,10 @@ public interface AdminPlanteMapper {
 
     @Mapping(source = "plante.id", target = "planteId")
     @Mapping(source = "plante.nomScientifique", target = "planteNomScientifique")
+    @Mapping(target = "collecteId", ignore = true)
+    @Mapping(target = "sourceNomComplet", ignore = true)
+    @Mapping(target = "sourceSpecialite", ignore = true)
+    @Mapping(target = "localisation", ignore = true)
     AdminVertuResponse toVertuDto(VertuDeLaPlante vertu);
 
     @AfterMapping
@@ -47,5 +51,23 @@ public interface AdminPlanteMapper {
         }
         response.setNbEtudes(plante.getEtudesScientifiques() != null ? plante.getEtudesScientifiques().size() : 0);
         response.setNbVertus(plante.getVertus() != null ? plante.getVertus().size() : 0);
+    }
+
+    @AfterMapping
+    default void enrichVertu(VertuDeLaPlante vertu, @MappingTarget AdminVertuResponse dto) {
+        if (vertu.getCollecte() != null) {
+            dto.setCollecteId(vertu.getCollecte().getId());
+            if (vertu.getCollecte().getSource() != null) {
+                dto.setSourceNomComplet(vertu.getCollecte().getSource().getPrenom() + " " + vertu.getCollecte().getSource().getNom());
+                dto.setSourceSpecialite(vertu.getCollecte().getSource().getSpecialite());
+            }
+            if (vertu.getCollecte().getLocalisation() != null) {
+                String loc = vertu.getCollecte().getLocalisation().getLocalite();
+                if (vertu.getCollecte().getLocalisation().getRegion() != null) {
+                    loc += " (" + vertu.getCollecte().getLocalisation().getRegion() + ")";
+                }
+                dto.setLocalisation(loc);
+            }
+        }
     }
 }

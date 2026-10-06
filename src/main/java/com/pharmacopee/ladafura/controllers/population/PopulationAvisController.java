@@ -1,5 +1,6 @@
 package com.pharmacopee.ladafura.controllers.population;
 
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -38,44 +39,59 @@ import lombok.extern.slf4j.Slf4j;
 @RequestMapping("/api/v1/population/avis")
 @RequiredArgsConstructor
 @Slf4j
-@PreAuthorize("hasAuthority('ROLE_POPULATION')")
-@SecurityRequirement(name = "bearerAuth")
-@Tag(name = "Population - Avis", description = "Endpoints de dépôt, modification et consultation des avis clients vérifiés")
+@Tag(name = "Population - Avis", description = "Endpoints de dépôt, modification et consultation des avis clients vérifiés sur les pharmacopées")
 public class PopulationAvisController {
 
     private final IPopulationAvisService populationAvisService;
 
-    @GetMapping("/eligibilite/{produitId}")
-    @Operation(summary = "Vérifier son éligibilité pour noter un produit",
-               description = "Vérifie si le client a effectivement commandé et réceptionné le produit (commande livrée ou retirée), et s'il a déjà laissé une évaluation.")
+    @GetMapping("/pharmacopee/{pharmacopeeId}")
+    @Operation(summary = "Consulter les avis publiés d'une pharmacopée",
+               description = "Consultation publique des retours d'expérience et notes vérifiés pour une pharmacopée.")
+    @ApiResponse(responseCode = "200", description = "Avis récupérés avec succès")
+    public ResponseEntity<Page<PopulationAvisResponse>> getAvisByPharmacopee(
+            @PathVariable Long pharmacopeeId,
+            @ParameterObject Pageable pageable) {
+        log.info("Requête GET /api/v1/population/avis/pharmacopee/{} reçue", pharmacopeeId);
+        return ResponseEntity.ok(populationAvisService.getAvisByPharmacopee(pharmacopeeId, pageable));
+    }
+
+    @GetMapping({"/eligibilite/{pharmacopeeId}", "/eligibilite/pharmacopee/{pharmacopeeId}"})
+    @PreAuthorize("hasAuthority('ROLE_POPULATION')")
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(summary = "Vérifier son éligibilité pour noter une pharmacopée",
+               description = "Vérifie si le client a passé une commande livrée auprès de la pharmacopée et s'il a déjà laissé une évaluation.")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Éligibilité vérifiée avec succès"),
         @ApiResponse(responseCode = "401", description = "Non authentifié"),
         @ApiResponse(responseCode = "403", description = "Accès refusé"),
-        @ApiResponse(responseCode = "404", description = "Produit introuvable")
+        @ApiResponse(responseCode = "404", description = "Pharmacopée introuvable")
     })
-    public ResponseEntity<PopulationEligibiliteAvisResponse> verifierEligibiliteAvis(@PathVariable Long produitId) {
-        log.info("Requête GET /api/v1/population/avis/eligibilite/{} reçue", produitId);
-        return ResponseEntity.ok(populationAvisService.verifierEligibiliteAvis(produitId));
+    public ResponseEntity<PopulationEligibiliteAvisResponse> verifierEligibiliteAvis(@PathVariable Long pharmacopeeId) {
+        log.info("Requête GET /api/v1/population/avis/eligibilite/{} reçue", pharmacopeeId);
+        return ResponseEntity.ok(populationAvisService.verifierEligibiliteAvis(pharmacopeeId));
     }
 
     @PostMapping
-    @Operation(summary = "Déposer un avis et une note sur un produit acheté",
-               description = "Permet au client de noter (1 à 5 étoiles) et commenter un produit reçu. L'avis est créé au statut EN_ATTENTE pour modération administrative.")
+    @PreAuthorize("hasAuthority('ROLE_POPULATION')")
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(summary = "Déposer un avis et une note sur une pharmacopée",
+               description = "Permet au client de noter (1 à 5 étoiles) et commenter son expérience auprès de la pharmacopée.")
     @ApiResponses({
         @ApiResponse(responseCode = "201", description = "Avis créé avec succès"),
-        @ApiResponse(responseCode = "400", description = "Produit non acheté/reçu ou avis déjà existant"),
+        @ApiResponse(responseCode = "400", description = "Aucune commande livrée ou avis déjà existant"),
         @ApiResponse(responseCode = "401", description = "Non authentifié"),
         @ApiResponse(responseCode = "403", description = "Accès refusé"),
-        @ApiResponse(responseCode = "404", description = "Produit introuvable")
+        @ApiResponse(responseCode = "404", description = "Pharmacopée introuvable")
     })
     public ResponseEntity<PopulationAvisResponse> creerAvis(@Valid @RequestBody PopulationCreateAvisRequest request) {
-        log.info("Requête POST /api/v1/population/avis reçue pour le produit ID: {}", request.getProduitId());
+        log.info("Requête POST /api/v1/population/avis reçue pour la pharmacopée ID: {}", request.getPharmacopeeId());
         PopulationAvisResponse response = populationAvisService.creerAvis(request);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
     @PutMapping("/{avisId}")
+    @PreAuthorize("hasAuthority('ROLE_POPULATION')")
+    @SecurityRequirement(name = "bearerAuth")
     @Operation(summary = "Modifier son avis ou sa note",
                description = "Permet de corriger ou mettre à jour la note ou le commentaire d'un avis existant.")
     @ApiResponses({
@@ -93,6 +109,8 @@ public class PopulationAvisController {
     }
 
     @DeleteMapping("/{avisId}")
+    @PreAuthorize("hasAuthority('ROLE_POPULATION')")
+    @SecurityRequirement(name = "bearerAuth")
     @Operation(summary = "Supprimer son avis",
                description = "Supprime définitivement un avis déposé par l'utilisateur.")
     @ApiResponses({
@@ -108,6 +126,8 @@ public class PopulationAvisController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority('ROLE_POPULATION')")
+    @SecurityRequirement(name = "bearerAuth")
     @Operation(summary = "Consulter la liste de ses avis déposés",
                description = "Retourne l'historique complet et paginé de tous les avis rédigés par l'utilisateur connecté.")
     @ApiResponses({
@@ -124,6 +144,8 @@ public class PopulationAvisController {
     }
 
     @GetMapping("/{avisId}")
+    @PreAuthorize("hasAuthority('ROLE_POPULATION')")
+    @SecurityRequirement(name = "bearerAuth")
     @Operation(summary = "Consulter le détail d'un de ses avis",
                description = "Récupère les informations complètes d'un avis client spécifique.")
     @ApiResponses({

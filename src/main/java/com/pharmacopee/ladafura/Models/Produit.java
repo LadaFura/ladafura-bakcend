@@ -71,9 +71,4 @@ public class Produit {
     @OneToMany(mappedBy = "produit", cascade = CascadeType.ALL)
     @JsonIgnore
     private List<DisponibiliteProduit> disponibilites = new ArrayList<>();
-
-    @Builder.Default
-    @OneToMany(mappedBy = "produit", cascade = CascadeType.ALL)
-    @JsonIgnore
-    private List<Avis> avis = new ArrayList<>();
 }

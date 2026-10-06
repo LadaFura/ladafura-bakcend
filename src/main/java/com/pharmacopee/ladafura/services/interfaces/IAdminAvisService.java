@@ -9,7 +9,7 @@ import com.pharmacopee.ladafura.enums.StatutAvis;
 
 public interface IAdminAvisService {
 
-    Page<AdminAvisResponse> getAllAvis(StatutAvis statut, Long produitId, Pageable pageable);
+    Page<AdminAvisResponse> getAllAvis(StatutAvis statut, Long pharmacopeeId, Pageable pageable);
 
     AdminAvisResponse moderateAvis(Long id, AdminModerateAvisRequest request);
 

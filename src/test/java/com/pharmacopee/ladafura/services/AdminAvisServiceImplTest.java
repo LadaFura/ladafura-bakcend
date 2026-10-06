@@ -23,7 +23,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 import com.pharmacopee.ladafura.Models.Avis;
-import com.pharmacopee.ladafura.Models.Produit;
+import com.pharmacopee.ladafura.Models.Pharmacopee;
 import com.pharmacopee.ladafura.Models.Utilisateur;
 import com.pharmacopee.ladafura.dto.admin.avis.AdminAvisResponse;
 import com.pharmacopee.ladafura.dto.admin.avis.AdminModerateAvisRequest;
@@ -47,7 +47,7 @@ class AdminAvisServiceImplTest {
 
     private Avis testAvis;
     private Utilisateur testUser;
-    private Produit testProduit;
+    private Pharmacopee testPharmacopee;
 
     @BeforeEach
     void setUp() {
@@ -57,17 +57,17 @@ class AdminAvisServiceImplTest {
         testUser.setPrenom("Fatoumata");
         testUser.setEmail("fatou@ladafura.ml");
 
-        testProduit = Produit.builder()
+        testPharmacopee = Pharmacopee.builder()
                 .id(5L)
-                .nom("Sirop Kinkéliba")
+                .nom("Danaya Tradithérapie")
                 .build();
 
         testAvis = Avis.builder()
                 .id(1L)
                 .utilisateur(testUser)
-                .produit(testProduit)
+                .pharmacopee(testPharmacopee)
                 .note(4)
-                .commentaire("Efficace contre la toux")
+                .commentaire("Accueil chaleureux et service rapide")
                 .statut(StatutAvis.EN_ATTENTE)
                 .dateAvis(LocalDateTime.now())
                 .build();
@@ -85,20 +85,20 @@ class AdminAvisServiceImplTest {
         assertThat(result).hasSize(1);
         assertThat(result.getContent().get(0).getId()).isEqualTo(1L);
         assertThat(result.getContent().get(0).getNomCompletUtilisateur()).isEqualTo("Fatoumata Traoré");
-        assertThat(result.getContent().get(0).getNomProduit()).isEqualTo("Sirop Kinkéliba");
+        assertThat(result.getContent().get(0).getNomPharmacopee()).isEqualTo("Danaya Tradithérapie");
     }
 
     @Test
-    @DisplayName("getAllAvis - Filtrage par produit")
-    void getAllAvis_ByProduit() {
+    @DisplayName("getAllAvis - Filtrage par pharmacopée")
+    void getAllAvis_ByPharmacopee() {
         Pageable pageable = PageRequest.of(0, 10);
-        when(avisRepository.findByProduitId(5L, pageable))
+        when(avisRepository.findByPharmacopeeId(5L, pageable))
                 .thenReturn(new PageImpl<>(List.of(testAvis)));
 
         Page<AdminAvisResponse> result = avisService.getAllAvis(null, 5L, pageable);
 
         assertThat(result).hasSize(1);
-        assertThat(result.getContent().get(0).getProduitId()).isEqualTo(5L);
+        assertThat(result.getContent().get(0).getPharmacopeeId()).isEqualTo(5L);
     }
 
     @Test

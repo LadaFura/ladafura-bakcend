@@ -29,10 +29,13 @@ public class AdminAvisMapper {
             response.setEmailUtilisateur(avis.getUtilisateur().getEmail());
         }
 
-        if (avis.getProduit() != null) {
-            response.setProduitId(avis.getProduit().getId());
-            response.setNomProduit(avis.getProduit().getNom());
+        if (avis.getPharmacopee() != null) {
+            response.setPharmacopeeId(avis.getPharmacopee().getId());
+            response.setNomPharmacopee(avis.getPharmacopee().getNom());
         }
+
+        response.setReponseOfficine(avis.getReponseOfficine());
+        response.setDateReponse(avis.getDateReponse());
 
         return response;
     }

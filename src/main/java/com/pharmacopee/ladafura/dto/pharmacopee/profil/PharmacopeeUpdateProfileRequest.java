@@ -39,4 +39,7 @@ public class PharmacopeeUpdateProfileRequest {
     @Valid
     @Schema(description = "Coordonnées de localisation géographique (optionnel)")
     private PharmacopeeLocalisationRequest localisation;
+
+    @Schema(description = "URL de la photo ou bannière de l'établissement (optionnel)", example = "/uploads/pharmacopees/officine.jpg")
+    private String photoUrl;
 }

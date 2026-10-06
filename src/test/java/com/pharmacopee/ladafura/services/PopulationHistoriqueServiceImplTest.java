@@ -136,9 +136,9 @@ class PopulationHistoriqueServiceImplTest {
         avis = Avis.builder()
                 .id(701L)
                 .utilisateur(currentUser)
-                .produit(produitArtémisia)
+                .pharmacopee(pharmacopee)
                 .note(5)
-                .commentaire("Très efficace contre les accès palustres.")
+                .commentaire("Très bon accueil et remède traditionnel efficace.")
                 .statut(StatutAvis.PUBLIE)
                 .dateAvis(LocalDateTime.of(2026, 9, 22, 14, 30))
                 .build();
@@ -302,7 +302,7 @@ class PopulationHistoriqueServiceImplTest {
 
         when(ligneCommandeRepository.findPurchasedLinesByUtilisateurId(10L))
                 .thenReturn(List.of(lc1, lc2));
-        when(avisRepository.findByUtilisateurIdAndProduitId(10L, 101L))
+        when(avisRepository.findByUtilisateurIdAndPharmacopeeId(10L, 1L))
                 .thenReturn(Optional.of(avis));
 
         Page<PopulationProduitAcheteItem> page =

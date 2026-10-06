@@ -47,8 +47,8 @@ class AdminAvisControllerTest {
                 .dateAvis(LocalDateTime.now())
                 .utilisateurId(10L)
                 .nomCompletUtilisateur("Fatoumata Traoré")
-                .produitId(5L)
-                .nomProduit("Sirop Kinkéliba")
+                .pharmacopeeId(5L)
+                .nomPharmacopee("Danaya Tradithérapie")
                 .build();
 
         Pageable pageable = PageRequest.of(0, 10);

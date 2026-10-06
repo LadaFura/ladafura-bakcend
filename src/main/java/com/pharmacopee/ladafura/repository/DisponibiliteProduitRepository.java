@@ -41,4 +41,44 @@ public interface DisponibiliteProduitRepository extends JpaRepository<Disponibil
 
     @org.springframework.data.jpa.repository.Query("SELECT COUNT(d) FROM DisponibiliteProduit d WHERE d.pharmacopee.id = :pharmacopeeId AND d.produit.statut = com.pharmacopee.ladafura.enums.StatutProduit.VALIDE")
     long countProduitsValidesByPharmacopeeId(@org.springframework.data.repository.query.Param("pharmacopeeId") Long pharmacopeeId);
+
+    @org.springframework.data.jpa.repository.Query("SELECT DISTINCT d FROM DisponibiliteProduit d " +
+           "JOIN FETCH d.pharmacopee ph " +
+           "LEFT JOIN FETCH ph.localisation " +
+           "JOIN FETCH d.produit pr " +
+           "WHERE ph.statut = com.pharmacopee.ladafura.enums.StatutPharmacopee.VALIDEE " +
+           "AND d.disponible = true " +
+           "AND pr.statut = com.pharmacopee.ladafura.enums.StatutProduit.VALIDE " +
+           "AND (LOWER(pr.nom) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+           "     OR LOWER(pr.description) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+           "     OR LOWER(pr.composition) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+    List<DisponibiliteProduit> searchDisponibilitesByProduitKeyword(@org.springframework.data.repository.query.Param("keyword") String keyword);
+
+    @org.springframework.data.jpa.repository.Query("SELECT DISTINCT d FROM DisponibiliteProduit d " +
+           "JOIN FETCH d.pharmacopee ph " +
+           "LEFT JOIN FETCH ph.localisation " +
+           "JOIN FETCH d.produit pr " +
+           "JOIN pr.compositions cp " +
+           "JOIN cp.plante pl " +
+           "JOIN pl.maladies m " +
+           "WHERE ph.statut = com.pharmacopee.ladafura.enums.StatutPharmacopee.VALIDEE " +
+           "AND d.disponible = true " +
+           "AND pr.statut = com.pharmacopee.ladafura.enums.StatutProduit.VALIDE " +
+           "AND (LOWER(m.nom) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+           "     OR LOWER(m.description) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+    List<DisponibiliteProduit> searchDisponibilitesByMaladieKeyword(@org.springframework.data.repository.query.Param("keyword") String keyword);
+
+    @org.springframework.data.jpa.repository.Query("SELECT DISTINCT d FROM DisponibiliteProduit d " +
+           "JOIN FETCH d.pharmacopee ph " +
+           "LEFT JOIN FETCH ph.localisation " +
+           "JOIN FETCH d.produit pr " +
+           "JOIN pr.compositions cp " +
+           "JOIN cp.plante pl " +
+           "LEFT JOIN pl.nomsPlante np " +
+           "WHERE ph.statut = com.pharmacopee.ladafura.enums.StatutPharmacopee.VALIDEE " +
+           "AND d.disponible = true " +
+           "AND pr.statut = com.pharmacopee.ladafura.enums.StatutProduit.VALIDE " +
+           "AND (LOWER(pl.nomScientifique) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+           "     OR LOWER(np.nom) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+    List<DisponibiliteProduit> searchDisponibilitesByPlanteKeyword(@org.springframework.data.repository.query.Param("keyword") String keyword);
 }

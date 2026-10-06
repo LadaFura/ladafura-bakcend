@@ -62,4 +62,33 @@ public class AdminCollecteServiceImpl implements IAdminCollecteService {
         Collecte saved = collecteRepository.save(collecte);
         return collecteMapper.toDetailDto(saved);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public com.pharmacopee.ladafura.dto.admin.collecte.AdminCollecteStatsResponse getStats() {
+        log.info("Calcul des statistiques globales des collectes terrain");
+        long total = collecteRepository.count();
+        long soumises = collecteRepository.countByStatut(StatutCollecte.SOUMISE);
+        long enExamen = collecteRepository.countByStatut(StatutCollecte.EN_EXAMEN);
+        long validees = collecteRepository.countByStatut(StatutCollecte.VALIDEE);
+        long rejetees = collecteRepository.countByStatut(StatutCollecte.REJETEE);
+
+        return com.pharmacopee.ladafura.dto.admin.collecte.AdminCollecteStatsResponse.builder()
+                .total(total)
+                .soumises(soumises)
+                .enExamen(enExamen)
+                .validees(validees)
+                .rejetees(rejetees)
+                .build();
+    }
+
+    @Override
+    public AdminCollecteDetailResponse updatePhoto(Long id, String photoUrl) {
+        log.info("Mise à jour de la photo pour la collecte {} : {}", id, photoUrl);
+        Collecte collecte = collecteRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Collecte", "id", id));
+        collecte.setPhotoUrl(photoUrl);
+        Collecte saved = collecteRepository.save(collecte);
+        return collecteMapper.toDetailDto(saved);
+    }
 }

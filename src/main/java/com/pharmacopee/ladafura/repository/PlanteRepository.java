@@ -38,15 +38,17 @@ public interface PlanteRepository extends JpaRepository<Plante, Long> {
             "OR LOWER(n.nom) LIKE LOWER(CONCAT('%', :keyword, '%'))")
     Page<Plante> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
 
-    @Query("SELECT DISTINCT p FROM Plante p LEFT JOIN p.nomsPlante n " +
+    @Query("SELECT DISTINCT p FROM Plante p LEFT JOIN p.nomsPlante n LEFT JOIN p.maladies m " +
             "WHERE p.statut = :statut AND (LOWER(p.nomScientifique) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
             "OR LOWER(p.description) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
-            "OR LOWER(n.nom) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+            "OR LOWER(n.nom) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+            "OR LOWER(m.nom) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     Page<Plante> searchByStatutAndKeyword(@Param("statut") StatutPlante statut, @Param("keyword") String keyword, Pageable pageable);
 
-    @Query("SELECT DISTINCT p FROM Plante p LEFT JOIN p.nomsPlante n " +
+    @Query("SELECT DISTINCT p FROM Plante p LEFT JOIN p.nomsPlante n LEFT JOIN p.maladies m " +
             "WHERE p.statut = :statut AND (LOWER(p.nomScientifique) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
             "OR LOWER(p.description) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
-            "OR LOWER(n.nom) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+            "OR LOWER(n.nom) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+            "OR LOWER(m.nom) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     List<Plante> searchTopByStatutAndKeyword(@Param("statut") StatutPlante statut, @Param("keyword") String keyword, Pageable pageable);
 }

@@ -38,13 +38,18 @@ public class Avis {
     @Column(nullable = false)
     private StatutAvis statut = StatutAvis.EN_ATTENTE;
 
+    @Column(columnDefinition = "TEXT")
+    private String reponseOfficine;
+
+    private LocalDateTime dateReponse;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "utilisateur_id", nullable = false)
     private Utilisateur utilisateur;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "produit_id", nullable = false)
-    private Produit produit;
+    @JoinColumn(name = "pharmacopee_id", nullable = false)
+    private Pharmacopee pharmacopee;
 
     @PrePersist
     public void onCreate() {

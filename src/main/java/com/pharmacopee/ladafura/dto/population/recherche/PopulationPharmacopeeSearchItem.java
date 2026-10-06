@@ -42,4 +42,14 @@ public class PopulationPharmacopeeSearchItem {
 
     @Schema(description = "Coordonnée Longitude", example = "-8.3333")
     private Double longitude;
+
+    @Schema(description = "URL de la photo ou bannière de l'officine", example = "/uploads/pharmacopees/officine.jpg")
+    private String photoUrl;
+
+    @Schema(description = "Motif de correspondance expliquant pourquoi cette pharmacopée est affichée", example = "Remède disponible : Sirop Palu")
+    private String motifCorrespondance;
+
+    @Schema(description = "Liste des remèdes ou produits disponibles en pharmacopée correspondant à la recherche", example = "[\"Sirop Palu Bio (5 000 FCFA)\"]")
+    @Builder.Default
+    private java.util.List<String> produitsDisponibles = new java.util.ArrayList<>();
 }

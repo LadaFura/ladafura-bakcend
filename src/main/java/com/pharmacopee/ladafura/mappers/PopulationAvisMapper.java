@@ -5,7 +5,7 @@ import java.util.Optional;
 import org.springframework.stereotype.Component;
 
 import com.pharmacopee.ladafura.Models.Avis;
-import com.pharmacopee.ladafura.Models.Produit;
+import com.pharmacopee.ladafura.Models.Pharmacopee;
 import com.pharmacopee.ladafura.dto.population.avis.PopulationAvisResponse;
 import com.pharmacopee.ladafura.dto.population.avis.PopulationEligibiliteAvisResponse;
 import com.pharmacopee.ladafura.enums.StatutAvis;
@@ -30,14 +30,14 @@ public class PopulationAvisMapper {
             return null;
         }
 
-        Produit p = avis.getProduit();
+        Pharmacopee p = avis.getPharmacopee();
 
         return PopulationAvisResponse.builder()
                 .id(avis.getId())
-                .produitId(p != null ? p.getId() : null)
-                .nomProduit(p != null ? p.getNom() : null)
-                .formeProduit(p != null ? p.getForme() : null)
-                .photoProduitUrl(p != null ? p.getPhotoUrl() : null)
+                .pharmacopeeId(p != null ? p.getId() : null)
+                .nomPharmacopee(p != null ? p.getNom() : null)
+                .reponseOfficine(avis.getReponseOfficine())
+                .dateReponse(avis.getDateReponse())
                 .note(avis.getNote())
                 .commentaire(avis.getCommentaire())
                 .dateAvis(avis.getDateAvis())
@@ -47,24 +47,24 @@ public class PopulationAvisMapper {
     }
 
     public PopulationEligibiliteAvisResponse toEligibiliteResponse(
-            Produit produit, boolean eligible, Optional<Avis> existingAvis) {
-        Long prodId = produit != null ? produit.getId() : null;
-        String nomProd = produit != null ? produit.getNom() : null;
+            Pharmacopee pharmacopee, boolean eligible, Optional<Avis> existingAvis) {
+        Long pharmaId = pharmacopee != null ? pharmacopee.getId() : null;
+        String nomPharma = pharmacopee != null ? pharmacopee.getNom() : null;
         boolean dejaEvalue = existingAvis.isPresent();
         Long avisId = dejaEvalue ? existingAvis.get().getId() : null;
 
         String message;
         if (!eligible) {
-            message = "Vous devez avoir commandé et réceptionné ce produit (commande livrée ou retirée) pour pouvoir déposer un avis vérifié.";
+            message = "Vous devez avoir commandé auprès de cette pharmacopée (commande livrée ou retirée) pour pouvoir déposer un avis.";
         } else if (dejaEvalue) {
-            message = "Vous avez déjà évalué ce produit. Vous pouvez modifier votre note et votre commentaire.";
+            message = "Vous avez déjà évalué cette pharmacopée. Vous pouvez modifier votre note et votre commentaire.";
         } else {
-            message = "Vous êtes éligible à déposer un avis vérifié sur ce produit.";
+            message = "Vous êtes éligible à déposer un avis sur cette pharmacopée.";
         }
 
         return PopulationEligibiliteAvisResponse.builder()
-                .produitId(prodId)
-                .nomProduit(nomProd)
+                .pharmacopeeId(pharmaId)
+                .nomPharmacopee(nomPharma)
                 .eligible(eligible)
                 .dejaEvalue(dejaEvalue)
                 .avisId(avisId)

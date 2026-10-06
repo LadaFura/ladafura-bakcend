@@ -172,7 +172,7 @@ public class PharmacopeeDashboardServiceImpl implements IPharmacopeeDashboardSer
         Double noteMoy = avisRepository.findAverageNoteByPharmacopeeIdAndStatut(pId, StatutAvis.PUBLIE);
         Double noteArrondie = noteMoy != null ? Math.round(noteMoy * 10.0) / 10.0 : 0.0;
 
-        int nbProdEvalues = avisRepository.countDistinctProduitsWithAvisByPharmacopeeIdAndStatut(pId, StatutAvis.PUBLIE);
+        int nbProdEvalues = (int) avisRepository.countByPharmacopeeIdAndStatut(pId, StatutAvis.PUBLIE);
 
         long s5 = avisRepository.countByPharmacopeeIdAndStatutAndNote(pId, StatutAvis.PUBLIE, 5);
         long s4 = avisRepository.countByPharmacopeeIdAndStatutAndNote(pId, StatutAvis.PUBLIE, 4);

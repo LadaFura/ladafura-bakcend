@@ -14,12 +14,12 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "Demande de publication d'un avis client et d'une note sur un produit acheté")
+@Schema(description = "Demande de publication d'un avis client et d'une note sur une pharmacopée")
 public class PopulationCreateAvisRequest {
 
-    @NotNull(message = "L'identifiant du produit est obligatoire")
-    @Schema(description = "Identifiant du produit commandé et reçu", example = "5")
-    private Long produitId;
+    @NotNull(message = "L'identifiant de la pharmacopée est obligatoire")
+    @Schema(description = "Identifiant de la pharmacopée concernée", example = "1")
+    private Long pharmacopeeId;
 
     @NotNull(message = "La note est obligatoire")
     @Min(value = 1, message = "La note minimale est de 1")

@@ -23,6 +23,7 @@ public class AdminPharmacopeeDetailResponse {
     private String description;
     private String telephone;
     private StatutPharmacopee statut;
+    private String photoUrl;
 
     // Localisation géographique
     private String region;

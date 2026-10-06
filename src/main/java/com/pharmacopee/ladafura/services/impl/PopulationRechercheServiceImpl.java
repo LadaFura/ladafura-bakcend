@@ -1,7 +1,10 @@
 package com.pharmacopee.ladafura.services.impl;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -9,6 +12,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.pharmacopee.ladafura.Models.DisponibiliteProduit;
 import com.pharmacopee.ladafura.Models.Maladie;
 import com.pharmacopee.ladafura.Models.NomPlante;
 import com.pharmacopee.ladafura.Models.Pharmacopee;
@@ -24,6 +28,7 @@ import com.pharmacopee.ladafura.enums.StatutPharmacopee;
 import com.pharmacopee.ladafura.enums.StatutPlante;
 import com.pharmacopee.ladafura.enums.StatutProduit;
 import com.pharmacopee.ladafura.mappers.PopulationRechercheMapper;
+import com.pharmacopee.ladafura.repository.DisponibiliteProduitRepository;
 import com.pharmacopee.ladafura.repository.MaladieRepository;
 import com.pharmacopee.ladafura.repository.NomPlanteRepository;
 import com.pharmacopee.ladafura.repository.PharmacopeeRepository;
@@ -45,6 +50,7 @@ public class PopulationRechercheServiceImpl implements IPopulationRechercheServi
     private final MaladieRepository maladieRepository;
     private final ProduitRepository produitRepository;
     private final PharmacopeeRepository pharmacopeeRepository;
+    private final DisponibiliteProduitRepository disponibiliteProduitRepository;
     private final PopulationRechercheMapper populationRechercheMapper;
 
     @Override
@@ -62,11 +68,11 @@ public class PopulationRechercheServiceImpl implements IPopulationRechercheServi
         }
 
         String trimmedQuery = query.trim();
-        log.info("Recherche globale universelle pour le terme : '{}'", trimmedQuery);
+        log.info("Recherche globale intelligente universelle pour le terme : '{}'", trimmedQuery);
 
-        Pageable topLimit = PageRequest.of(0, 5);
+        Pageable topLimit = PageRequest.of(0, 10);
 
-        // 1. Recherche parmi les plantes validées
+        // 1. Recherche parmi les plantes validées (nom scientifique, vernaculaire, description, maladie)
         List<PopulationPlanteSearchItem> plantes = planteRepository
                 .searchTopByStatutAndKeyword(StatutPlante.VALIDE, trimmedQuery, topLimit)
                 .stream()
@@ -89,21 +95,80 @@ public class PopulationRechercheServiceImpl implements IPopulationRechercheServi
                 .map(populationRechercheMapper::toMaladieItem)
                 .toList();
 
-        // 4. Recherche parmi les produits validés
+        // 4. Recherche INTELLIGENTE des PHARMACOPÉES (Résultat Principal)
+        // La pharmacopée est le résultat principal qu'on recherche une maladie, un produit, une plante ou une officine.
+        Map<Long, PopulationPharmacopeeSearchItem> pharmacopeesMap = new LinkedHashMap<>();
+
+        // 4.a : Correspondance directe par nom / description / localisation de la pharmacopée
+        List<Pharmacopee> directPharmas = pharmacopeeRepository
+                .searchTopByStatutAndKeyword(StatutPharmacopee.VALIDEE, trimmedQuery, topLimit);
+        for (Pharmacopee p : directPharmas) {
+            PopulationPharmacopeeSearchItem item = populationRechercheMapper.toPharmacopeeItem(p);
+            item.setMotifCorrespondance("Officine de pharmacopée");
+            pharmacopeesMap.put(p.getId(), item);
+        }
+
+        // 4.b : Correspondance par Produit disponible (nom / description / composition)
+        List<DisponibiliteProduit> dispoByProduit = disponibiliteProduitRepository
+                .searchDisponibilitesByProduitKeyword(trimmedQuery);
+        for (DisponibiliteProduit d : dispoByProduit) {
+            Pharmacopee p = d.getPharmacopee();
+            if (p == null) continue;
+            PopulationPharmacopeeSearchItem item = pharmacopeesMap.computeIfAbsent(
+                    p.getId(), id -> populationRechercheMapper.toPharmacopeeItem(p));
+            String prodLabel = d.getProduit().getNom() + (d.getPrix() != null ? " (" + d.getPrix().intValue() + " FCFA)" : "");
+            if (!item.getProduitsDisponibles().contains(prodLabel)) {
+                item.getProduitsDisponibles().add(prodLabel);
+            }
+            if (item.getMotifCorrespondance() == null || item.getMotifCorrespondance().equals("Officine de pharmacopée")) {
+                item.setMotifCorrespondance("Remède disponible : " + d.getProduit().getNom());
+            }
+        }
+
+        // 4.c : Correspondance par Maladie / Symptôme (ex: Paludisme -> pharmacopées qui proposent ces produits)
+        List<DisponibiliteProduit> dispoByMaladie = disponibiliteProduitRepository
+                .searchDisponibilitesByMaladieKeyword(trimmedQuery);
+        for (DisponibiliteProduit d : dispoByMaladie) {
+            Pharmacopee p = d.getPharmacopee();
+            if (p == null) continue;
+            PopulationPharmacopeeSearchItem item = pharmacopeesMap.computeIfAbsent(
+                    p.getId(), id -> populationRechercheMapper.toPharmacopeeItem(p));
+            String prodLabel = d.getProduit().getNom() + (d.getPrix() != null ? " (" + d.getPrix().intValue() + " FCFA)" : "");
+            if (!item.getProduitsDisponibles().contains(prodLabel)) {
+                item.getProduitsDisponibles().add(prodLabel);
+            }
+            if (item.getMotifCorrespondance() == null || item.getMotifCorrespondance().equals("Officine de pharmacopée")) {
+                item.setMotifCorrespondance("Propose des remèdes pour : " + trimmedQuery);
+            }
+        }
+
+        // 4.d : Correspondance par Plante médicinale (produits à base de cette plante vendus en officine)
+        List<DisponibiliteProduit> dispoByPlante = disponibiliteProduitRepository
+                .searchDisponibilitesByPlanteKeyword(trimmedQuery);
+        for (DisponibiliteProduit d : dispoByPlante) {
+            Pharmacopee p = d.getPharmacopee();
+            if (p == null) continue;
+            PopulationPharmacopeeSearchItem item = pharmacopeesMap.computeIfAbsent(
+                    p.getId(), id -> populationRechercheMapper.toPharmacopeeItem(p));
+            String prodLabel = d.getProduit().getNom() + (d.getPrix() != null ? " (" + d.getPrix().intValue() + " FCFA)" : "");
+            if (!item.getProduitsDisponibles().contains(prodLabel)) {
+                item.getProduitsDisponibles().add(prodLabel);
+            }
+            if (item.getMotifCorrespondance() == null || item.getMotifCorrespondance().equals("Officine de pharmacopée")) {
+                item.setMotifCorrespondance("Remède à base de : " + trimmedQuery);
+            }
+        }
+
+        List<PopulationPharmacopeeSearchItem> pharmacopees = new ArrayList<>(pharmacopeesMap.values());
+
+        // 5. Recherche parmi les produits validés (conservé pour conformité du contrat DTO)
         List<PopulationProduitSearchItem> produits = produitRepository
                 .searchTopByStatutAndKeyword(StatutProduit.VALIDE, trimmedQuery, topLimit)
                 .stream()
                 .map(populationRechercheMapper::toProduitItem)
                 .toList();
 
-        // 5. Recherche parmi les pharmacopées agréées
-        List<PopulationPharmacopeeSearchItem> pharmacopees = pharmacopeeRepository
-                .searchTopByStatutAndKeyword(StatutPharmacopee.VALIDEE, trimmedQuery, topLimit)
-                .stream()
-                .map(populationRechercheMapper::toPharmacopeeItem)
-                .toList();
-
-        int total = plantes.size() + nomsVernaculaires.size() + maladies.size() + produits.size() + pharmacopees.size();
+        int total = pharmacopees.size() + plantes.size();
 
         return PopulationGlobalSearchResponse.builder()
                 .query(trimmedQuery)

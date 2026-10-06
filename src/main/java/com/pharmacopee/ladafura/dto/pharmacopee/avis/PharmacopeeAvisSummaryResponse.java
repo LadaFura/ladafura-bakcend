@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "Synthèse et statistiques de satisfaction clients sur les produits de l'officine")
+@Schema(description = "Synthèse et statistiques de satisfaction clients sur la pharmacopée")
 public class PharmacopeeAvisSummaryResponse {
 
     @Schema(description = "Nombre total d'avis publiés par la modération", example = "42")
@@ -18,9 +18,6 @@ public class PharmacopeeAvisSummaryResponse {
 
     @Schema(description = "Note moyenne globale sur 5.0", example = "4.7")
     private Double noteMoyenneGlobale;
-
-    @Schema(description = "Nombre de produits différents ayant reçu au moins un avis", example = "8")
-    private int nombreProduitsEvalues;
 
     @Schema(description = "Nombre d'avis 5 étoiles (Excellent)", example = "30")
     private long total5Etoiles;

@@ -89,6 +89,20 @@ public class PharmacopeeProduitController {
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
+    @PostMapping("/proposer")
+    @Operation(summary = "Proposer un nouveau produit ou remède",
+               description = "Permet au praticien de soumettre un nouveau produit avec composition et photo. Le produit sera soumis à validation.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "201", description = "Produit proposé avec succès"),
+        @ApiResponse(responseCode = "400", description = "Données invalides"),
+        @ApiResponse(responseCode = "403", description = "Pharmacopée non validée")
+    })
+    public ResponseEntity<PharmacopeeProduitResponse> proposerProduit(@Valid @RequestBody com.pharmacopee.ladafura.dto.pharmacopee.produit.ProposerProduitRequest request) {
+        log.info("Proposition d'un nouveau produit '{}' par la pharmacopée connectée", request.getNom());
+        PharmacopeeProduitResponse response = pharmacopeeProduitService.proposerProduit(request);
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
+    }
+
     @PutMapping("/{produitId}")
     @Operation(summary = "Modifier le stock et la disponibilité d'un produit",
                description = "Met à jour la quantité en stock ou active/désactive la vente pour ce produit spécifique dans votre officine.")

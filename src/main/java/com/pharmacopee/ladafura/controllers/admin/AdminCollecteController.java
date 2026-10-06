@@ -43,6 +43,13 @@ public class AdminCollecteController {
         return ResponseEntity.ok(collecteService.getAllCollectes(statut, pageable));
     }
 
+    @GetMapping("/stats")
+    @Operation(summary = "Statistiques des collectes", description = "Retourne le nombre total de collectes réparties par statut d'examen.")
+    @ApiResponse(responseCode = "200", description = "Statistiques calculées avec succès")
+    public ResponseEntity<com.pharmacopee.ladafura.dto.admin.collecte.AdminCollecteStatsResponse> getStats() {
+        return ResponseEntity.ok(collecteService.getStats());
+    }
+
     @GetMapping("/{id}")
     @Operation(summary = "Obtenir le détail d'une collecte", description = "Fournit l'ensemble des données géographiques, les audios, photos, l'agent et la source interrogée.")
     @ApiResponse(responseCode = "200", description = "Détails de la collecte")
@@ -60,5 +67,15 @@ public class AdminCollecteController {
             @PathVariable Long id,
             @Valid @RequestBody AdminModerateCollecteRequest request) {
         return ResponseEntity.ok(collecteService.moderateCollecte(id, request));
+    }
+
+    @PatchMapping("/{id}/photo")
+    @Operation(summary = "Mettre à jour la photo du spécimen", description = "Permet de modifier l'URL de la photo du spécimen d'une collecte.")
+    @ApiResponse(responseCode = "200", description = "Photo mise à jour avec succès")
+    @ApiResponse(responseCode = "404", description = "Collecte introuvable")
+    public ResponseEntity<AdminCollecteDetailResponse> updatePhoto(
+            @PathVariable Long id,
+            @RequestBody java.util.Map<String, String> body) {
+        return ResponseEntity.ok(collecteService.updatePhoto(id, body.get("photoUrl")));
     }
 }

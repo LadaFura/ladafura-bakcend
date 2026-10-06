@@ -23,5 +23,7 @@ public interface IAdminPlanteService {
 
     AdminVertuResponse moderateVertu(Long vertuId, AdminModerateVertuRequest request);
 
+    java.util.List<AdminVertuResponse> getVertusByPlanteId(Long id);
+
     void deletePlante(Long id);
 }

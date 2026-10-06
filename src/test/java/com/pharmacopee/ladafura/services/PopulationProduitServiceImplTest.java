@@ -67,9 +67,6 @@ class PopulationProduitServiceImplTest {
     @Mock
     private ModeRetraitRepository modeRetraitRepository;
 
-    @Mock
-    private AvisRepository avisRepository;
-
     @Spy
     private PopulationProduitMapper mapper = new PopulationProduitMapper();
 
@@ -181,10 +178,6 @@ class PopulationProduitServiceImplTest {
                 .thenReturn(page);
         when(disponibiliteProduitRepository.findOffresValideesByProduitId(5L))
                 .thenReturn(List.of(disponibilite));
-        when(avisRepository.findAverageNoteByProduitIdAndStatut(5L, StatutAvis.PUBLIE))
-                .thenReturn(4.5);
-        when(avisRepository.countByProduitIdAndStatut(5L, StatutAvis.PUBLIE))
-                .thenReturn(8L);
 
         Page<PopulationProduitSummaryResponse> result =
                 produitService.listerProduits("tisane", 1L, 5000.0, pageable);
@@ -199,8 +192,8 @@ class PopulationProduitServiceImplTest {
         assertThat(item.getPlantesPrincipales()).contains("Combretum micranthum");
         assertThat(item.getNombrePharmacopees()).isEqualTo(1);
         assertThat(item.isDisponibleEnPharmacie()).isTrue();
-        assertThat(item.getNoteMoyenne()).isEqualTo(4.5);
-        assertThat(item.getNombreAvis()).isEqualTo(8L);
+        assertThat(item.getNoteMoyenne()).isNull();
+        assertThat(item.getNombreAvis()).isEqualTo(0L);
 
         verify(produitRepository).searchProduits(StatutProduit.VALIDE, "tisane", 1L, 5000.0, pageable);
     }
@@ -216,10 +209,6 @@ class PopulationProduitServiceImplTest {
                 .thenReturn(List.of(disponibilite));
         when(modeRetraitRepository.findByPharmacopeeId(3L))
                 .thenReturn(List.of(modeRetrait));
-        when(avisRepository.findAverageNoteByProduitIdAndStatut(5L, StatutAvis.PUBLIE))
-                .thenReturn(4.5);
-        when(avisRepository.countByProduitIdAndStatut(5L, StatutAvis.PUBLIE))
-                .thenReturn(8L);
 
         PopulationProduitDetailResponse response = produitService.getProduitDetail(5L);
 

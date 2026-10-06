@@ -7,7 +7,6 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 
-import com.pharmacopee.ladafura.Models.Avis;
 import com.pharmacopee.ladafura.Models.CategorieProduit;
 import com.pharmacopee.ladafura.Models.CompositionProduit;
 import com.pharmacopee.ladafura.Models.Produit;
@@ -15,7 +14,6 @@ import com.pharmacopee.ladafura.dto.admin.produit.AdminCategorieResponse;
 import com.pharmacopee.ladafura.dto.admin.produit.AdminCompositionProduitDto;
 import com.pharmacopee.ladafura.dto.admin.produit.AdminProduitDisponibiliteDto;
 import com.pharmacopee.ladafura.dto.admin.produit.AdminProduitResponse;
-import com.pharmacopee.ladafura.enums.StatutAvis;
 
 @Mapper(componentModel = "spring")
 public interface AdminProduitMapper {
@@ -65,19 +63,9 @@ public interface AdminProduitMapper {
         } else {
             response.setNbDisponibilites(0);
         }
-
-        if (produit.getAvis() != null && !produit.getAvis().isEmpty()) {
-            response.setNbAvis(produit.getAvis().size());
-            double avg = produit.getAvis().stream()
-                    .filter(a -> a.getStatut() == StatutAvis.PUBLIE)
-                    .mapToInt(Avis::getNote)
-                    .average()
-                    .orElse(0.0);
-            response.setNoteMoyenne(Math.round(avg * 10.0) / 10.0);
-        } else {
-            response.setNbAvis(0);
-            response.setNoteMoyenne(0.0);
-        }
+        response.setNbAvis(0);
+        response.setNoteMoyenne(0.0);
+        
     }
 
     @AfterMapping

@@ -151,6 +151,14 @@ public class AdminPlanteServiceImpl implements IAdminPlanteService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<AdminVertuResponse> getVertusByPlanteId(Long id) {
+        log.info("Récupération des vertus pour la plante {}", id);
+        List<VertuDeLaPlante> vertus = vertuDeLaPlanteRepository.findByPlanteId(id);
+        return vertus.stream().map(planteMapper::toVertuDto).toList();
+    }
+
+    @Override
     public void deletePlante(Long id) {
         log.info("Suppression de la plante {}", id);
         Plante plante = planteRepository.findById(id)

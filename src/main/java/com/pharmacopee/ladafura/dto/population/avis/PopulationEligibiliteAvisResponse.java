@@ -13,11 +13,11 @@ import lombok.NoArgsConstructor;
 @Schema(description = "Vérification préalable de l'éligibilité pour déposer un avis vérifié")
 public class PopulationEligibiliteAvisResponse {
 
-    @Schema(description = "Identifiant du produit", example = "5")
-    private Long produitId;
+    @Schema(description = "Identifiant de la pharmacopée", example = "1")
+    private Long pharmacopeeId;
 
-    @Schema(description = "Nom du produit", example = "Sirop d'Artemisia")
-    private String nomProduit;
+    @Schema(description = "Nom de la pharmacopée", example = "danaya")
+    private String nomPharmacopee;
 
     @Schema(description = "Indique si le client a bien commandé et reçu ce produit", example = "true")
     private Boolean eligible;

@@ -27,6 +27,8 @@ public class AdminAvisResponse {
     private String nomCompletUtilisateur;
     private String emailUtilisateur;
 
-    private Long produitId;
-    private String nomProduit;
+    private Long pharmacopeeId;
+    private String nomPharmacopee;
+    private String reponseOfficine;
+    private LocalDateTime dateReponse;
 }

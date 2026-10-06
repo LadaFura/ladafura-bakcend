@@ -15,9 +15,9 @@ import com.pharmacopee.ladafura.enums.StatutAvis;
 @Repository
 public interface AvisRepository extends JpaRepository<Avis, Long> {
 
-    List<Avis> findByProduitId(Long produitId);
+    List<Avis> findByPharmacopeeId(Long pharmacopeeId);
 
-    Page<Avis> findByProduitId(Long produitId, Pageable pageable);
+    Page<Avis> findByPharmacopeeId(Long pharmacopeeId, Pageable pageable);
 
     List<Avis> findByUtilisateurId(Long utilisateurId);
 
@@ -27,9 +27,9 @@ public interface AvisRepository extends JpaRepository<Avis, Long> {
 
     java.util.Optional<Avis> findByIdAndUtilisateurId(Long id, Long utilisateurId);
 
-    boolean existsByUtilisateurIdAndProduitId(Long utilisateurId, Long produitId);
+    boolean existsByUtilisateurIdAndPharmacopeeId(Long utilisateurId, Long pharmacopeeId);
 
-    java.util.Optional<Avis> findByUtilisateurIdAndProduitId(Long utilisateurId, Long produitId);
+    java.util.Optional<Avis> findByUtilisateurIdAndPharmacopeeId(Long utilisateurId, Long pharmacopeeId);
 
     List<Avis> findByStatut(StatutAvis statut);
 
@@ -37,30 +37,17 @@ public interface AvisRepository extends JpaRepository<Avis, Long> {
 
     long countByStatut(StatutAvis statut);
 
-    long countByProduitId(Long produitId);
+    long countByPharmacopeeId(Long pharmacopeeId);
 
-    @Query("SELECT AVG(a.note) FROM Avis a WHERE a.produit.id = :produitId AND a.statut = :statut")
-    Double findAverageNoteByProduitIdAndStatut(@Param("produitId") Long produitId, @Param("statut") StatutAvis statut);
-
-    Page<Avis> findByProduitIdAndStatut(Long produitId, StatutAvis statut, Pageable pageable);
-
-    long countByProduitIdAndStatut(Long produitId, StatutAvis statut);
-
-    @Query("SELECT a FROM Avis a WHERE a.produit.id IN (SELECT dp.produit.id FROM DisponibiliteProduit dp WHERE dp.pharmacopee.id = :pharmacopeeId) AND a.statut = :statut")
-    Page<Avis> findByPharmacopeeIdAndStatut(@Param("pharmacopeeId") Long pharmacopeeId, @Param("statut") StatutAvis statut, Pageable pageable);
-
-    @Query("SELECT a FROM Avis a WHERE a.id = :id AND a.produit.id IN (SELECT dp.produit.id FROM DisponibiliteProduit dp WHERE dp.pharmacopee.id = :pharmacopeeId) AND a.statut = :statut")
-    java.util.Optional<Avis> findByIdAndPharmacopeeIdAndStatut(@Param("id") Long id, @Param("pharmacopeeId") Long pharmacopeeId, @Param("statut") StatutAvis statut);
-
-    @Query("SELECT AVG(a.note) FROM Avis a WHERE a.produit.id IN (SELECT dp.produit.id FROM DisponibiliteProduit dp WHERE dp.pharmacopee.id = :pharmacopeeId) AND a.statut = :statut")
+    @Query("SELECT AVG(a.note) FROM Avis a WHERE a.pharmacopee.id = :pharmacopeeId AND a.statut = :statut")
     Double findAverageNoteByPharmacopeeIdAndStatut(@Param("pharmacopeeId") Long pharmacopeeId, @Param("statut") StatutAvis statut);
 
-    @Query("SELECT COUNT(a) FROM Avis a WHERE a.produit.id IN (SELECT dp.produit.id FROM DisponibiliteProduit dp WHERE dp.pharmacopee.id = :pharmacopeeId) AND a.statut = :statut")
-    long countByPharmacopeeIdAndStatut(@Param("pharmacopeeId") Long pharmacopeeId, @Param("statut") StatutAvis statut);
+    Page<Avis> findByPharmacopeeIdAndStatut(Long pharmacopeeId, StatutAvis statut, Pageable pageable);
 
-    @Query("SELECT COUNT(a) FROM Avis a WHERE a.produit.id IN (SELECT dp.produit.id FROM DisponibiliteProduit dp WHERE dp.pharmacopee.id = :pharmacopeeId) AND a.statut = :statut AND a.note = :note")
+    long countByPharmacopeeIdAndStatut(Long pharmacopeeId, StatutAvis statut);
+
+    java.util.Optional<Avis> findByIdAndPharmacopeeIdAndStatut(Long id, Long pharmacopeeId, StatutAvis statut);
+
+    @Query("SELECT COUNT(a) FROM Avis a WHERE a.pharmacopee.id = :pharmacopeeId AND a.statut = :statut AND a.note = :note")
     long countByPharmacopeeIdAndStatutAndNote(@Param("pharmacopeeId") Long pharmacopeeId, @Param("statut") StatutAvis statut, @Param("note") Integer note);
-
-    @Query("SELECT COUNT(DISTINCT a.produit.id) FROM Avis a WHERE a.produit.id IN (SELECT dp.produit.id FROM DisponibiliteProduit dp WHERE dp.pharmacopee.id = :pharmacopeeId) AND a.statut = :statut")
-    int countDistinctProduitsWithAvisByPharmacopeeIdAndStatut(@Param("pharmacopeeId") Long pharmacopeeId, @Param("statut") StatutAvis statut);
 }

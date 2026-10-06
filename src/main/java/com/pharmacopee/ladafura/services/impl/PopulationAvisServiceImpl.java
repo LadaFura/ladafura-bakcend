@@ -1,6 +1,7 @@
 package com.pharmacopee.ladafura.services.impl;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -9,21 +10,22 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.pharmacopee.ladafura.Models.Avis;
-import com.pharmacopee.ladafura.Models.Produit;
+import com.pharmacopee.ladafura.Models.Pharmacopee;
 import com.pharmacopee.ladafura.Models.Utilisateur;
 import com.pharmacopee.ladafura.dto.population.avis.PopulationAvisResponse;
 import com.pharmacopee.ladafura.dto.population.avis.PopulationCreateAvisRequest;
 import com.pharmacopee.ladafura.dto.population.avis.PopulationEligibiliteAvisResponse;
 import com.pharmacopee.ladafura.dto.population.avis.PopulationUpdateAvisRequest;
 import com.pharmacopee.ladafura.enums.StatutAvis;
+import com.pharmacopee.ladafura.enums.StatutCommande;
 import com.pharmacopee.ladafura.exceptions.BadRequestException;
 import com.pharmacopee.ladafura.exceptions.ResourceNotFoundException;
 import com.pharmacopee.ladafura.mappers.PopulationAvisMapper;
 import com.pharmacopee.ladafura.repository.AvisRepository;
-import com.pharmacopee.ladafura.repository.LigneCommandeRepository;
-import com.pharmacopee.ladafura.repository.ProduitRepository;
-import com.pharmacopee.ladafura.services.interfaces.IPopulationAuthService;
+import com.pharmacopee.ladafura.repository.CommandeRepository;
+import com.pharmacopee.ladafura.repository.PharmacopeeRepository;
 import com.pharmacopee.ladafura.services.interfaces.IPopulationAvisService;
+import com.pharmacopee.ladafura.services.interfaces.IPopulationAuthService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,40 +38,43 @@ public class PopulationAvisServiceImpl implements IPopulationAvisService {
 
     private final IPopulationAuthService populationAuthService;
     private final AvisRepository avisRepository;
-    private final ProduitRepository produitRepository;
-    private final LigneCommandeRepository ligneCommandeRepository;
+    private final PharmacopeeRepository pharmacopeeRepository;
+    private final CommandeRepository commandeRepository;
     private final PopulationAvisMapper mapper;
 
     @Override
     @Transactional(readOnly = true)
-    public PopulationEligibiliteAvisResponse verifierEligibiliteAvis(Long produitId) {
+    public PopulationEligibiliteAvisResponse verifierEligibiliteAvis(Long pharmacopeeId) {
         Utilisateur user = populationAuthService.getCurrentPopulationUser();
-        log.info("Vérification d'éligibilité avis pour l'utilisateur ID: {} et le produit ID: {}", user.getId(), produitId);
+        log.info("Vérification d'éligibilité avis pour l'utilisateur ID: {} et la pharmacopée ID: {}", user.getId(), pharmacopeeId);
 
-        Produit produit = produitRepository.findById(produitId)
-                .orElseThrow(() -> new ResourceNotFoundException("Produit", "id", produitId));
+        Pharmacopee pharmacopee = pharmacopeeRepository.findById(pharmacopeeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Pharmacopée", "id", pharmacopeeId));
 
-        boolean eligible = ligneCommandeRepository.hasUserPurchasedAndReceivedProduct(user.getId(), produitId);
-        Optional<Avis> existingAvis = avisRepository.findByUtilisateurIdAndProduitId(user.getId(), produitId);
+        boolean eligible = commandeRepository.existsByUtilisateurIdAndPharmacopeeIdAndStatutIn(
+                user.getId(), pharmacopee.getId(), List.of(StatutCommande.LIVREE));
 
-        return mapper.toEligibiliteResponse(produit, eligible, existingAvis);
+        Optional<Avis> existingAvis = avisRepository.findByUtilisateurIdAndPharmacopeeId(user.getId(), pharmacopeeId);
+
+        return mapper.toEligibiliteResponse(pharmacopee, eligible, existingAvis);
     }
 
     @Override
     public PopulationAvisResponse creerAvis(PopulationCreateAvisRequest request) {
         Utilisateur user = populationAuthService.getCurrentPopulationUser();
-        log.info("Création d'un avis par l'utilisateur ID: {} pour le produit ID: {}", user.getId(), request.getProduitId());
+        log.info("Création d'un avis par l'utilisateur ID: {} pour la pharmacopée ID: {}", user.getId(), request.getPharmacopeeId());
 
-        Produit produit = produitRepository.findById(request.getProduitId())
-                .orElseThrow(() -> new ResourceNotFoundException("Produit", "id", request.getProduitId()));
+        Pharmacopee pharmacopee = pharmacopeeRepository.findById(request.getPharmacopeeId())
+                .orElseThrow(() -> new ResourceNotFoundException("Pharmacopée", "id", request.getPharmacopeeId()));
 
-        boolean eligible = ligneCommandeRepository.hasUserPurchasedAndReceivedProduct(user.getId(), produit.getId());
+        boolean eligible = commandeRepository.existsByUtilisateurIdAndPharmacopeeIdAndStatutIn(
+                user.getId(), pharmacopee.getId(), List.of(StatutCommande.LIVREE));
         if (!eligible) {
-            throw new BadRequestException("Vous devez avoir commandé et réceptionné ce produit (commande livrée ou retirée) pour pouvoir donner votre avis.");
+            throw new BadRequestException("Vous devez avoir passé au moins une commande livrée auprès de cette pharmacopée pour pouvoir donner votre avis.");
         }
 
-        if (avisRepository.existsByUtilisateurIdAndProduitId(user.getId(), produit.getId())) {
-            throw new BadRequestException("Vous avez déjà déposé un avis pour ce produit. Vous pouvez modifier votre avis existant.");
+        if (avisRepository.existsByUtilisateurIdAndPharmacopeeId(user.getId(), pharmacopee.getId())) {
+            throw new BadRequestException("Vous avez déjà déposé un avis pour cette pharmacopée. Vous pouvez modifier votre avis existant.");
         }
 
         Avis avis = Avis.builder()
@@ -78,11 +83,11 @@ public class PopulationAvisServiceImpl implements IPopulationAvisService {
                 .dateAvis(LocalDateTime.now())
                 .statut(StatutAvis.EN_ATTENTE)
                 .utilisateur(user)
-                .produit(produit)
+                .pharmacopee(pharmacopee)
                 .build();
 
         Avis saved = avisRepository.save(avis);
-        log.info("Avis ID: {} créé avec succès (en attente de modération) pour le produit ID: {}", saved.getId(), produit.getId());
+        log.info("Avis ID: {} créé avec succès (en attente de modération) pour la pharmacopée ID: {}", saved.getId(), pharmacopee.getId());
 
         return mapper.toResponse(saved);
     }
@@ -98,7 +103,7 @@ public class PopulationAvisServiceImpl implements IPopulationAvisService {
         avis.setNote(request.getNote());
         avis.setCommentaire(request.getCommentaire());
         avis.setDateAvis(LocalDateTime.now());
-        avis.setStatut(StatutAvis.EN_ATTENTE); // Nécessite une nouvelle validation de modération
+        avis.setStatut(StatutAvis.EN_ATTENTE); 
 
         Avis updated = avisRepository.save(avis);
         log.info("Avis ID: {} mis à jour avec succès", avisId);
@@ -129,6 +134,14 @@ public class PopulationAvisServiceImpl implements IPopulationAvisService {
                 : avisRepository.findByUtilisateurId(user.getId(), pageable);
 
         return page.map(mapper::toResponse);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<PopulationAvisResponse> getAvisByPharmacopee(Long pharmacopeeId, Pageable pageable) {
+        log.info("Consultation publique des avis pour la pharmacopée ID: {}", pharmacopeeId);
+        return avisRepository.findByPharmacopeeIdAndStatut(pharmacopeeId, StatutAvis.PUBLIE, pageable)
+                .map(mapper::toResponse);
     }
 
     @Override

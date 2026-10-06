@@ -26,4 +26,5 @@ public class AdminPharmacopeeSummaryResponse {
     private String nomProprietaire;
     private Integer nbPraticiens;
     private Integer nbProduits;
+    private String photoUrl;
 }

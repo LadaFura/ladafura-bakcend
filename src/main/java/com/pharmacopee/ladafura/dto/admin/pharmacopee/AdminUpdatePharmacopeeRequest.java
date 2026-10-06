@@ -36,4 +36,6 @@ public class AdminUpdatePharmacopeeRequest {
     private String localite;
     private Double latitude;
     private Double longitude;
+
+    private String photoUrl;
 }

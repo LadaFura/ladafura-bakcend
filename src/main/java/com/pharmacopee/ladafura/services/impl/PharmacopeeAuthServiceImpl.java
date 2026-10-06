@@ -103,17 +103,16 @@ public class PharmacopeeAuthServiceImpl implements IPharmacopeeAuthService {
         List<Pharmacopee> structures = getMyPharmacopees();
         Utilisateur user = getCurrentUtilisateur();
 
-        if (structures.isEmpty()) {
-            throw new ResourceNotFoundException("Pharmacopée", "utilisateurId", user.getId());
-        }
-
         Optional<Praticien> praticienOpt = praticienRepository.findById(user.getId());
         boolean estPrincipal = praticienOpt.map(p -> p.getEstPraticienPrincipal() == null || p.getEstPraticienPrincipal()).orElse(true);
 
-        // Seul le praticien principal (ou admin) a l'autorisation de basculer d'une structure à l'autre
+        Long targetId = getHeaderTargetPharmacopeeId();
         if (estPrincipal || user.getRole() == Role.ADMINISTRATEUR) {
-            Long targetId = getHeaderTargetPharmacopeeId();
             if (targetId != null) {
+                if (user.getRole() == Role.ADMINISTRATEUR) {
+                    return pharmacopeeRepository.findById(targetId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Pharmacopée", "id", targetId));
+                }
                 for (Pharmacopee p : structures) {
                     if (p.getId().equals(targetId)) {
                         return p;
@@ -121,6 +120,10 @@ public class PharmacopeeAuthServiceImpl implements IPharmacopeeAuthService {
                 }
                 log.warn("L'établissement ID {} spécifié par X-Pharmacopee-Id n'appartient pas à l'utilisateur ID {}", targetId, user.getId());
             }
+        }
+
+        if (structures.isEmpty()) {
+            throw new ResourceNotFoundException("Pharmacopée", "utilisateurId", user.getId());
         }
 
         // Par défaut, retourner la première validée ou la première existante
@@ -235,4 +238,9 @@ public class PharmacopeeAuthServiceImpl implements IPharmacopeeAuthService {
         }
         return null;
     }
+    @Override
+    public void verifyPraticienPrincipal() {
+        // Implementation mock
+    }
 }
+

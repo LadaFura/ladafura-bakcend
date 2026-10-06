@@ -37,6 +37,9 @@ public class PharmacopeeProfileResponse {
     @Schema(description = "Indique si l'établissement est agréé et validé", example = "true")
     private boolean validee;
 
+    @Schema(description = "URL de la photo ou bannière de l'établissement", example = "/uploads/pharmacopees/officine.jpg")
+    private String photoUrl;
+
     @Schema(description = "Identifiant du compte utilisateur responsable", example = "2")
     private Long utilisateurId;
 
