@@ -28,6 +28,18 @@ public class PharmacopeePlanteServiceImpl implements IPharmacopeePlanteService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<PharmacopeePlanteDto> getAllPlantes() {
+        return planteRepository.findByStatut(StatutPlante.VALIDE).stream()
+                .map(p -> PharmacopeePlanteDto.builder()
+                        .id(p.getId())
+                        .nomScientifique(p.getNomScientifique())
+                        .nomVulgaire(p.getNomsPlante() != null ? p.getNomsPlante().stream().map(NomPlante::getNom).collect(Collectors.joining(", ")) : null)
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<PharmacopeePlanteDto> searchPlantes(String query) {
         if (query == null || query.trim().length() < 2) {
             return List.of();

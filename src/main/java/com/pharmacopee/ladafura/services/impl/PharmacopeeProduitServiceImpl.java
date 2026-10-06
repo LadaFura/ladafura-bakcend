@@ -201,7 +201,21 @@ public class PharmacopeeProduitServiceImpl implements IPharmacopeeProduitService
                 .compositions(new ArrayList<>())
                 .build();
 
-        if (request.getPlanteIds() != null && !request.getPlanteIds().isEmpty()) {
+        if (request.getCompositions() != null && !request.getCompositions().isEmpty()) {
+            for (var compDto : request.getCompositions()) {
+                if (compDto.getPlanteId() != null) {
+                    Plante plante = planteRepository.findById(compDto.getPlanteId())
+                            .orElseThrow(() -> new ResourceNotFoundException("Plante", "id", compDto.getPlanteId()));
+                    CompositionProduit cp = CompositionProduit.builder()
+                            .produit(produit)
+                            .plante(plante)
+                            .quantite(compDto.getQuantite())
+                            .unite(compDto.getUnite())
+                            .build();
+                    produit.getCompositions().add(cp);
+                }
+            }
+        } else if (request.getPlanteIds() != null && !request.getPlanteIds().isEmpty()) {
             for (Long planteId : request.getPlanteIds()) {
                 Plante plante = planteRepository.findById(planteId)
                         .orElseThrow(() -> new ResourceNotFoundException("Plante", "id", planteId));

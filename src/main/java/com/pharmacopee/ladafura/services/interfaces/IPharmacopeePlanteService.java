@@ -6,6 +6,7 @@ import com.pharmacopee.ladafura.dto.pharmacopee.plante.CreatePharmacopeePlanteRe
 import com.pharmacopee.ladafura.dto.pharmacopee.plante.PharmacopeePlanteDto;
 
 public interface IPharmacopeePlanteService {
+    List<PharmacopeePlanteDto> getAllPlantes();
     List<PharmacopeePlanteDto> searchPlantes(String query);
     PharmacopeePlanteDto createPlante(CreatePharmacopeePlanteRequest request);
 }
