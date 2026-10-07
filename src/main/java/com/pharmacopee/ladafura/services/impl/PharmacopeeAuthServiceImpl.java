@@ -140,7 +140,7 @@ public class PharmacopeeAuthServiceImpl implements IPharmacopeeAuthService {
 
         Optional<Praticien> praticienOpt = praticienRepository.findById(user.getId());
         String planAbonnement = praticienOpt.map(Praticien::getPlanAbonnement).orElse("GRATUIT");
-        int quotaMax = praticienOpt.map(p -> p.getQuotaMaxStructures() != null ? p.getQuotaMaxStructures() : 1).orElse(1);
+        int quotaMax = praticienOpt.map(p -> (p.getQuotaMaxStructures() != null && p.getQuotaMaxStructures() > 1) ? p.getQuotaMaxStructures() : 6).orElse(6);
         boolean estPrincipal = praticienOpt.map(p -> p.getEstPraticienPrincipal() == null || p.getEstPraticienPrincipal()).orElse(true);
 
         Pharmacopee activePharmacopee = null;

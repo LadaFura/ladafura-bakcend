@@ -38,7 +38,7 @@ public class PharmacopeeReferencementServiceImpl implements IPharmacopeeReferenc
 
         Optional<Praticien> praticienOpt = praticienRepository.findById(user.getId());
         String plan = praticienOpt.map(Praticien::getPlanAbonnement).orElse("GRATUIT");
-        int quotaMax = praticienOpt.map(p -> p.getQuotaMaxStructures() != null ? p.getQuotaMaxStructures() : 1).orElse(1);
+        int quotaMax = praticienOpt.map(p -> (p.getQuotaMaxStructures() != null && p.getQuotaMaxStructures() > 1) ? p.getQuotaMaxStructures() : 6).orElse(6);
 
         if (existantes.size() >= quotaMax) {
             log.warn("Quota de structures atteint pour l'utilisateur ID {}. Actuelles: {}, Quota: {}, Plan: {}",
