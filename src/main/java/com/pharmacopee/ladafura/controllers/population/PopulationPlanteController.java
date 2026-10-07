@@ -15,6 +15,7 @@ import com.pharmacopee.ladafura.dto.population.plante.PopulationConnaissanceTrad
 import com.pharmacopee.ladafura.dto.population.plante.PopulationEtudeScientifiqueDto;
 import com.pharmacopee.ladafura.dto.population.plante.PopulationPlanteDetailResponse;
 import com.pharmacopee.ladafura.dto.population.plante.PopulationPlanteSummaryResponse;
+import com.pharmacopee.ladafura.dto.population.produit.PopulationProduitSummaryResponse;
 import com.pharmacopee.ladafura.services.interfaces.IPopulationPlanteService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -78,5 +79,17 @@ public class PopulationPlanteController {
             @PathVariable Long id) {
         log.info("Requête GET /api/v1/population/plantes/{}/etudes reçue", id);
         return ResponseEntity.ok(planteService.getEtudesByPlante(id));
+    }
+
+    @GetMapping("/{id}/produits")
+    @Operation(summary = "Consulter les produits traditionnels formulés avec cette plante",
+               description = "Retourne les remèdes traditionnels validés (fura) incorporant cette plante dans leur composition.")
+    @ApiResponse(responseCode = "200", description = "Liste des produits associés")
+    @ApiResponse(responseCode = "404", description = "Plante introuvable ou non validée")
+    public ResponseEntity<List<PopulationProduitSummaryResponse>> getProduitsByPlante(
+            @Parameter(description = "Identifiant de la plante", example = "1")
+            @PathVariable Long id) {
+        log.info("Requête GET /api/v1/population/plantes/{}/produits reçue", id);
+        return ResponseEntity.ok(planteService.getProduitsByPlante(id));
     }
 }

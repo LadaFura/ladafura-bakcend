@@ -15,10 +15,18 @@ import com.pharmacopee.ladafura.dto.population.plante.PopulationConnaissanceTrad
 import com.pharmacopee.ladafura.dto.population.plante.PopulationEtudeScientifiqueDto;
 import com.pharmacopee.ladafura.dto.population.plante.PopulationPlanteDetailResponse;
 import com.pharmacopee.ladafura.dto.population.plante.PopulationPlanteSummaryResponse;
+import com.pharmacopee.ladafura.dto.population.produit.PopulationProduitSummaryResponse;
 import com.pharmacopee.ladafura.enums.StatutPlante;
+import com.pharmacopee.ladafura.enums.StatutProduit;
 import com.pharmacopee.ladafura.enums.StatutValidation;
 import com.pharmacopee.ladafura.exceptions.ResourceNotFoundException;
 import com.pharmacopee.ladafura.mappers.PopulationPlanteMapper;
+import com.pharmacopee.ladafura.mappers.PopulationProduitMapper;
+import com.pharmacopee.ladafura.Models.CompositionProduit;
+import com.pharmacopee.ladafura.Models.DisponibiliteProduit;
+import com.pharmacopee.ladafura.Models.Produit;
+import com.pharmacopee.ladafura.repository.CompositionProduitRepository;
+import com.pharmacopee.ladafura.repository.DisponibiliteProduitRepository;
 import com.pharmacopee.ladafura.repository.EtudeScientifiqueRepository;
 import com.pharmacopee.ladafura.repository.NomPlanteRepository;
 import com.pharmacopee.ladafura.repository.PlanteRepository;
@@ -38,7 +46,10 @@ public class PopulationPlanteServiceImpl implements IPopulationPlanteService {
     private final VertuDeLaPlanteRepository vertuDeLaPlanteRepository;
     private final EtudeScientifiqueRepository etudeScientifiqueRepository;
     private final NomPlanteRepository nomPlanteRepository;
+    private final CompositionProduitRepository compositionProduitRepository;
+    private final DisponibiliteProduitRepository disponibiliteProduitRepository;
     private final PopulationPlanteMapper mapper;
+    private final PopulationProduitMapper produitMapper;
 
     @Override
     public Page<PopulationPlanteSummaryResponse> listerPlantes(Pageable pageable) {
@@ -93,6 +104,27 @@ public class PopulationPlanteServiceImpl implements IPopulationPlanteService {
         List<EtudeScientifique> etudes = etudeScientifiqueRepository.findByPlanteId(id);
         return etudes.stream()
                 .map(mapper::toEtudeDto)
+                .toList();
+    }
+
+    @Override
+    public List<PopulationProduitSummaryResponse> getProduitsByPlante(Long id) {
+        log.info("Consultation des produits traditionnels contenant la plante ID: {}", id);
+
+        // Vérifier que la plante existe et est validée
+        planteRepository.findByIdAndStatut(id, StatutPlante.VALIDE)
+                .orElseThrow(() -> new ResourceNotFoundException("Plante", "id", id));
+
+        List<CompositionProduit> compositions = compositionProduitRepository.findByPlanteId(id);
+
+        return compositions.stream()
+                .map(CompositionProduit::getProduit)
+                .filter(p -> p != null && StatutProduit.VALIDE.equals(p.getStatut()))
+                .distinct()
+                .map(produit -> {
+                    List<DisponibiliteProduit> disponibilites = disponibiliteProduitRepository.findOffresValideesByProduitId(produit.getId());
+                    return produitMapper.toSummaryResponse(produit, disponibilites, null, 0L);
+                })
                 .toList();
     }
 }
