@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 
 import com.pharmacopee.ladafura.Models.Avis;
 import com.pharmacopee.ladafura.Models.Pharmacopee;
+import com.pharmacopee.ladafura.Models.Utilisateur;
 import com.pharmacopee.ladafura.dto.population.avis.PopulationAvisResponse;
 import com.pharmacopee.ladafura.dto.population.avis.PopulationEligibiliteAvisResponse;
 import com.pharmacopee.ladafura.enums.StatutAvis;
@@ -31,11 +32,14 @@ public class PopulationAvisMapper {
         }
 
         Pharmacopee p = avis.getPharmacopee();
+        Utilisateur u = avis.getUtilisateur();
 
         return PopulationAvisResponse.builder()
                 .id(avis.getId())
                 .pharmacopeeId(p != null ? p.getId() : null)
                 .nomPharmacopee(p != null ? p.getNom() : null)
+                .auteurPrenom(u != null ? u.getPrenom() : null)
+                .auteurNom(u != null ? u.getNom() : null)
                 .reponseOfficine(avis.getReponseOfficine())
                 .dateReponse(avis.getDateReponse())
                 .note(avis.getNote())

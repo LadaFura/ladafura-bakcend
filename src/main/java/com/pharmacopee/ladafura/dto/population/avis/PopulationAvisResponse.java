@@ -26,6 +26,12 @@ public class PopulationAvisResponse {
     @Schema(description = "Nom de la pharmacopée", example = "danaya")
     private String nomPharmacopee;
 
+    @Schema(description = "Prénom de l'auteur de l'avis", example = "Amadou")
+    private String auteurPrenom;
+
+    @Schema(description = "Nom de l'auteur de l'avis", example = "Diallo")
+    private String auteurNom;
+
     @Schema(description = "Réponse de l'officine")
     private String reponseOfficine;
 
