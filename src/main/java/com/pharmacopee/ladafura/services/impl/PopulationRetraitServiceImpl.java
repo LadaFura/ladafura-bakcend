@@ -12,6 +12,7 @@ import com.pharmacopee.ladafura.dto.population.retrait.PopulationEstimationRetra
 import com.pharmacopee.ladafura.dto.population.retrait.PopulationEstimationRetraitResponse;
 import com.pharmacopee.ladafura.dto.population.retrait.PopulationPharmacopeeRetraitOptionsResponse;
 import com.pharmacopee.ladafura.enums.StatutPharmacopee;
+import com.pharmacopee.ladafura.enums.TypeModeRetrait;
 import com.pharmacopee.ladafura.exceptions.BadRequestException;
 import com.pharmacopee.ladafura.exceptions.ResourceNotFoundException;
 import com.pharmacopee.ladafura.mappers.PopulationRetraitMapper;
@@ -33,6 +34,7 @@ public class PopulationRetraitServiceImpl implements IPopulationRetraitService {
     private final PopulationRetraitMapper mapper;
 
     @Override
+    @Transactional
     public PopulationPharmacopeeRetraitOptionsResponse getOptionsRetraitPharmacopee(Long pharmacopeeId) {
         log.info("Consultation des options de retrait (Livraison/Pickup) pour la pharmacopée ID: {}", pharmacopeeId);
 
@@ -44,6 +46,16 @@ public class PopulationRetraitServiceImpl implements IPopulationRetraitService {
         }
 
         List<ModeRetrait> modes = modeRetraitRepository.findByPharmacopeeId(pharmacopeeId);
+        if (modes.isEmpty()) {
+            // Initialiser le retrait au comptoir (PICKUP gratuit) par défaut si aucun mode configuré
+            ModeRetrait defaultPickup = ModeRetrait.builder()
+                    .pharmacopee(pharmacopee)
+                    .type(TypeModeRetrait.PICKUP)
+                    .actif(true)
+                    .frais(0.0)
+                    .build();
+            modes = List.of(modeRetraitRepository.save(defaultPickup));
+        }
         return mapper.toPharmacopeeOptionsResponse(pharmacopee, modes);
     }
 

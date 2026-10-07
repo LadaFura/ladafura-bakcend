@@ -78,10 +78,10 @@ public class PopulationRetraitMapper {
 
         if (modes != null) {
             for (ModeRetrait mr : modes) {
-                PopulationModeRetraitOptionDto opt = toOptionDto(mr, ph);
-                if (opt != null) {
-                    options.add(opt);
-                    if (Boolean.TRUE.equals(mr.getActif())) {
+                if (Boolean.TRUE.equals(mr.getActif())) {
+                    PopulationModeRetraitOptionDto opt = toOptionDto(mr, ph);
+                    if (opt != null) {
+                        options.add(opt);
                         if (mr.getType() == TypeModeRetrait.LIVRAISON) {
                             proposeLivraison = true;
                             fraisLivraison = mr.getFrais();
