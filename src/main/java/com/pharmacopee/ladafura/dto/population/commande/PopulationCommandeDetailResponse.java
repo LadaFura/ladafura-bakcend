@@ -66,6 +66,18 @@ public class PopulationCommandeDetailResponse {
     @Schema(description = "Articles composant la commande")
     private List<PopulationLigneCommandeDto> lignes;
 
-    @Schema(description = "Statut du paiement rattaché (ex: EN_ATTENTE, PAYE, NON_APPLICABLE)", example = "EN_ATTENTE")
+    @Schema(description = "Statut du paiement rattaché (ex: EN_ATTENTE, REUSSI, ECHOUE)", example = "REUSSI")
     private String statutPaiement;
+
+    @Schema(description = "Identifiant unique de la transaction de paiement", example = "55")
+    private Long paiementId;
+
+    @Schema(description = "Référence unique de transaction de paiement", example = "PAY-OM-20261008-88392")
+    private String referencePaiement;
+
+    @Schema(description = "Moyen de règlement utilisé", example = "MOBILE_MONEY")
+    private String methodePaiement;
+
+    @Schema(description = "Libellé convivial du mode de paiement", example = "Mobile Money (Orange Money)")
+    private String libellePaiement;
 }

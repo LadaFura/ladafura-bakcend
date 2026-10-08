@@ -9,6 +9,7 @@ import com.pharmacopee.ladafura.Models.Commande;
 import com.pharmacopee.ladafura.Models.LigneCommande;
 import com.pharmacopee.ladafura.Models.Localisation;
 import com.pharmacopee.ladafura.Models.ModeRetrait;
+import com.pharmacopee.ladafura.Models.Paiement;
 import com.pharmacopee.ladafura.Models.Pharmacopee;
 import com.pharmacopee.ladafura.Models.Produit;
 import com.pharmacopee.ladafura.dto.population.commande.PopulationCommandeDetailResponse;
@@ -120,9 +121,21 @@ public class PopulationCommandeMapper {
             }
         }
 
-        String statutPaiement = (c.getPaiement() != null && c.getPaiement().getStatut() != null)
-                ? c.getPaiement().getStatut().name()
+        Paiement p = c.getPaiement();
+        String statutPaiement = (p != null && p.getStatut() != null)
+                ? p.getStatut().name()
                 : "EN_ATTENTE";
+        Long paiementId = (p != null) ? p.getId() : null;
+        String referencePaiement = (p != null) ? p.getReference() : null;
+        String methodePaiement = (p != null && p.getMethode() != null) ? p.getMethode().name() : null;
+        String libellePaiement = null;
+        if (p != null && p.getMethode() != null) {
+            libellePaiement = switch (p.getMethode()) {
+                case MOBILE_MONEY -> "Mobile Money";
+                case CASH -> "Espèces à la livraison / au comptoir";
+                case CARTE_BANCAIRE -> "Carte bancaire";
+            };
+        }
 
         return PopulationCommandeDetailResponse.builder()
                 .id(c.getId())
@@ -142,6 +155,10 @@ public class PopulationCommandeMapper {
                 .annulable(isAnnulable(c.getStatut()))
                 .lignes(lignesDto)
                 .statutPaiement(statutPaiement)
+                .paiementId(paiementId)
+                .referencePaiement(referencePaiement)
+                .methodePaiement(methodePaiement)
+                .libellePaiement(libellePaiement)
                 .build();
     }
 

@@ -38,6 +38,7 @@ import com.pharmacopee.ladafura.dto.population.commande.PopulationCommandeRecapi
 import com.pharmacopee.ladafura.dto.population.commande.PopulationCommandeStatutResponse;
 import com.pharmacopee.ladafura.dto.population.commande.PopulationCommandeSummaryResponse;
 import com.pharmacopee.ladafura.dto.population.commande.PopulationCreateCommandeRequest;
+import com.pharmacopee.ladafura.enums.MethodePaiement;
 import com.pharmacopee.ladafura.enums.Role;
 import com.pharmacopee.ladafura.enums.StatutCommande;
 import com.pharmacopee.ladafura.enums.StatutPharmacopee;
@@ -50,6 +51,7 @@ import com.pharmacopee.ladafura.repository.CommandeRepository;
 import com.pharmacopee.ladafura.repository.DisponibiliteProduitRepository;
 import com.pharmacopee.ladafura.repository.LignePanierRepository;
 import com.pharmacopee.ladafura.repository.ModeRetraitRepository;
+import com.pharmacopee.ladafura.repository.PaiementRepository;
 import com.pharmacopee.ladafura.repository.PanierRepository;
 import com.pharmacopee.ladafura.repository.PharmacopeeRepository;
 import com.pharmacopee.ladafura.services.impl.PopulationCommandeServiceImpl;
@@ -78,6 +80,9 @@ class PopulationCommandeServiceImplTest {
 
     @Mock
     private DisponibiliteProduitRepository disponibiliteProduitRepository;
+
+    @Mock
+    private PaiementRepository paiementRepository;
 
     @Spy
     private PopulationCommandeMapper mapper = new PopulationCommandeMapper();
@@ -207,13 +212,17 @@ class PopulationCommandeServiceImplTest {
     }
 
     @Test
-    @DisplayName("passerCommande - Confirmation avec Livraison : commande créée, stock décrémenté et panier vidé")
+    @DisplayName("passerCommande - Confirmation avec Livraison et Paiement validé : commande créée, stock décrémenté et panier vidé")
     void passerCommande_Livraison_Success() {
         PopulationCreateCommandeRequest request = PopulationCreateCommandeRequest.builder()
                 .pharmacopeeId(1L)
                 .modeRetraitId(10L)
                 .adresseLivraison("Badalabougou Rue 12")
                 .notes("Appeler en arrivant")
+                .methode(MethodePaiement.MOBILE_MONEY)
+                .operateur("ORANGE_MONEY")
+                .telephoneMobileMoney("+22370112233")
+                .simulerSucces(true)
                 .build();
 
         when(populationAuthService.getCurrentPopulationUser()).thenReturn(currentUser);
@@ -233,16 +242,48 @@ class PopulationCommandeServiceImplTest {
 
         assertThat(response).isNotNull();
         assertThat(response.getId()).isEqualTo(1001L);
-        assertThat(response.getStatut()).isEqualTo(StatutCommande.EN_ATTENTE);
+        assertThat(response.getStatut()).isEqualTo(StatutCommande.CONFIRMEE);
         assertThat(response.getTotalProduit()).isEqualTo(5000.0);
         assertThat(response.getMontantLivraison()).isEqualTo(1500.0);
         assertThat(response.getMontantTotal()).isEqualTo(6500.0);
+        assertThat(response.getStatutPaiement()).isEqualTo("REUSSI");
         assertThat(disponibilite.getQuantiteStock()).isEqualTo(48); // 50 - 2
         assertThat(panier.getLignes()).isEmpty();
 
         verify(disponibiliteProduitRepository).save(disponibilite);
+        verify(paiementRepository).save(any());
         verify(lignePanierRepository).deleteByPanierId(20L);
         verify(panierRepository).save(panier);
+    }
+
+    @Test
+    @DisplayName("passerCommande - Échec du paiement Mobile Money : aucune commande enregistrée, panier et stocks intacts")
+    void passerCommande_PaymentFailure_NoOrderCreated() {
+        PopulationCreateCommandeRequest request = PopulationCreateCommandeRequest.builder()
+                .pharmacopeeId(1L)
+                .modeRetraitId(10L)
+                .adresseLivraison("Badalabougou Rue 12")
+                .methode(MethodePaiement.MOBILE_MONEY)
+                .operateur("ORANGE_MONEY")
+                .telephoneMobileMoney("+22370112233")
+                .simulerSucces(false) // Échec de paiement
+                .build();
+
+        when(populationAuthService.getCurrentPopulationUser()).thenReturn(currentUser);
+        when(panierRepository.findByUtilisateurId(10L)).thenReturn(Optional.of(panier));
+        when(pharmacopeeRepository.findById(1L)).thenReturn(Optional.of(pharmacopee));
+        when(modeRetraitRepository.findById(10L)).thenReturn(Optional.of(modeLivraison));
+        when(disponibiliteProduitRepository.findByPharmacopeeIdAndProduitId(1L, 5L))
+                .thenReturn(Optional.of(disponibilite));
+        when(commandeRepository.existsByNumero(any())).thenReturn(false);
+
+        assertThatThrownBy(() -> commandeService.passerCommande(request))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("Le règlement via Mobile Money a échoué");
+
+        // Vérification stricte : aucun stock modifié, aucune commande sauvée, panier non vidé
+        assertThat(disponibilite.getQuantiteStock()).isEqualTo(50);
+        assertThat(panier.getLignes()).isNotEmpty();
     }
 
     @Test
@@ -252,6 +293,7 @@ class PopulationCommandeServiceImplTest {
                 .pharmacopeeId(1L)
                 .modeRetraitId(10L)
                 .adresseLivraison(null)
+                .methode(MethodePaiement.CASH)
                 .build();
 
         when(populationAuthService.getCurrentPopulationUser()).thenReturn(currentUser);

@@ -185,7 +185,7 @@ class PopulationEndToEndFlowIntegrationTest {
 
         commandeService = new PopulationCommandeServiceImpl(
                 authService, commandeRepository, panierRepository, lignePanierRepository,
-                pharmacopeeRepository, modeRetraitRepository, dispoRepo, commandeMapper);
+                pharmacopeeRepository, modeRetraitRepository, dispoRepo, paiementRepository, commandeMapper);
 
         paiementService = new PopulationPaiementServiceImpl(
                 authService, paiementRepository, commandeRepository, paiementMapper);
@@ -250,20 +250,27 @@ class PopulationEndToEndFlowIntegrationTest {
                 .build();
         nouvelleCommande.getLignes().add(lc);
 
-        when(commandeRepository.save(any(Commande.class))).thenReturn(nouvelleCommande);
+        when(commandeRepository.save(any(Commande.class))).thenAnswer(inv -> {
+            Commande c = inv.getArgument(0);
+            c.setId(600L);
+            return c;
+        });
 
         PopulationCreateCommandeRequest cmdReq = PopulationCreateCommandeRequest.builder()
                 .pharmacopeeId(10L)
                 .modeRetraitId(400L)
                 .adresseLivraison("Bamako-Coura, Rue 14")
                 .notes("Appeler en arrivant devant la pharmacie")
+                .methode(MethodePaiement.MOBILE_MONEY)
+                .operateur("ORANGE_MONEY")
+                .telephoneMobileMoney("+22370112233")
+                .simulerSucces(true)
                 .build();
 
         PopulationCommandeDetailResponse cmdResp = commandeService.passerCommande(cmdReq);
         assertThat(cmdResp).isNotNull();
-        assertThat(cmdResp.getNumero()).isEqualTo("CMD-2026-BKO-001");
         assertThat(cmdResp.getMontantTotal()).isEqualTo(7500.0);
-        assertThat(cmdResp.getStatut()).isEqualTo(StatutCommande.EN_ATTENTE);
+        assertThat(cmdResp.getStatut()).isEqualTo(StatutCommande.CONFIRMEE);
 
         // --- 3. PAIEMENT DE LA COMMANDE (Mobile Money) ---
         when(commandeRepository.findByIdAndUtilisateurId(600L, 100L)).thenReturn(Optional.of(nouvelleCommande));

@@ -142,7 +142,7 @@ class PopulationSecurityAndRulesValidationTest {
 
         commandeService = new PopulationCommandeServiceImpl(
                 authService, commandeRepository, panierRepository, lignePanierRepository,
-                pharmacopeeRepository, modeRetraitRepository, dispoRepo, commandeMapper);
+                pharmacopeeRepository, modeRetraitRepository, dispoRepo, paiementRepository, commandeMapper);
 
         paiementService = new PopulationPaiementServiceImpl(
                 authService, paiementRepository, commandeRepository, paiementMapper);
@@ -179,6 +179,7 @@ class PopulationSecurityAndRulesValidationTest {
         PopulationCreateCommandeRequest request = PopulationCreateCommandeRequest.builder()
                 .pharmacopeeId(1L)
                 .modeRetraitId(1L)
+                .methode(MethodePaiement.CASH)
                 .build();
 
         assertThatThrownBy(() -> commandeService.passerCommande(request))
@@ -196,6 +197,7 @@ class PopulationSecurityAndRulesValidationTest {
         PopulationCreateCommandeRequest request = PopulationCreateCommandeRequest.builder()
                 .pharmacopeeId(1L)
                 .modeRetraitId(1L)
+                .methode(MethodePaiement.CASH)
                 .build();
 
         assertThatThrownBy(() -> commandeService.passerCommande(request))

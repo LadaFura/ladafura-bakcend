@@ -25,6 +25,7 @@ import com.pharmacopee.ladafura.dto.population.commande.PopulationCommandeRecapi
 import com.pharmacopee.ladafura.dto.population.commande.PopulationCommandeStatutResponse;
 import com.pharmacopee.ladafura.dto.population.commande.PopulationCommandeSummaryResponse;
 import com.pharmacopee.ladafura.dto.population.commande.PopulationCreateCommandeRequest;
+import com.pharmacopee.ladafura.enums.MethodePaiement;
 import com.pharmacopee.ladafura.enums.StatutCommande;
 import com.pharmacopee.ladafura.services.interfaces.IPopulationCommandeService;
 
@@ -72,12 +73,13 @@ class PopulationCommandeControllerTest {
                 .pharmacopeeId(1L)
                 .modeRetraitId(10L)
                 .adresseLivraison("Bamako")
+                .methode(MethodePaiement.MOBILE_MONEY)
                 .build();
 
         PopulationCommandeDetailResponse responseDto = PopulationCommandeDetailResponse.builder()
                 .id(100L)
                 .numero("CMD-2026-001")
-                .statut(StatutCommande.EN_ATTENTE)
+                .statut(StatutCommande.CONFIRMEE)
                 .montantTotal(6500.0)
                 .build();
 

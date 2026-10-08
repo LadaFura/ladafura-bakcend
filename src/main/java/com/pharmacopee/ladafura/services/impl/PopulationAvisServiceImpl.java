@@ -81,13 +81,13 @@ public class PopulationAvisServiceImpl implements IPopulationAvisService {
                 .note(request.getNote())
                 .commentaire(request.getCommentaire())
                 .dateAvis(LocalDateTime.now())
-                .statut(StatutAvis.EN_ATTENTE)
+                .statut(StatutAvis.PUBLIE)
                 .utilisateur(user)
                 .pharmacopee(pharmacopee)
                 .build();
 
         Avis saved = avisRepository.save(avis);
-        log.info("Avis ID: {} créé avec succès (en attente de modération) pour la pharmacopée ID: {}", saved.getId(), pharmacopee.getId());
+        log.info("Avis ID: {} créé et publié avec succès pour la pharmacopée ID: {}", saved.getId(), pharmacopee.getId());
 
         return mapper.toResponse(saved);
     }
@@ -103,10 +103,10 @@ public class PopulationAvisServiceImpl implements IPopulationAvisService {
         avis.setNote(request.getNote());
         avis.setCommentaire(request.getCommentaire());
         avis.setDateAvis(LocalDateTime.now());
-        avis.setStatut(StatutAvis.EN_ATTENTE); 
+        avis.setStatut(StatutAvis.PUBLIE);
 
         Avis updated = avisRepository.save(avis);
-        log.info("Avis ID: {} mis à jour avec succès", avisId);
+        log.info("Avis ID: {} mis à jour et publié avec succès", avisId);
 
         return mapper.toResponse(updated);
     }
