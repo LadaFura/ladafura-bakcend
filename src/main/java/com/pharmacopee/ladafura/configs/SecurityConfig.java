@@ -81,6 +81,7 @@ public class SecurityConfig {
 
 
                         // 6. Endpoints des pharmacopées
+                        .requestMatchers(HttpMethod.POST, "/api/v1/pharmacopee/auth/register").permitAll()
                         .requestMatchers("/api/v1/pharmacopee/**").hasRole("PHARMACOPEE")
 
                         // 7. Endpoints de la population

@@ -30,4 +30,13 @@ public class PopulationConnaissanceTraditionnelleDto {
 
     @Schema(description = "Description complémentaire du savoir traditionnel", example = "Traditionnellement consommé le matin en infusion")
     private String description;
+
+    @Schema(description = "Nom du tradithérapeute ou informateur source", example = "Mamadou Traoré")
+    private String sourceNom;
+
+    @Schema(description = "Spécialité de la source traditionnelle", example = "Naturopathe / Tradithérapeute herboriste")
+    private String sourceSpecialite;
+
+    @Schema(description = "Localité ou adresse de la source", example = "Kati, Région de Koulikoro")
+    private String sourceLocalite;
 }
