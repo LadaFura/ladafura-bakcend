@@ -165,6 +165,34 @@ public class PopulationPlanteMapper {
         if (vertu == null) {
             return null;
         }
+
+        String sourceNom = null;
+        String sourceSpecialite = null;
+        String sourceLocalite = null;
+
+        if (vertu.getCollecte() != null) {
+            Collecte col = vertu.getCollecte();
+            if (col.getSource() != null) {
+                com.pharmacopee.ladafura.Models.Source src = col.getSource();
+                String prenom = src.getPrenom() != null ? src.getPrenom() : "";
+                String nom = src.getNom() != null ? src.getNom() : "";
+                String complet = (prenom + " " + nom).trim();
+                sourceNom = !complet.isBlank() ? complet : null;
+                sourceSpecialite = src.getSpecialite();
+                sourceLocalite = src.getAdresse();
+            }
+            if (sourceLocalite == null && col.getLocalisation() != null) {
+                Localisation loc = col.getLocalisation();
+                List<String> locParts = new ArrayList<>();
+                if (loc.getLocalite() != null && !loc.getLocalite().isBlank()) locParts.add(loc.getLocalite());
+                if (loc.getCommune() != null && !loc.getCommune().isBlank()) locParts.add(loc.getCommune());
+                if (loc.getRegion() != null && !loc.getRegion().isBlank()) locParts.add(loc.getRegion());
+                if (!locParts.isEmpty()) {
+                    sourceLocalite = String.join(", ", locParts);
+                }
+            }
+        }
+
         return PopulationConnaissanceTraditionnelleDto.builder()
                 .id(vertu.getId())
                 .usageRapporte(vertu.getUsageRapporte())
@@ -172,6 +200,9 @@ public class PopulationPlanteMapper {
                 .preparation(vertu.getPreparation())
                 .precaution(vertu.getPrecaution())
                 .description(vertu.getDescription())
+                .sourceNom(sourceNom)
+                .sourceSpecialite(sourceSpecialite)
+                .sourceLocalite(sourceLocalite)
                 .build();
     }
 

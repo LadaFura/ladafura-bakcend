@@ -26,6 +26,16 @@ public class PharmacopeeAuthController {
 
     private final IPharmacopeeAuthService pharmacopeeAuthService;
 
+    @org.springframework.web.bind.annotation.PostMapping("/register")
+    @Operation(summary = "Inscrire un praticien principal et créer sa pharmacopée (EN_ATTENTE)",
+               description = "Endpoint public : crée le compte praticien puis sa pharmacopée en attente de validation administrative.")
+    @io.swagger.v3.oas.annotations.security.SecurityRequirements
+    public ResponseEntity<PharmacopeeAuthResponse> register(
+            @jakarta.validation.Valid @org.springframework.web.bind.annotation.RequestBody com.pharmacopee.ladafura.dto.pharmacopee.auth.PraticienRegisterRequest request) {
+        return ResponseEntity.status(org.springframework.http.HttpStatus.CREATED)
+                .body(pharmacopeeAuthService.registerPraticien(request));
+    }
+
     @GetMapping("/me")
     @Operation(summary = "Consulter son identité et le statut de sa pharmacopée",
                description = "Permet à l'utilisateur connecté avec le rôle PHARMACOPEE de consulter son profil utilisateur, son UID Firebase et l'état de référencement de son établissement.")

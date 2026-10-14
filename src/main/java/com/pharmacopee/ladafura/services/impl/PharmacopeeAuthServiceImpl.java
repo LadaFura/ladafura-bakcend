@@ -1,5 +1,6 @@
 package com.pharmacopee.ladafura.services.impl;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -28,6 +29,11 @@ import com.pharmacopee.ladafura.exceptions.UnauthorizedException;
 import com.pharmacopee.ladafura.repository.PharmacopeeRepository;
 import com.pharmacopee.ladafura.repository.PraticienRepository;
 import com.pharmacopee.ladafura.repository.UtilisateurRepository;
+import com.pharmacopee.ladafura.exceptions.BadRequestException;
+import com.pharmacopee.ladafura.exceptions.ConflictException;
+import com.pharmacopee.ladafura.dto.pharmacopee.auth.PraticienRegisterRequest;
+import com.pharmacopee.ladafura.repository.LocalisationRepository;
+import com.pharmacopee.ladafura.services.interfaces.IFirebaseAuthService;
 import com.pharmacopee.ladafura.services.interfaces.IPharmacopeeAuthService;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -43,6 +49,8 @@ public class PharmacopeeAuthServiceImpl implements IPharmacopeeAuthService {
     private final UtilisateurRepository utilisateurRepository;
     private final PharmacopeeRepository pharmacopeeRepository;
     private final PraticienRepository praticienRepository;
+    private final LocalisationRepository localisationRepository;
+    private final IFirebaseAuthService firebaseAuthService;
 
     @Override
     public Utilisateur getCurrentUtilisateur() {
@@ -241,6 +249,92 @@ public class PharmacopeeAuthServiceImpl implements IPharmacopeeAuthService {
     @Override
     public void verifyPraticienPrincipal() {
         // Implementation mock
+    }
+
+    @Override
+    @Transactional
+    public PharmacopeeAuthResponse registerPraticien(PraticienRegisterRequest request) {
+        log.info("Inscription d'un praticien principal (email: {})", request.getEmail());
+
+        if (utilisateurRepository.existsByEmail(request.getEmail())) {
+            throw new ConflictException("Utilisateur", "email", request.getEmail());
+        }
+
+        String displayName = request.getPrenom() + " " + request.getNom();
+        String firebaseUid;
+        try {
+            firebaseUid = firebaseAuthService.createUser(request.getEmail(), request.getMotDePasse(), displayName);
+        } catch (Exception e) {
+            log.error("Échec de création du compte Firebase : {}", e.getMessage());
+            throw new BadRequestException("Échec de la création du compte dans le service d'authentification : " + e.getMessage());
+        }
+
+        try {
+            firebaseAuthService.setRole(firebaseUid, Role.PHARMACOPEE.name());
+        } catch (Exception e) {
+            log.warn("Impossible d'attribuer le rôle PHARMACOPEE dans Firebase pour l'UID {}: {}", firebaseUid, e.getMessage());
+        }
+
+        Praticien praticien = new Praticien();
+        praticien.setNom(request.getNom());
+        praticien.setPrenom(request.getPrenom());
+        praticien.setEmail(request.getEmail());
+        praticien.setTelephone(request.getTelephone());
+        praticien.setRole(Role.PHARMACOPEE);
+        praticien.setStatut(StatutUtilisateur.ACTIF);
+        praticien.setFirebaseUid(firebaseUid);
+        praticien.setDateCreation(LocalDateTime.now());
+        praticien.setNumeroAgrement(request.getNumeroAgrement());
+        praticien.setSpecialite(request.getSpecialite());
+        praticien.setPlanAbonnement("GRATUIT");
+        praticien.setQuotaMaxStructures(6);
+        praticien.setEstPraticienPrincipal(true);
+        Praticien saved = praticienRepository.save(praticien);
+
+        Localisation localisation = null;
+        if (hasText(request.getRegion()) && hasText(request.getCommune())) {
+            localisation = localisationRepository.save(Localisation.builder()
+                    .region(request.getRegion())
+                    .cercle(hasText(request.getCercle()) ? request.getCercle() : request.getRegion())
+                    .commune(request.getCommune())
+                    .localite(hasText(request.getLocalite()) ? request.getLocalite() : request.getCommune())
+                    .latitude(request.getLatitude())
+                    .longitude(request.getLongitude())
+                    .build());
+        }
+
+        Pharmacopee pharmacopee = Pharmacopee.builder()
+                .nom(request.getNomPharmacopee())
+                .description(request.getDescriptionPharmacopee())
+                .telephone(request.getTelephonePharmacopee())
+                .statut(StatutPharmacopee.EN_ATTENTE)
+                .utilisateur(saved)
+                .localisation(localisation)
+                .build();
+        pharmacopeeRepository.save(pharmacopee);
+
+        log.info("Praticien principal créé (ID={}) avec pharmacopée EN_ATTENTE", saved.getId());
+
+        return PharmacopeeAuthResponse.builder()
+                .utilisateurId(saved.getId())
+                .nom(saved.getNom())
+                .prenom(saved.getPrenom())
+                .email(saved.getEmail())
+                .telephone(saved.getTelephone())
+                .role(saved.getRole())
+                .statutUtilisateur(saved.getStatut())
+                .firebaseUid(firebaseUid)
+                .pharmacopeeId(pharmacopee.getId())
+                .nomPharmacopee(pharmacopee.getNom())
+                .telephonePharmacopee(pharmacopee.getTelephone())
+                .statutReferencement(pharmacopee.getStatut())
+                .validee(false)
+                .estPraticienPrincipal(true)
+                .build();
+    }
+
+    private static boolean hasText(String s) {
+        return s != null && !s.isBlank();
     }
 }
 

@@ -43,4 +43,7 @@ public class AdminCreateProduitRequest {
 
     @Builder.Default
     private List<AdminCompositionRequestDto> compositions = new ArrayList<>();
+
+    @Builder.Default
+    private List<Long> maladieIds = new ArrayList<>();
 }

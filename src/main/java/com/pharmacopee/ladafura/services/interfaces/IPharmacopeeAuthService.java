@@ -40,4 +40,9 @@ public interface IPharmacopeeAuthService {
      */
     void verifyPharmacopeeValidated();
     void verifyPraticienPrincipal();
+
+    /**
+     * Inscrit un praticien principal et crée sa pharmacopée avec le statut EN_ATTENTE.
+     */
+    PharmacopeeAuthResponse registerPraticien(com.pharmacopee.ladafura.dto.pharmacopee.auth.PraticienRegisterRequest request);
 }

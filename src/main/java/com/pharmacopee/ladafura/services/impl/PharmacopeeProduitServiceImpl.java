@@ -25,11 +25,17 @@ import com.pharmacopee.ladafura.services.interfaces.IPharmacopeeProduitService;
 
 import com.pharmacopee.ladafura.Models.CategorieProduit;
 import com.pharmacopee.ladafura.Models.CompositionProduit;
+import com.pharmacopee.ladafura.Models.Maladie;
 import com.pharmacopee.ladafura.Models.Plante;
 import com.pharmacopee.ladafura.dto.pharmacopee.produit.ProposerProduitRequest;
 import com.pharmacopee.ladafura.repository.CategorieProduitRepository;
+import com.pharmacopee.ladafura.repository.MaladieRepository;
 import com.pharmacopee.ladafura.repository.PlanteRepository;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -44,18 +50,21 @@ public class PharmacopeeProduitServiceImpl implements IPharmacopeeProduitService
     private final ProduitRepository produitRepository;
     private final CategorieProduitRepository categorieProduitRepository;
     private final PlanteRepository planteRepository;
+    private final MaladieRepository maladieRepository;
 
     public PharmacopeeProduitServiceImpl(
             IPharmacopeeAuthService pharmacopeeAuthService,
             DisponibiliteProduitRepository disponibiliteProduitRepository,
             ProduitRepository produitRepository,
             CategorieProduitRepository categorieProduitRepository,
-            PlanteRepository planteRepository) {
+            PlanteRepository planteRepository,
+            MaladieRepository maladieRepository) {
         this.pharmacopeeAuthService = pharmacopeeAuthService;
         this.disponibiliteProduitRepository = disponibiliteProduitRepository;
         this.produitRepository = produitRepository;
         this.categorieProduitRepository = categorieProduitRepository;
         this.planteRepository = planteRepository;
+        this.maladieRepository = maladieRepository;
     }
 
     @Override
@@ -213,11 +222,20 @@ public class PharmacopeeProduitServiceImpl implements IPharmacopeeProduitService
                 .compositions(new ArrayList<>())
                 .build();
 
+        Set<Maladie> maladiesSelectionnees = new HashSet<>();
+        if (request.getMaladieIds() != null && !request.getMaladieIds().isEmpty()) {
+            maladiesSelectionnees.addAll(maladieRepository.findAllById(request.getMaladieIds()));
+            produit.setMaladies(maladiesSelectionnees);
+        }
+
         if (request.getCompositions() != null && !request.getCompositions().isEmpty()) {
             for (var compDto : request.getCompositions()) {
                 if (compDto.getPlanteId() != null) {
                     Plante plante = planteRepository.findById(compDto.getPlanteId())
                             .orElseThrow(() -> new ResourceNotFoundException("Plante", "id", compDto.getPlanteId()));
+                    if (!maladiesSelectionnees.isEmpty()) {
+                        plante.getMaladies().addAll(maladiesSelectionnees);
+                    }
                     CompositionProduit cp = CompositionProduit.builder()
                             .produit(produit)
                             .plante(plante)
@@ -231,6 +249,9 @@ public class PharmacopeeProduitServiceImpl implements IPharmacopeeProduitService
             for (Long planteId : request.getPlanteIds()) {
                 Plante plante = planteRepository.findById(planteId)
                         .orElseThrow(() -> new ResourceNotFoundException("Plante", "id", planteId));
+                if (!maladiesSelectionnees.isEmpty()) {
+                    plante.getMaladies().addAll(maladiesSelectionnees);
+                }
                 CompositionProduit cp = CompositionProduit.builder()
                         .produit(produit)
                         .plante(plante)
@@ -261,6 +282,26 @@ public class PharmacopeeProduitServiceImpl implements IPharmacopeeProduitService
         String catNom = (p.getCategorie() != null) ? p.getCategorie().getNom() : null;
         Long catId = (p.getCategorie() != null) ? p.getCategorie().getId() : null;
 
+        Set<String> nomsMaladies = new HashSet<>();
+        if (p.getMaladies() != null) {
+            for (Maladie m : p.getMaladies()) {
+                if (m != null && m.getNom() != null) {
+                    nomsMaladies.add(m.getNom());
+                }
+            }
+        }
+        if (p.getCompositions() != null) {
+            for (CompositionProduit cp : p.getCompositions()) {
+                if (cp.getPlante() != null && cp.getPlante().getMaladies() != null) {
+                    for (Maladie m : cp.getPlante().getMaladies()) {
+                        if (m != null && m.getNom() != null) {
+                            nomsMaladies.add(m.getNom());
+                        }
+                    }
+                }
+            }
+        }
+
         return PharmacopeeProduitResponse.builder()
                 .disponibiliteId(dispo.getId())
                 .produitId(p.getId())
@@ -273,6 +314,7 @@ public class PharmacopeeProduitServiceImpl implements IPharmacopeeProduitService
                 .categorieId(catId)
                 .quantiteStock(dispo.getQuantiteStock())
                 .disponible(dispo.getDisponible())
+                .maladies(new ArrayList<>(nomsMaladies))
                 .dateMiseAJour(dispo.getDateMiseAJour())
                 .build();
     }

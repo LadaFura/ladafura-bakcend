@@ -1,7 +1,9 @@
 package com.pharmacopee.ladafura.Models;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.pharmacopee.ladafura.enums.StatutProduit;
@@ -16,6 +18,8 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
@@ -66,6 +70,15 @@ public class Produit {
     @Builder.Default
     @OneToMany(mappedBy = "produit", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CompositionProduit> compositions = new ArrayList<>();
+
+    @Builder.Default
+    @ManyToMany
+    @JoinTable(
+            name = "produit_maladies",
+            joinColumns = @JoinColumn(name = "produit_id"),
+            inverseJoinColumns = @JoinColumn(name = "maladie_id")
+    )
+    private Set<Maladie> maladies = new HashSet<>();
 
     @Builder.Default
     @OneToMany(mappedBy = "produit", cascade = CascadeType.ALL)

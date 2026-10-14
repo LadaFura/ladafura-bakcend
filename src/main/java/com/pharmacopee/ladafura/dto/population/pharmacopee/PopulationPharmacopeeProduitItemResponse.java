@@ -1,5 +1,7 @@
 package com.pharmacopee.ladafura.dto.population.pharmacopee;
 
+import java.util.List;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -45,4 +47,10 @@ public class PopulationPharmacopeeProduitItemResponse {
 
     @Schema(description = "Quantité en stock disponible", example = "15")
     private Integer quantiteStock;
+
+    @Schema(description = "Maladies et symptômes ciblés par ce produit")
+    private List<String> maladies;
+
+    @Schema(description = "Plantes médicinales entrant dans la composition du produit")
+    private List<String> plantes;
 }

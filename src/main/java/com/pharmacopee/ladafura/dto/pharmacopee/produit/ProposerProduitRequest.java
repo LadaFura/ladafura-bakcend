@@ -21,6 +21,8 @@ public class ProposerProduitRequest {
 
     private List<PharmacopeeCompositionRequestDto> compositions;
 
+    private List<Long> maladieIds;
+
     private String photoUrl;
 
     @NotNull(message = "Le prix de base est requis")

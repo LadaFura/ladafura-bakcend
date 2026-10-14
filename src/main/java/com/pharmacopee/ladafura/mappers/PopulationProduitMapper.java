@@ -79,10 +79,22 @@ public class PopulationProduitMapper {
             return null;
         }
 
-        // 1. Ingrédients végétaux
+        // 1. Ingrédients végétaux & Maladies ciblées
         List<PopulationCompositionItemDto> compDtos = new ArrayList<>();
         Set<Long> maladieIds = new HashSet<>();
         List<PopulationProduitMaladieDto> maladieDtos = new ArrayList<>();
+
+        if (produit.getMaladies() != null) {
+            for (Maladie m : produit.getMaladies()) {
+                if (m != null && maladieIds.add(m.getId())) {
+                    maladieDtos.add(PopulationProduitMaladieDto.builder()
+                            .id(m.getId())
+                            .nom(m.getNom())
+                            .description(m.getDescription())
+                            .build());
+                }
+            }
+        }
 
         if (compositions != null) {
             for (CompositionProduit comp : compositions) {

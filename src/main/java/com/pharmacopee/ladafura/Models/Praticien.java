@@ -1,7 +1,7 @@
 package com.pharmacopee.ladafura.Models;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -45,5 +45,5 @@ public class Praticien extends Utilisateur {
         inverseJoinColumns = @JoinColumn(name = "pharmacopee_id")
     )
     @JsonIgnore
-    private List<Pharmacopee> pharmacopees = new ArrayList<>();
+    private Set<Pharmacopee> pharmacopees = new HashSet<>();
 }

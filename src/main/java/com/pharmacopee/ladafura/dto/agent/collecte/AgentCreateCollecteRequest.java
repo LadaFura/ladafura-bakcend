@@ -37,5 +37,9 @@ public class AgentCreateCollecteRequest {
 
     @Builder.Default
     @Schema(description = "Indique si la collecte doit être immédiatement soumise (true) ou enregistrée comme brouillon (false)", example = "false")
-    private boolean soumettre = false;
+    private Boolean soumettre = false;
+
+    public boolean isSoumettre() {
+        return Boolean.TRUE.equals(this.soumettre);
+    }
 }

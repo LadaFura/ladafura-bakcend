@@ -33,6 +33,12 @@ public class AdminProduitResponse {
     @Builder.Default
     private List<AdminCompositionProduitDto> compositions = new ArrayList<>();
 
+    @Builder.Default
+    private List<String> maladies = new ArrayList<>();
+
+    @Builder.Default
+    private List<Long> maladieIds = new ArrayList<>();
+
     private Integer nbDisponibilites;
     private Double noteMoyenne;
     private Integer nbAvis;
