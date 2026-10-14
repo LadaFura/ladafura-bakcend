@@ -21,6 +21,8 @@ public interface AdminProduitMapper {
     @Mapping(target = "categorieId", ignore = true)
     @Mapping(target = "categorieNom", ignore = true)
     @Mapping(target = "compositions", ignore = true)
+    @Mapping(target = "maladies", ignore = true)
+    @Mapping(target = "maladieIds", ignore = true)
     @Mapping(target = "nbDisponibilites", ignore = true)
     @Mapping(target = "noteMoyenne", ignore = true)
     @Mapping(target = "nbAvis", ignore = true)
@@ -43,6 +45,14 @@ public interface AdminProduitMapper {
         if (produit.getCompositions() != null) {
             response.setCompositions(produit.getCompositions().stream()
                     .map(this::toCompositionDto)
+                    .collect(Collectors.toList()));
+        }
+        if (produit.getMaladies() != null) {
+            response.setMaladies(produit.getMaladies().stream()
+                    .map(com.pharmacopee.ladafura.Models.Maladie::getNom)
+                    .collect(Collectors.toList()));
+            response.setMaladieIds(produit.getMaladies().stream()
+                    .map(com.pharmacopee.ladafura.Models.Maladie::getId)
                     .collect(Collectors.toList()));
         }
         if (produit.getDisponibilites() != null && !produit.getDisponibilites().isEmpty()) {

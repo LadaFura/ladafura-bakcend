@@ -1,7 +1,9 @@
 package com.pharmacopee.ladafura.Models;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.pharmacopee.ladafura.enums.StatutPharmacopee;
@@ -62,7 +64,7 @@ public class Pharmacopee {
     @Builder.Default
     @ManyToMany(mappedBy = "pharmacopees", fetch = FetchType.LAZY)
     @JsonIgnore
-    private List<Praticien> praticiens = new ArrayList<>();
+    private Set<Praticien> praticiens = new HashSet<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "localisation_id")

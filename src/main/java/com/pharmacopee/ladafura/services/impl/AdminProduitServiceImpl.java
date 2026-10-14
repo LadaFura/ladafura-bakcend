@@ -1,6 +1,7 @@
 package com.pharmacopee.ladafura.services.impl;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -11,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.pharmacopee.ladafura.Models.CategorieProduit;
 import com.pharmacopee.ladafura.Models.CompositionProduit;
+import com.pharmacopee.ladafura.Models.Maladie;
 import com.pharmacopee.ladafura.Models.Plante;
 import com.pharmacopee.ladafura.Models.Produit;
 import com.pharmacopee.ladafura.dto.admin.produit.AdminCategorieRequest;
@@ -25,6 +27,7 @@ import com.pharmacopee.ladafura.exceptions.BadRequestException;
 import com.pharmacopee.ladafura.exceptions.ResourceNotFoundException;
 import com.pharmacopee.ladafura.mappers.AdminProduitMapper;
 import com.pharmacopee.ladafura.repository.CategorieProduitRepository;
+import com.pharmacopee.ladafura.repository.MaladieRepository;
 import com.pharmacopee.ladafura.repository.PlanteRepository;
 import com.pharmacopee.ladafura.repository.ProduitRepository;
 import com.pharmacopee.ladafura.services.interfaces.IAdminProduitService;
@@ -41,6 +44,7 @@ public class AdminProduitServiceImpl implements IAdminProduitService {
     private final ProduitRepository produitRepository;
     private final CategorieProduitRepository categorieProduitRepository;
     private final PlanteRepository planteRepository;
+    private final MaladieRepository maladieRepository;
     private final AdminProduitMapper produitMapper;
 
     @Override
@@ -55,7 +59,6 @@ public class AdminProduitServiceImpl implements IAdminProduitService {
         } else {
             page = produitRepository.findAll(pageable);
         }
-
         return page.map(produitMapper::toDto);
     }
 
@@ -90,6 +93,11 @@ public class AdminProduitServiceImpl implements IAdminProduitService {
                 .categorie(categorie)
                 .compositions(new ArrayList<>())
                 .build();
+
+        if (request.getMaladieIds() != null && !request.getMaladieIds().isEmpty()) {
+            List<Maladie> maladies = maladieRepository.findAllById(request.getMaladieIds());
+            produit.setMaladies(new HashSet<>(maladies));
+        }
 
         if (request.getCompositions() != null && !request.getCompositions().isEmpty()) {
             for (AdminCompositionRequestDto compReq : request.getCompositions()) {
@@ -127,6 +135,11 @@ public class AdminProduitServiceImpl implements IAdminProduitService {
             CategorieProduit categorie = categorieProduitRepository.findById(request.getCategorieId())
                     .orElseThrow(() -> new ResourceNotFoundException("Catégorie Produit", "id", request.getCategorieId()));
             produit.setCategorie(categorie);
+        }
+
+        if (request.getMaladieIds() != null) {
+            List<Maladie> maladies = maladieRepository.findAllById(request.getMaladieIds());
+            produit.setMaladies(new HashSet<>(maladies));
         }
 
         if (request.getCompositions() != null) {

@@ -99,6 +99,46 @@ public class PopulationPharmacopeeMapper {
                 ? disp.getPrix()
                 : (p != null ? p.getPrix() : null);
 
+        java.util.Set<String> maladiesSet = new java.util.LinkedHashSet<>();
+        java.util.Set<String> plantesSet = new java.util.LinkedHashSet<>();
+
+        if (p != null) {
+            if (p.getMaladies() != null) {
+                p.getMaladies().forEach(m -> {
+                    if (m != null && m.getNom() != null && !m.getNom().isBlank()) {
+                        maladiesSet.add(m.getNom().trim());
+                    }
+                });
+            }
+            if (p.getComposition() != null && !p.getComposition().isBlank()) {
+                plantesSet.add(p.getComposition().trim());
+            }
+            if (p.getCompositions() != null) {
+                p.getCompositions().forEach(cp -> {
+                    if (cp != null && cp.getPlante() != null) {
+                        var pl = cp.getPlante();
+                        if (pl.getNomScientifique() != null && !pl.getNomScientifique().isBlank()) {
+                            plantesSet.add(pl.getNomScientifique().trim());
+                        }
+                        if (pl.getNomsPlante() != null) {
+                            pl.getNomsPlante().forEach(np -> {
+                                if (np != null && np.getNom() != null && !np.getNom().isBlank()) {
+                                    plantesSet.add(np.getNom().trim());
+                                }
+                            });
+                        }
+                        if (pl.getMaladies() != null) {
+                            pl.getMaladies().forEach(m -> {
+                                if (m != null && m.getNom() != null && !m.getNom().isBlank()) {
+                                    maladiesSet.add(m.getNom().trim());
+                                }
+                            });
+                        }
+                    }
+                });
+            }
+        }
+
         return PopulationPharmacopeeProduitItemResponse.builder()
                 .disponibiliteId(disp.getId())
                 .produitId(p != null ? p.getId() : null)
@@ -111,6 +151,8 @@ public class PopulationPharmacopeeMapper {
                 .categorieNom(p != null && p.getCategorie() != null ? p.getCategorie().getNom() : null)
                 .disponible(disp.getDisponible())
                 .quantiteStock(disp.getQuantiteStock())
+                .maladies(new java.util.ArrayList<>(maladiesSet))
+                .plantes(new java.util.ArrayList<>(plantesSet))
                 .build();
     }
 

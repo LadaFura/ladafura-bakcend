@@ -48,6 +48,9 @@ public class PharmacopeeProduitResponse {
     @Schema(description = "Indicateur d'activation de la disponibilité à la vente", example = "true")
     private Boolean disponible;
 
+    @Schema(description = "Maladies ciblées par ce produit")
+    private java.util.List<String> maladies;
+
     @Schema(description = "Date et heure de la dernière mise à jour du stock/disponibilité")
     private LocalDateTime dateMiseAJour;
 }

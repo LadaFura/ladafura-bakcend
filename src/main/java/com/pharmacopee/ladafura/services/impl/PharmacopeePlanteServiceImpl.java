@@ -69,27 +69,35 @@ public class PharmacopeePlanteServiceImpl implements IPharmacopeePlanteService {
         pharmacopeeAuthService.verifyPraticienPrincipal();
         
         String nom = request.getNom().trim();
-        
-        if (planteRepository.existsByNomScientifiqueIgnoreCase(nom)) {
-            throw new IllegalArgumentException("Une plante avec ce nom existe déjà.");
+
+        var existing = planteRepository.findByNomScientifiqueIgnoreCase(nom);
+        if (existing.isPresent()) {
+            Plante p = existing.get();
+            return PharmacopeePlanteDto.builder()
+                    .id(p.getId())
+                    .nomScientifique(p.getNomScientifique())
+                    .nomVulgaire(p.getNomsPlante() != null
+                            ? p.getNomsPlante().stream().map(NomPlante::getNom).collect(Collectors.joining(", "))
+                            : nom)
+                    .build();
         }
-        
+
         Plante plante = new Plante();
         plante.setNomScientifique(nom);
         // On considère que le praticien principal crée des plantes qui sont automatiquement validées
         plante.setStatut(StatutPlante.VALIDE);
-        
+
         // On ajoute aussi ce nom comme nom vernaculaire par défaut (sans langue spécifique)
         NomPlante nomPlante = new NomPlante();
         nomPlante.setNom(nom);
         nomPlante.setLangue("Non précisée");
         nomPlante.setPlante(plante);
-        
+
         plante.getNomsPlante().add(nomPlante);
-        
+
         Plante saved = planteRepository.save(plante);
         log.info("Nouvelle plante validée créée par le praticien principal: {}", saved.getNomScientifique());
-        
+
         return PharmacopeePlanteDto.builder()
                 .id(saved.getId())
                 .nomScientifique(saved.getNomScientifique())

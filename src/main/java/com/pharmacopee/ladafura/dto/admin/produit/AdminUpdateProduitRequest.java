@@ -36,4 +36,6 @@ public class AdminUpdateProduitRequest {
     private Long categorieId;
 
     private List<AdminCompositionRequestDto> compositions;
+
+    private List<Long> maladieIds;
 }

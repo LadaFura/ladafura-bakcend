@@ -58,14 +58,17 @@ public interface DisponibiliteProduitRepository extends JpaRepository<Disponibil
            "JOIN FETCH d.pharmacopee ph " +
            "LEFT JOIN FETCH ph.localisation " +
            "JOIN FETCH d.produit pr " +
-           "JOIN pr.compositions cp " +
-           "JOIN cp.plante pl " +
-           "JOIN pl.maladies m " +
+           "LEFT JOIN pr.maladies pm " +
+           "LEFT JOIN pr.compositions cp " +
+           "LEFT JOIN cp.plante pl " +
+           "LEFT JOIN pl.maladies plm " +
            "WHERE ph.statut = com.pharmacopee.ladafura.enums.StatutPharmacopee.VALIDEE " +
            "AND d.disponible = true " +
            "AND pr.statut = com.pharmacopee.ladafura.enums.StatutProduit.VALIDE " +
-           "AND (LOWER(m.nom) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
-           "     OR LOWER(m.description) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+           "AND (LOWER(pm.nom) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+           "     OR LOWER(pm.description) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+           "     OR LOWER(plm.nom) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+           "     OR LOWER(plm.description) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     List<DisponibiliteProduit> searchDisponibilitesByMaladieKeyword(@org.springframework.data.repository.query.Param("keyword") String keyword);
 
     @org.springframework.data.jpa.repository.Query("SELECT DISTINCT d FROM DisponibiliteProduit d " +

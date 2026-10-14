@@ -220,15 +220,33 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> handleHttpMessageNotReadableException(
+            org.springframework.http.converter.HttpMessageNotReadableException ex,
+            HttpServletRequest request) {
+        log.warn("Corps de requête JSON illisible ou invalide sur [{}] : {}", request.getRequestURI(), ex.getMessage());
+
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error(HttpStatus.BAD_REQUEST.getReasonPhrase())
+                .message("Format de requête JSON invalide : " + ex.getMostSpecificCause().getMessage())
+                .path(request.getRequestURI())
+                .build();
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGlobalException(Exception ex, HttpServletRequest request) {
         log.error("Erreur serveur non gérée sur [{}] : ", request.getRequestURI(), ex);
 
+        String detail = ex.getMessage() != null ? " (" + ex.getClass().getSimpleName() + ": " + ex.getMessage() + ")" : " (" + ex.getClass().getSimpleName() + ")";
         ErrorResponse errorResponse = ErrorResponse.builder()
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
                 .error(HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase())
-                .message("Une erreur interne inattendue s'est produite sur le serveur. Veuillez réessayer plus tard.")
+                .message("Une erreur interne inattendue s'est produite sur le serveur." + detail)
                 .path(request.getRequestURI())
                 .build();
 

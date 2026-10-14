@@ -162,4 +162,10 @@ $RECYCLE.BIN/
 firebase-service-account*.json
 *service-account*.json
 
+# Environment variables & SSL Certificates
+.env
+*.env
+*.pem
+secrets/
+
 # End of https://www.toptal.com/developers/gitignore/api/java,windows,macos,visualstudiocode,maven
