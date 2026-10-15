@@ -21,8 +21,6 @@ import lombok.Setter;
 @Table(name = "praticiens")
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
 public class Praticien extends Utilisateur {
 
     private String numeroAgrement;
@@ -30,13 +28,13 @@ public class Praticien extends Utilisateur {
     private String specialite;
 
     @Column(nullable = false)
-    private String planAbonnement = "GRATUIT";
+    private String planAbonnement;
 
     @Column(nullable = false)
-    private Integer quotaMaxStructures = 2;
+    private Integer quotaMaxStructures;
 
     @Column(nullable = false)
-    private Boolean estPraticienPrincipal = true;
+    private Boolean estPraticienPrincipal;
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
@@ -45,5 +43,13 @@ public class Praticien extends Utilisateur {
         inverseJoinColumns = @JoinColumn(name = "pharmacopee_id")
     )
     @JsonIgnore
-    private Set<Pharmacopee> pharmacopees = new HashSet<>();
+    private Set<Pharmacopee> pharmacopees;
+
+    public Praticien() {
+        super();
+        this.planAbonnement = "GRATUIT";
+        this.quotaMaxStructures = 2;
+        this.estPraticienPrincipal = true;
+        this.pharmacopees = new HashSet<>();
+    }
 }
