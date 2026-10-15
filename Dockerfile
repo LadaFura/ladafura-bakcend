@@ -29,6 +29,7 @@ RUN addgroup -S ladafura && adduser -S ladafura -G ladafura
 
 # Dossier d'upload pour les images et documents
 RUN mkdir -p uploads && chown -R ladafura:ladafura /app
+COPY --chown=ladafura:ladafura uploads ./uploads
 
 # Récupération du JAR produit à l'étape 1
 COPY --from=builder /build/target/*.jar app.jar
