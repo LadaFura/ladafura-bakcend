@@ -12,19 +12,14 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
 @Table(name = "maladies")
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class Maladie {
 
     @Id
@@ -37,8 +32,19 @@ public class Maladie {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Builder.Default
     @ManyToMany(mappedBy = "maladies")
     @JsonIgnore
-    private Set<Plante> plantes = new HashSet<>();
+    private Set<Plante> plantes;
+
+    public Maladie() {
+        this.plantes = new HashSet<>();
+    }
+
+    @Builder
+    public Maladie(Long id, String nom, String description, Set<Plante> plantes) {
+        this.id = id;
+        this.nom = nom;
+        this.description = description;
+        this.plantes = plantes != null ? plantes : new HashSet<>();
+    }
 }

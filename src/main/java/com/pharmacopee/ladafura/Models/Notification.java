@@ -18,19 +18,14 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
 @Table(name = "notifications")
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class Notification {
 
     @Id
@@ -47,18 +42,15 @@ public class Notification {
     @Column(nullable = false)
     private TypeNotification type;
 
-    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private NiveauNotification niveau = NiveauNotification.INFO;
+    private NiveauNotification niveau;
 
-    @Builder.Default
     @Column(nullable = false)
-    private Boolean lue = false;
+    private Boolean lue;
 
-    @Builder.Default
     @Column(nullable = false)
-    private LocalDateTime dateNotification = LocalDateTime.now();
+    private LocalDateTime dateNotification;
 
     private LocalDateTime dateLecture;
 
@@ -75,6 +67,30 @@ public class Notification {
     @JoinColumn(name = "utilisateur_id")
     @JsonIgnore
     private Utilisateur utilisateur;
+
+    public Notification() {
+        this.niveau = NiveauNotification.INFO;
+        this.lue = false;
+        this.dateNotification = LocalDateTime.now();
+    }
+
+    @Builder
+    public Notification(Long id, String titre, String message, TypeNotification type, NiveauNotification niveau,
+                        Boolean lue, LocalDateTime dateNotification, LocalDateTime dateLecture,
+                        String referenceId, String lien, Pharmacopee pharmacopee, Utilisateur utilisateur) {
+        this.id = id;
+        this.titre = titre;
+        this.message = message;
+        this.type = type;
+        this.niveau = niveau != null ? niveau : NiveauNotification.INFO;
+        this.lue = lue != null ? lue : false;
+        this.dateNotification = dateNotification != null ? dateNotification : LocalDateTime.now();
+        this.dateLecture = dateLecture;
+        this.referenceId = referenceId;
+        this.lien = lien;
+        this.pharmacopee = pharmacopee;
+        this.utilisateur = utilisateur;
+    }
 
     @PrePersist
     public void onCreate() {

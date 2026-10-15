@@ -12,9 +12,6 @@ import java.time.LocalDateTime;
 @Table(name = "avis")
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class Avis {
 
     @Id
@@ -29,14 +26,12 @@ public class Avis {
     @Column(columnDefinition = "TEXT")
     private String commentaire;
 
-    @Builder.Default
     @Column(nullable = false)
-    private LocalDateTime dateAvis = LocalDateTime.now();
+    private LocalDateTime dateAvis;
 
-    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private StatutAvis statut = StatutAvis.EN_ATTENTE;
+    private StatutAvis statut;
 
     @Column(columnDefinition = "TEXT")
     private String reponseOfficine;
@@ -51,10 +46,31 @@ public class Avis {
     @JoinColumn(name = "pharmacopee_id", nullable = false)
     private Pharmacopee pharmacopee;
 
+    public Avis() {
+        this.dateAvis = LocalDateTime.now();
+        this.statut = StatutAvis.EN_ATTENTE;
+    }
+
+    @Builder
+    public Avis(Long id, Integer note, String commentaire, LocalDateTime dateAvis, StatutAvis statut, String reponseOfficine, LocalDateTime dateReponse, Utilisateur utilisateur, Pharmacopee pharmacopee) {
+        this.id = id;
+        this.note = note;
+        this.commentaire = commentaire;
+        this.dateAvis = dateAvis != null ? dateAvis : LocalDateTime.now();
+        this.statut = statut != null ? statut : StatutAvis.EN_ATTENTE;
+        this.reponseOfficine = reponseOfficine;
+        this.dateReponse = dateReponse;
+        this.utilisateur = utilisateur;
+        this.pharmacopee = pharmacopee;
+    }
+
     @PrePersist
     public void onCreate() {
         if (this.dateAvis == null) {
             this.dateAvis = LocalDateTime.now();
+        }
+        if (this.statut == null) {
+            this.statut = StatutAvis.EN_ATTENTE;
         }
     }
 }

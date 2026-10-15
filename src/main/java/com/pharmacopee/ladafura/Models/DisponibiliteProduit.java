@@ -23,27 +23,21 @@ import lombok.Setter;
 @Table(name = "disponibilites_produits")
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class DisponibiliteProduit {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Builder.Default
     @Column(nullable = false)
-    private Boolean disponible = true;
+    private Boolean disponible;
 
-    @Builder.Default
-    private Integer quantiteStock = 0;
+    private Integer quantiteStock;
 
     private Double prix;
 
-    @Builder.Default
     @Column(nullable = false)
-    private LocalDateTime dateMiseAJour = LocalDateTime.now();
+    private LocalDateTime dateMiseAJour;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "pharmacopee_id", nullable = false)
@@ -52,6 +46,23 @@ public class DisponibiliteProduit {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "produit_id", nullable = false)
     private Produit produit;
+
+    public DisponibiliteProduit() {
+        this.disponible = true;
+        this.quantiteStock = 0;
+        this.dateMiseAJour = LocalDateTime.now();
+    }
+
+    @Builder
+    public DisponibiliteProduit(Long id, Boolean disponible, Integer quantiteStock, Double prix, LocalDateTime dateMiseAJour, Pharmacopee pharmacopee, Produit produit) {
+        this.id = id;
+        this.disponible = disponible != null ? disponible : true;
+        this.quantiteStock = quantiteStock != null ? quantiteStock : 0;
+        this.prix = prix;
+        this.dateMiseAJour = dateMiseAJour != null ? dateMiseAJour : LocalDateTime.now();
+        this.pharmacopee = pharmacopee;
+        this.produit = produit;
+    }
 
     @PrePersist
     @PreUpdate

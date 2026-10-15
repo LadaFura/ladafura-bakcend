@@ -23,9 +23,6 @@ import lombok.Setter;
 @Table(name = "categories_produits")
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class CategorieProduit {
 
     @Id
@@ -37,12 +34,24 @@ public class CategorieProduit {
 
     private String description;
 
-    @Builder.Default
     @Column(nullable = false)
-    private Boolean statut = true;
+    private Boolean statut;
 
-    @Builder.Default
     @OneToMany(mappedBy = "categorie", cascade = CascadeType.ALL)
     @JsonIgnore
-    private List<Produit> produits = new ArrayList<>();
+    private List<Produit> produits;
+
+    public CategorieProduit() {
+        this.statut = true;
+        this.produits = new ArrayList<>();
+    }
+
+    @Builder
+    public CategorieProduit(Long id, String nom, String description, Boolean statut, List<Produit> produits) {
+        this.id = id;
+        this.nom = nom;
+        this.description = description;
+        this.statut = statut != null ? statut : true;
+        this.produits = produits != null ? produits : new ArrayList<>();
+    }
 }

@@ -14,19 +14,14 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
 @Table(name = "vertus_plantes")
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class VertuDeLaPlante {
 
     @Id
@@ -46,10 +41,9 @@ public class VertuDeLaPlante {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private StatutValidation statut = StatutValidation.BROUILLON;
+    private StatutValidation statut;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "collecte_id")
@@ -59,4 +53,23 @@ public class VertuDeLaPlante {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "plante_id")
     private Plante plante;
+
+    public VertuDeLaPlante() {
+        this.statut = StatutValidation.BROUILLON;
+    }
+
+    @Builder
+    public VertuDeLaPlante(Long id, String usageRapporte, String partieUtilisee, String preparation,
+                           String precaution, String description, StatutValidation statut,
+                           Collecte collecte, Plante plante) {
+        this.id = id;
+        this.usageRapporte = usageRapporte;
+        this.partieUtilisee = partieUtilisee;
+        this.preparation = preparation;
+        this.precaution = precaution;
+        this.description = description;
+        this.statut = statut != null ? statut : StatutValidation.BROUILLON;
+        this.collecte = collecte;
+        this.plante = plante;
+    }
 }

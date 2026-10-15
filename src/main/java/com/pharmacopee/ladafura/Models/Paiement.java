@@ -18,19 +18,14 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
 @Table(name = "paiements")
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class Paiement {
 
     @Id
@@ -40,18 +35,16 @@ public class Paiement {
     @Column(nullable = false)
     private Double montant;
 
-    @Builder.Default
     @Column(nullable = false)
-    private LocalDateTime datePaiement = LocalDateTime.now();
+    private LocalDateTime datePaiement;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private MethodePaiement methode;
 
-    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private StatutPaiement statut = StatutPaiement.EN_ATTENTE;
+    private StatutPaiement statut;
 
     private String reference;
 
@@ -59,6 +52,23 @@ public class Paiement {
     @JoinColumn(name = "commande_id", nullable = false, unique = true)
     @JsonIgnore
     private Commande commande;
+
+    public Paiement() {
+        this.datePaiement = LocalDateTime.now();
+        this.statut = StatutPaiement.EN_ATTENTE;
+    }
+
+    @Builder
+    public Paiement(Long id, Double montant, LocalDateTime datePaiement, MethodePaiement methode,
+                    StatutPaiement statut, String reference, Commande commande) {
+        this.id = id;
+        this.montant = montant;
+        this.datePaiement = datePaiement != null ? datePaiement : LocalDateTime.now();
+        this.methode = methode;
+        this.statut = statut != null ? statut : StatutPaiement.EN_ATTENTE;
+        this.reference = reference;
+        this.commande = commande;
+    }
 
     @PrePersist
     public void onCreate() {

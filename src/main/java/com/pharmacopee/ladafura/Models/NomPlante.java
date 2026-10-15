@@ -11,19 +11,14 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
 @Table(name = "noms_plantes")
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class NomPlante {
 
     @Id
@@ -35,11 +30,23 @@ public class NomPlante {
 
     private String langue;
 
-    @Builder.Default
-    private String pays = "Mali";
+    private String pays;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "plante_id", nullable = false)
     @JsonIgnore
     private Plante plante;
+
+    public NomPlante() {
+        this.pays = "Mali";
+    }
+
+    @Builder
+    public NomPlante(Long id, String nom, String langue, String pays, Plante plante) {
+        this.id = id;
+        this.nom = nom;
+        this.langue = langue;
+        this.pays = pays != null ? pays : "Mali";
+        this.plante = plante;
+    }
 }
