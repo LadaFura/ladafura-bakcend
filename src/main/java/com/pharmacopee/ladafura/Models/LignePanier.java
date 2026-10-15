@@ -23,18 +23,14 @@ import lombok.Setter;
 @Table(name = "lignes_panier")
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class LignePanier {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Builder.Default
     @Column(nullable = false)
-    private Integer quantite = 1;
+    private Integer quantite;
 
     @Column(nullable = false)
     private Double prixUnitaire;
@@ -50,6 +46,20 @@ public class LignePanier {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "produit_id", nullable = false)
     private Produit produit;
+
+    public LignePanier() {
+        this.quantite = 1;
+    }
+
+    @Builder
+    public LignePanier(Long id, Integer quantite, Double prixUnitaire, Double sousTotal, Panier panier, Produit produit) {
+        this.id = id;
+        this.quantite = quantite != null ? quantite : 1;
+        this.prixUnitaire = prixUnitaire;
+        this.sousTotal = sousTotal;
+        this.panier = panier;
+        this.produit = produit;
+    }
 
     @PrePersist
     @PreUpdate

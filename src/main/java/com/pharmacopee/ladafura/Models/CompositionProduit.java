@@ -20,9 +20,6 @@ import lombok.Setter;
 @Table(name = "compositions_produits")
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class CompositionProduit {
 
     @Id
@@ -41,4 +38,16 @@ public class CompositionProduit {
     @JoinColumn(name = "produit_id", nullable = false)
     @JsonIgnore
     private Produit produit;
+
+    public CompositionProduit() {
+    }
+
+    @Builder
+    public CompositionProduit(Long id, Double quantite, String unite, Plante plante, Produit produit) {
+        this.id = id;
+        this.quantite = quantite;
+        this.unite = unite;
+        this.plante = plante;
+        this.produit = produit;
+    }
 }
