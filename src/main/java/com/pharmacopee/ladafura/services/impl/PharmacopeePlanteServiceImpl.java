@@ -66,6 +66,7 @@ public class PharmacopeePlanteServiceImpl implements IPharmacopeePlanteService {
     @Override
     @Transactional
     public PharmacopeePlanteDto createPlante(CreatePharmacopeePlanteRequest request) {
+        pharmacopeeAuthService.verifyPharmacopeeValidated();
         pharmacopeeAuthService.verifyPraticienPrincipal();
         
         String nom = request.getNom().trim();

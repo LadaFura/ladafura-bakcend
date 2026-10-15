@@ -58,6 +58,7 @@ public class PharmacopeeMaladieServiceImpl implements IPharmacopeeMaladieService
     @Override
     @Transactional
     public PharmacopeeMaladieDto createMaladie(CreatePharmacopeeMaladieRequest request) {
+        pharmacopeeAuthService.verifyPharmacopeeValidated();
         pharmacopeeAuthService.verifyPraticienPrincipal();
 
         String nom = request.getNom().trim();

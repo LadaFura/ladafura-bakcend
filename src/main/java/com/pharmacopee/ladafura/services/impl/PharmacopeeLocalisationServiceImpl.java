@@ -41,6 +41,7 @@ public class PharmacopeeLocalisationServiceImpl implements IPharmacopeeLocalisat
 
     @Override
     public PharmacopeeLocalisationResponse saveOrUpdateLocalisation(PharmacopeeLocalisationRequest request) {
+        pharmacopeeAuthService.verifyPharmacopeeValidated();
         Pharmacopee pharmacopee = pharmacopeeAuthService.getCurrentPharmacopee();
         Localisation localisation = pharmacopee.getLocalisation();
 

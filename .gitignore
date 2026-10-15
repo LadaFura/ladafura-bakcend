@@ -168,4 +168,5 @@ firebase-service-account*.json
 *.pem
 secrets/
 
-# End of https://www.toptal.com/developers/gitignore/api/java,windows,macos,visualstudiocode,maven
+# Uploaded test media
+uploads/

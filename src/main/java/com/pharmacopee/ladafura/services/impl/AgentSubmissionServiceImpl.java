@@ -196,8 +196,20 @@ public class AgentSubmissionServiceImpl implements IAgentSubmissionService {
             erreursBloquantes.add("La localisation géographique du recueil de terrain n'a pas été renseignée.");
         }
 
-        boolean conforme = erreursBloquantes.isEmpty();
-        String prochaineEtape = conforme ? "SOUMISSION_AUTORISEE" : "COMPLETER_DOSSIER";
+        // Vérification de l'éligibilité au statut pour la soumission
+        if (collecte.getStatut() == StatutCollecte.VALIDEE) {
+            erreursBloquantes.add("Cette fiche de collecte est déjà validée et intégrée dans la pharmacopée. Elle ne peut plus être soumise.");
+        } else if (collecte.getStatut() == StatutCollecte.SOUMISE || collecte.getStatut() == StatutCollecte.EN_EXAMEN) {
+            erreursBloquantes.add("Cette fiche de collecte a déjà été soumise et est actuellement en cours d'examen par les modérateurs.");
+        } else if (collecte.getStatut() != StatutCollecte.BROUILLON && collecte.getStatut() != StatutCollecte.REJETEE) {
+            erreursBloquantes.add("Cette collecte au statut " + collecte.getStatut() + " ne peut pas être soumise.");
+        }
+
+        boolean conforme = erreursBloquantes.isEmpty() &&
+                (collecte.getStatut() == StatutCollecte.BROUILLON || collecte.getStatut() == StatutCollecte.REJETEE);
+        String prochaineEtape = conforme ? "SOUMISSION_AUTORISEE" :
+                (collecte.getStatut() == StatutCollecte.VALIDEE ? "COLLECTE_VALIDEE" :
+                (collecte.getStatut() == StatutCollecte.SOUMISE || collecte.getStatut() == StatutCollecte.EN_EXAMEN ? "EN_COURS_VALIDATION" : "COMPLETER_DOSSIER"));
 
         return AgentCollecteRecapitulatifResponse.builder()
                 .collecteId(collecte.getId())

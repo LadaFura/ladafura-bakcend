@@ -33,7 +33,7 @@ public class Praticien extends Utilisateur {
     private String planAbonnement = "GRATUIT";
 
     @Column(nullable = false)
-    private Integer quotaMaxStructures = 6;
+    private Integer quotaMaxStructures = 2;
 
     @Column(nullable = false)
     private Boolean estPraticienPrincipal = true;

@@ -97,7 +97,7 @@ public class SecurityConfig {
                                 "/api/v1/population/paiements/methodes",
                                 "/api/v1/population/avis/pharmacopee/**"
                         ).permitAll()
-                        .requestMatchers("/api/v1/population/**").hasRole("POPULATION")
+                        .requestMatchers("/api/v1/population/**").hasAnyRole("POPULATION", "USER")
 
                         // 8. Tout autre endpoint nécessite d'être authentifié
                         .anyRequest().authenticated()

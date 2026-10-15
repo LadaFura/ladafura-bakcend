@@ -78,4 +78,14 @@ public class AdminCollecteController {
             @RequestBody java.util.Map<String, String> body) {
         return ResponseEntity.ok(collecteService.updatePhoto(id, body.get("photoUrl")));
     }
+
+    @org.springframework.web.bind.annotation.PutMapping("/{id}")
+    @Operation(summary = "Modifier une fiche de collecte complète", description = "Permet à l'administrateur de modifier les données de la collecte : localisation, source, connaissances traditionnelles et médias.")
+    @ApiResponse(responseCode = "200", description = "Collecte modifiée avec succès")
+    @ApiResponse(responseCode = "404", description = "Collecte introuvable")
+    public ResponseEntity<AdminCollecteDetailResponse> updateCollecte(
+            @PathVariable Long id,
+            @Valid @RequestBody com.pharmacopee.ladafura.dto.admin.collecte.AdminUpdateCollecteRequest request) {
+        return ResponseEntity.ok(collecteService.updateCollecte(id, request));
+    }
 }

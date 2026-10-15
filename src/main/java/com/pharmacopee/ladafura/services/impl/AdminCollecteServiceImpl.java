@@ -26,6 +26,10 @@ public class AdminCollecteServiceImpl implements IAdminCollecteService {
 
     private final CollecteRepository collecteRepository;
     private final AdminCollecteMapper collecteMapper;
+    private final com.pharmacopee.ladafura.repository.SourceRepository sourceRepository;
+    private final com.pharmacopee.ladafura.repository.LocalisationRepository localisationRepository;
+    private final com.pharmacopee.ladafura.repository.VertuDeLaPlanteRepository vertuDeLaPlanteRepository;
+    private final com.pharmacopee.ladafura.repository.PlanteRepository planteRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -88,6 +92,124 @@ public class AdminCollecteServiceImpl implements IAdminCollecteService {
         Collecte collecte = collecteRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Collecte", "id", id));
         collecte.setPhotoUrl(photoUrl);
+        Collecte saved = collecteRepository.save(collecte);
+        return collecteMapper.toDetailDto(saved);
+    }
+
+    @Override
+    public AdminCollecteDetailResponse updateCollecte(Long id, com.pharmacopee.ladafura.dto.admin.collecte.AdminUpdateCollecteRequest request) {
+        log.info("Mise à jour complète de la collecte ID: {} par l'administrateur", id);
+        Collecte collecte = collecteRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Collecte", "id", id));
+
+        if (request.getDateCollecte() != null) {
+            collecte.setDateCollecte(request.getDateCollecte());
+        }
+        if (request.getDescription() != null) {
+            collecte.setDescription(request.getDescription());
+        }
+        if (request.getPhotoUrl() != null) {
+            collecte.setPhotoUrl(request.getPhotoUrl().isBlank() ? null : request.getPhotoUrl().trim());
+        }
+        if (request.getAudioUrl() != null) {
+            collecte.setAudioUrl(request.getAudioUrl().isBlank() ? null : request.getAudioUrl().trim());
+        }
+
+        // 1. Source (Tradipraticien / Informateur)
+        if (request.getSourceId() != null) {
+            com.pharmacopee.ladafura.Models.Source source = sourceRepository.findById(request.getSourceId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Source", "id", request.getSourceId()));
+            collecte.setSource(source);
+        } else if (request.getSourceNomComplet() != null && !request.getSourceNomComplet().isBlank()) {
+            com.pharmacopee.ladafura.Models.Source source = collecte.getSource();
+            String nomComplet = request.getSourceNomComplet().trim();
+            String[] parts = nomComplet.split(" ", 2);
+            String prenom = parts[0];
+            String nom = parts.length > 1 ? parts[1] : "";
+
+            if (source != null) {
+                source.setPrenom(prenom);
+                source.setNom(nom);
+                if (request.getSourceSpecialite() != null) source.setSpecialite(request.getSourceSpecialite());
+                if (request.getSourceTelephone() != null) source.setTelephone(request.getSourceTelephone());
+                if (request.getSourceAdresse() != null) source.setAdresse(request.getSourceAdresse());
+                sourceRepository.save(source);
+            } else {
+                source = new com.pharmacopee.ladafura.Models.Source();
+                source.setPrenom(prenom);
+                source.setNom(nom);
+                source.setSpecialite(request.getSourceSpecialite() != null ? request.getSourceSpecialite() : "Tradipraticien");
+                source.setTelephone(request.getSourceTelephone());
+                source.setAdresse(request.getSourceAdresse());
+                com.pharmacopee.ladafura.Models.Source savedSource = sourceRepository.save(source);
+                collecte.setSource(savedSource);
+            }
+        }
+
+        // 2. Localisation géographique
+        if (request.getLocalisationId() != null) {
+            com.pharmacopee.ladafura.Models.Localisation loc = localisationRepository.findById(request.getLocalisationId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Localisation", "id", request.getLocalisationId()));
+            collecte.setLocalisation(loc);
+        } else if (request.getRegion() != null || request.getCercle() != null || request.getCommune() != null || request.getLocalite() != null) {
+            com.pharmacopee.ladafura.Models.Localisation loc = collecte.getLocalisation();
+            if (loc != null) {
+                if (request.getRegion() != null) loc.setRegion(request.getRegion());
+                if (request.getCercle() != null) loc.setCercle(request.getCercle());
+                if (request.getCommune() != null) loc.setCommune(request.getCommune());
+                if (request.getLocalite() != null) loc.setLocalite(request.getLocalite());
+                if (request.getLatitude() != null) loc.setLatitude(request.getLatitude());
+                if (request.getLongitude() != null) loc.setLongitude(request.getLongitude());
+                localisationRepository.save(loc);
+            } else {
+                loc = com.pharmacopee.ladafura.Models.Localisation.builder()
+                        .region(request.getRegion() != null ? request.getRegion() : "Sikasso")
+                        .cercle(request.getCercle() != null ? request.getCercle() : "")
+                        .commune(request.getCommune() != null ? request.getCommune() : "")
+                        .localite(request.getLocalite() != null ? request.getLocalite() : "")
+                        .latitude(request.getLatitude())
+                        .longitude(request.getLongitude())
+                        .build();
+                com.pharmacopee.ladafura.Models.Localisation savedLoc = localisationRepository.save(loc);
+                collecte.setLocalisation(savedLoc);
+            }
+        }
+
+        // 3. Connaissances traditionnelles / Vertus
+        if (request.getVertus() != null && !request.getVertus().isEmpty()) {
+            for (com.pharmacopee.ladafura.dto.admin.collecte.AdminUpdateCollecteRequest.AdminVertuItemRequest vReq : request.getVertus()) {
+                if (vReq.getId() != null) {
+                    com.pharmacopee.ladafura.Models.VertuDeLaPlante vertu = vertuDeLaPlanteRepository.findById(vReq.getId())
+                            .orElseThrow(() -> new ResourceNotFoundException("VertuDeLaPlante", "id", vReq.getId()));
+                    if (vReq.getUsageRapporte() != null) vertu.setUsageRapporte(vReq.getUsageRapporte());
+                    if (vReq.getPartieUtilisee() != null) vertu.setPartieUtilisee(vReq.getPartieUtilisee());
+                    if (vReq.getPreparation() != null) vertu.setPreparation(vReq.getPreparation());
+                    if (vReq.getPrecaution() != null) vertu.setPrecaution(vReq.getPrecaution());
+                    if (vReq.getDescription() != null) vertu.setDescription(vReq.getDescription());
+                    if (vReq.getPlanteId() != null) {
+                        com.pharmacopee.ladafura.Models.Plante p = planteRepository.findById(vReq.getPlanteId())
+                                .orElseThrow(() -> new ResourceNotFoundException("Plante", "id", vReq.getPlanteId()));
+                        vertu.setPlante(p);
+                    }
+                    vertuDeLaPlanteRepository.save(vertu);
+                } else if (vReq.getPlanteId() != null) {
+                    com.pharmacopee.ladafura.Models.Plante p = planteRepository.findById(vReq.getPlanteId())
+                            .orElseThrow(() -> new ResourceNotFoundException("Plante", "id", vReq.getPlanteId()));
+                    com.pharmacopee.ladafura.Models.VertuDeLaPlante vertu = com.pharmacopee.ladafura.Models.VertuDeLaPlante.builder()
+                            .collecte(collecte)
+                            .plante(p)
+                            .usageRapporte(vReq.getUsageRapporte())
+                            .partieUtilisee(vReq.getPartieUtilisee())
+                            .preparation(vReq.getPreparation())
+                            .precaution(vReq.getPrecaution())
+                            .description(vReq.getDescription())
+                            .statut(com.pharmacopee.ladafura.enums.StatutValidation.VALIDE)
+                            .build();
+                    vertuDeLaPlanteRepository.save(vertu);
+                }
+            }
+        }
+
         Collecte saved = collecteRepository.save(collecte);
         return collecteMapper.toDetailDto(saved);
     }
