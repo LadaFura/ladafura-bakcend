@@ -80,7 +80,7 @@ public class PopulationAuthServiceImpl implements IPopulationAuthService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public Utilisateur getCurrentPopulationUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
@@ -91,10 +91,39 @@ public class PopulationAuthServiceImpl implements IPopulationAuthService {
 
         String identifier = authentication.getName();
 
-        // Recherche par email puis par firebaseUid
+        // Recherche par email puis par firebaseUid, avec auto-provisioning si l'utilisateur est authentifié via Firebase
         Utilisateur utilisateur = utilisateurRepository.findByEmail(identifier)
                 .or(() -> utilisateurRepository.findByFirebaseUid(identifier))
-                .orElseThrow(() -> new UnauthorizedException("Aucun compte utilisateur trouvé pour l'identifiant : " + identifier));
+                .orElseGet(() -> {
+                    log.info("Auto-provisioning du profil Population pour : {}", identifier);
+                    String email = identifier.contains("@") ? identifier : null;
+                    String firebaseUid = identifier;
+                    String displayName = null;
+                    try {
+                        if (authentication.getCredentials() != null) {
+                            var token = firebaseAuthService.verifyIdToken(authentication.getCredentials().toString());
+                            if (token.getUid() != null) firebaseUid = token.getUid();
+                            if (token.getEmail() != null) email = token.getEmail();
+                            if (token.getName() != null) displayName = token.getName();
+                        }
+                    } catch (Exception ignored) {}
+
+                    Utilisateur u = new Utilisateur();
+                    u.setEmail(email != null ? email : identifier);
+                    u.setFirebaseUid(firebaseUid);
+                    if (displayName != null && !displayName.isBlank()) {
+                        String[] parts = displayName.trim().split("\\s+", 2);
+                        u.setPrenom(parts[0]);
+                        u.setNom(parts.length > 1 ? parts[1] : parts[0]);
+                    } else {
+                        u.setPrenom("Utilisateur");
+                        u.setNom("Population");
+                    }
+                    u.setRole(Role.POPULATION);
+                    u.setStatut(StatutUtilisateur.ACTIF);
+                    u.setDateCreation(LocalDateTime.now());
+                    return utilisateurRepository.save(u);
+                });
 
         if (utilisateur.getStatut() != StatutUtilisateur.ACTIF) {
             log.warn("Compte inactif ou suspendu pour l'utilisateur ID: {} (statut={})", utilisateur.getId(), utilisateur.getStatut());
