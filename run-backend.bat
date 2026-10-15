@@ -39,3 +39,4 @@ if %errorlevel% neq 0 (
     echo [ERREUR] Echec du demarrage du backend.
     pause
 )
+
