@@ -38,6 +38,7 @@ public class PharmacopeeCollaborateurServiceImpl implements IPharmacopeeCollabor
     @Override
     @Transactional(readOnly = true)
     public Page<PharmacopeeCollaborateurResponse> getCollaborateurs(Pageable pageable) {
+        pharmacopeeAuthService.verifyPharmacopeeValidated();
         Long pharmacopeeId = pharmacopeeAuthService.getMe().getPharmacopeeId();
         if (pharmacopeeId == null) {
             throw new ForbiddenException("Aucune pharmacopée active");
@@ -50,6 +51,7 @@ public class PharmacopeeCollaborateurServiceImpl implements IPharmacopeeCollabor
     @Override
     @Transactional(readOnly = true)
     public PharmacopeeCollaborateurResponse getCollaborateurById(Long id) {
+        pharmacopeeAuthService.verifyPharmacopeeValidated();
         Long pharmacopeeId = pharmacopeeAuthService.getMe().getPharmacopeeId();
         if (pharmacopeeId == null) {
             throw new ForbiddenException("Aucune pharmacopée active");
@@ -64,6 +66,7 @@ public class PharmacopeeCollaborateurServiceImpl implements IPharmacopeeCollabor
     @Override
     @Transactional
     public PharmacopeeCollaborateurResponse addCollaborateur(CreateCollaborateurRequest request) {
+        pharmacopeeAuthService.verifyPharmacopeeValidated();
         pharmacopeeAuthService.verifyPraticienPrincipal();
 
         Long pharmacopeeId = pharmacopeeAuthService.getMe().getPharmacopeeId();
@@ -106,6 +109,7 @@ public class PharmacopeeCollaborateurServiceImpl implements IPharmacopeeCollabor
     @Override
     @Transactional
     public PharmacopeeCollaborateurResponse updateCollaborateur(Long id, UpdateCollaborateurRequest request) {
+        pharmacopeeAuthService.verifyPharmacopeeValidated();
         pharmacopeeAuthService.verifyPraticienPrincipal();
 
         Long pharmacopeeId = pharmacopeeAuthService.getMe().getPharmacopeeId();
@@ -140,6 +144,7 @@ public class PharmacopeeCollaborateurServiceImpl implements IPharmacopeeCollabor
     @Override
     @Transactional
     public void deleteCollaborateur(Long id) {
+        pharmacopeeAuthService.verifyPharmacopeeValidated();
         pharmacopeeAuthService.verifyPraticienPrincipal();
 
         Long pharmacopeeId = pharmacopeeAuthService.getMe().getPharmacopeeId();

@@ -202,7 +202,7 @@ public class AdminPharmacopeeServiceImpl implements IAdminPharmacopeeService {
             if (user.getRole() == com.pharmacopee.ladafura.enums.Role.PHARMACOPEE) {
                 entityManager.createNativeQuery(
                         "INSERT INTO praticiens (id, plan_abonnement, quota_max_structures, est_praticien_principal, specialite) " +
-                        "VALUES (:id, 'GRATUIT', 1, :principal, 'Médecine traditionnelle & Pharmacopée') " +
+                        "VALUES (:id, 'GRATUIT', 2, :principal, 'Médecine traditionnelle & Pharmacopée') " +
                         "ON DUPLICATE KEY UPDATE est_praticien_principal = IF(:principal = 1, 1, est_praticien_principal)"
                 )
                 .setParameter("id", userId)

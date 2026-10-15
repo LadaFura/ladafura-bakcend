@@ -190,8 +190,9 @@ public class FirebaseAuthenticationFilter extends OncePerRequestFilter {
             }
         }
 
-        // 4. Rôle de base accordé par défaut à tout utilisateur Firebase authentifié valide
+        // 4. Rôle de base accordé par défaut à tout utilisateur Firebase authentifié valide (Citoyen / Population)
         if (authorities.isEmpty()) {
+            authorities.add(new SimpleGrantedAuthority("ROLE_POPULATION"));
             authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
         }
 

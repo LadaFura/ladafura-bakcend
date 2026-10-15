@@ -163,9 +163,8 @@ public class AgentMediaServiceImpl implements IAgentMediaService {
             throw new ForbiddenException("Accès refusé : cette collecte ne vous appartient pas.");
         }
 
-        if (collecte.getStatut() != StatutCollecte.BROUILLON && collecte.getStatut() != StatutCollecte.REJETEE) {
-            throw new BadRequestException("Impossible de modifier les médias d'une collecte avec le statut " + collecte.getStatut()
-                    + ". Seules les collectes en statut BROUILLON ou REJETEE peuvent être modifiées.");
+        if (collecte.getStatut() == StatutCollecte.VALIDEE) {
+            throw new BadRequestException("Impossible d'ajouter ou modifier les médias d'une collecte déjà validée et archivée.");
         }
     }
 

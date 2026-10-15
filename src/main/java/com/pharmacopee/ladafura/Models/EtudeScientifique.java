@@ -11,19 +11,14 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
 @Table(name = "etudes_scientifiques")
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class EtudeScientifique {
 
     @Id
@@ -48,4 +43,19 @@ public class EtudeScientifique {
     @JoinColumn(name = "plante_id")
     @JsonIgnore
     private Plante plante;
+
+    public EtudeScientifique() {
+    }
+
+    @Builder
+    public EtudeScientifique(Long id, String titre, String auteurs, Integer annee, String reference, String resume, String documentUrl, Plante plante) {
+        this.id = id;
+        this.titre = titre;
+        this.auteurs = auteurs;
+        this.annee = annee;
+        this.reference = reference;
+        this.resume = resume;
+        this.documentUrl = documentUrl;
+        this.plante = plante;
+    }
 }

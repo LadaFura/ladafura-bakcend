@@ -26,8 +26,6 @@ import lombok.Setter;
 @Inheritance(strategy = InheritanceType.JOINED)
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
 public class Utilisateur {
 
     @Id
@@ -56,10 +54,15 @@ public class Utilisateur {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private StatutUtilisateur statut = StatutUtilisateur.ACTIF;
+    private StatutUtilisateur statut;
 
     @Column(nullable = false)
-    private LocalDateTime dateCreation = LocalDateTime.now();
+    private LocalDateTime dateCreation;
+
+    public Utilisateur() {
+        this.statut = StatutUtilisateur.ACTIF;
+        this.dateCreation = LocalDateTime.now();
+    }
 
     @PrePersist
     public void prePersist() {

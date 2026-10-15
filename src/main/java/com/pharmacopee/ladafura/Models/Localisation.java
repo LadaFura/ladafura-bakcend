@@ -6,19 +6,14 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
 @Table(name = "localisations")
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class Localisation {
 
     @Id
@@ -40,4 +35,18 @@ public class Localisation {
     private Double latitude;
 
     private Double longitude;
+
+    public Localisation() {
+    }
+
+    @Builder
+    public Localisation(Long id, String region, String cercle, String commune, String localite, Double latitude, Double longitude) {
+        this.id = id;
+        this.region = region;
+        this.cercle = cercle;
+        this.commune = commune;
+        this.localite = localite;
+        this.latitude = latitude;
+        this.longitude = longitude;
+    }
 }

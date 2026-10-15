@@ -21,19 +21,14 @@ import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
 @Table(name = "plantes")
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class Plante {
 
     @Id
@@ -48,36 +43,56 @@ public class Plante {
 
     private String photoUrl;
 
-    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private StatutPlante statut = StatutPlante.BROUILLON;
+    private StatutPlante statut;
 
-    @Builder.Default
     @OneToMany(mappedBy = "plante", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<NomPlante> nomsPlante = new ArrayList<>();
+    private List<NomPlante> nomsPlante;
 
-    @Builder.Default
     @ManyToMany
     @JoinTable(
             name = "plante_maladies",
             joinColumns = @JoinColumn(name = "plante_id"),
             inverseJoinColumns = @JoinColumn(name = "maladie_id")
     )
-    private Set<Maladie> maladies = new HashSet<>();
+    private Set<Maladie> maladies;
 
-    @Builder.Default
     @OneToMany(mappedBy = "plante", cascade = CascadeType.ALL)
     @JsonIgnore
-    private List<EtudeScientifique> etudesScientifiques = new ArrayList<>();
+    private List<EtudeScientifique> etudesScientifiques;
 
-    @Builder.Default
     @OneToMany(mappedBy = "plante", cascade = CascadeType.ALL)
     @JsonIgnore
-    private List<VertuDeLaPlante> vertus = new ArrayList<>();
+    private List<VertuDeLaPlante> vertus;
 
-    @Builder.Default
     @OneToMany(mappedBy = "plante")
     @JsonIgnore
-    private List<CompositionProduit> compositions = new ArrayList<>();
+    private List<CompositionProduit> compositions;
+
+    public Plante() {
+        this.statut = StatutPlante.BROUILLON;
+        this.nomsPlante = new ArrayList<>();
+        this.maladies = new HashSet<>();
+        this.etudesScientifiques = new ArrayList<>();
+        this.vertus = new ArrayList<>();
+        this.compositions = new ArrayList<>();
+    }
+
+    @Builder
+    public Plante(Long id, String nomScientifique, String description, String photoUrl,
+                  StatutPlante statut, List<NomPlante> nomsPlante, Set<Maladie> maladies,
+                  List<EtudeScientifique> etudesScientifiques, List<VertuDeLaPlante> vertus,
+                  List<CompositionProduit> compositions) {
+        this.id = id;
+        this.nomScientifique = nomScientifique;
+        this.description = description;
+        this.photoUrl = photoUrl;
+        this.statut = statut != null ? statut : StatutPlante.BROUILLON;
+        this.nomsPlante = nomsPlante != null ? nomsPlante : new ArrayList<>();
+        this.maladies = maladies != null ? maladies : new HashSet<>();
+        this.etudesScientifiques = etudesScientifiques != null ? etudesScientifiques : new ArrayList<>();
+        this.vertus = vertus != null ? vertus : new ArrayList<>();
+        this.compositions = compositions != null ? compositions : new ArrayList<>();
+    }
 }

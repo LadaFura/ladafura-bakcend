@@ -19,4 +19,6 @@ public interface IAdminCollecteService {
     com.pharmacopee.ladafura.dto.admin.collecte.AdminCollecteStatsResponse getStats();
 
     AdminCollecteDetailResponse updatePhoto(Long id, String photoUrl);
+
+    AdminCollecteDetailResponse updateCollecte(Long id, com.pharmacopee.ladafura.dto.admin.collecte.AdminUpdateCollecteRequest request);
 }

@@ -18,8 +18,6 @@ import lombok.Setter;
 @Table(name = "agents_collecte")
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
 public class AgentCollecte extends Utilisateur {
 
     private String matricule;
@@ -29,4 +27,8 @@ public class AgentCollecte extends Utilisateur {
     @OneToMany(mappedBy = "agentCollecte", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
     private List<Collecte> collectes = new ArrayList<>();
+
+    public AgentCollecte() {
+        super();
+    }
 }

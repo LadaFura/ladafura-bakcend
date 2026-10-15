@@ -23,9 +23,6 @@ import lombok.Setter;
 @Table(name = "lignes_commande")
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class LigneCommande {
 
     @Id
@@ -49,6 +46,19 @@ public class LigneCommande {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "produit_id", nullable = false)
     private Produit produit;
+
+    public LigneCommande() {
+    }
+
+    @Builder
+    public LigneCommande(Long id, Integer quantite, Double prixUnitaire, Double sousTotal, Commande commande, Produit produit) {
+        this.id = id;
+        this.quantite = quantite;
+        this.prixUnitaire = prixUnitaire;
+        this.sousTotal = sousTotal;
+        this.commande = commande;
+        this.produit = produit;
+    }
 
     @PrePersist
     @PreUpdate

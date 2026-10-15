@@ -42,6 +42,7 @@ public class PharmacopeeProfileServiceImpl implements IPharmacopeeProfileService
 
     @Override
     public PharmacopeeProfileResponse updateProfile(PharmacopeeUpdateProfileRequest request) {
+        pharmacopeeAuthService.verifyPharmacopeeValidated();
         Pharmacopee pharmacopee = pharmacopeeAuthService.getCurrentPharmacopee();
 
         log.info("Mise à jour du profil de la pharmacopée ID {}", pharmacopee.getId());

@@ -12,28 +12,22 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
 @Table(name = "favoris")
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class Favori {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Builder.Default
     @Column(nullable = false)
-    private LocalDateTime dateAjout = LocalDateTime.now();
+    private LocalDateTime dateAjout;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "utilisateur_id", nullable = false)
@@ -50,6 +44,20 @@ public class Favori {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "pharmacopee_id")
     private Pharmacopee pharmacopee;
+
+    public Favori() {
+        this.dateAjout = LocalDateTime.now();
+    }
+
+    @Builder
+    public Favori(Long id, LocalDateTime dateAjout, Utilisateur utilisateur, Plante plante, Produit produit, Pharmacopee pharmacopee) {
+        this.id = id;
+        this.dateAjout = dateAjout != null ? dateAjout : LocalDateTime.now();
+        this.utilisateur = utilisateur;
+        this.plante = plante;
+        this.produit = produit;
+        this.pharmacopee = pharmacopee;
+    }
 
     @PrePersist
     public void onCreate() {

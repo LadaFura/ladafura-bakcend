@@ -22,19 +22,14 @@ import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
 @Table(name = "pharmacopees")
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class Pharmacopee {
 
     @Id
@@ -52,40 +47,63 @@ public class Pharmacopee {
     @Column(name = "photo_url")
     private String photoUrl;
 
-    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private StatutPharmacopee statut = StatutPharmacopee.EN_ATTENTE;
+    private StatutPharmacopee statut;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "utilisateur_id")
     private Utilisateur utilisateur;
 
-    @Builder.Default
     @ManyToMany(mappedBy = "pharmacopees", fetch = FetchType.LAZY)
     @JsonIgnore
-    private Set<Praticien> praticiens = new HashSet<>();
+    private Set<Praticien> praticiens;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "localisation_id")
     private Localisation localisation;
 
-    @Builder.Default
     @OneToMany(mappedBy = "pharmacopee", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ModeRetrait> modesRetrait = new ArrayList<>();
+    private List<ModeRetrait> modesRetrait;
 
-    @Builder.Default
     @OneToMany(mappedBy = "pharmacopee", cascade = CascadeType.ALL)
     @JsonIgnore
-    private List<DisponibiliteProduit> disponibilites = new ArrayList<>();
+    private List<DisponibiliteProduit> disponibilites;
 
-    @Builder.Default
     @OneToMany(mappedBy = "pharmacopee")
     @JsonIgnore
-    private List<Commande> commandes = new ArrayList<>();
+    private List<Commande> commandes;
 
-    @Builder.Default
     @OneToMany(mappedBy = "pharmacopee", cascade = CascadeType.ALL)
     @JsonIgnore
-    private List<Avis> avis = new ArrayList<>();
+    private List<Avis> avis;
+
+    public Pharmacopee() {
+        this.statut = StatutPharmacopee.EN_ATTENTE;
+        this.praticiens = new HashSet<>();
+        this.modesRetrait = new ArrayList<>();
+        this.disponibilites = new ArrayList<>();
+        this.commandes = new ArrayList<>();
+        this.avis = new ArrayList<>();
+    }
+
+    @Builder
+    public Pharmacopee(Long id, String nom, String description, String telephone, String photoUrl,
+                       StatutPharmacopee statut, Utilisateur utilisateur, Set<Praticien> praticiens,
+                       Localisation localisation, List<ModeRetrait> modesRetrait,
+                       List<DisponibiliteProduit> disponibilites, List<Commande> commandes, List<Avis> avis) {
+        this.id = id;
+        this.nom = nom;
+        this.description = description;
+        this.telephone = telephone;
+        this.photoUrl = photoUrl;
+        this.statut = statut != null ? statut : StatutPharmacopee.EN_ATTENTE;
+        this.utilisateur = utilisateur;
+        this.praticiens = praticiens != null ? praticiens : new HashSet<>();
+        this.localisation = localisation;
+        this.modesRetrait = modesRetrait != null ? modesRetrait : new ArrayList<>();
+        this.disponibilites = disponibilites != null ? disponibilites : new ArrayList<>();
+        this.commandes = commandes != null ? commandes : new ArrayList<>();
+        this.avis = avis != null ? avis : new ArrayList<>();
+    }
 }

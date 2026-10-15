@@ -30,9 +30,6 @@ import lombok.Setter;
 @Table(name = "collectes")
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class Collecte {
 
     @Id
@@ -45,10 +42,9 @@ public class Collecte {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private StatutCollecte statut = StatutCollecte.BROUILLON;
+    private StatutCollecte statut;
 
     private String photoUrl;
 
@@ -71,8 +67,28 @@ public class Collecte {
     @JoinColumn(name = "localisation_id")
     private Localisation localisation;
 
-    @Builder.Default
     @OneToMany(mappedBy = "collecte", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
-    private List<VertuDeLaPlante> vertus = new ArrayList<>();
+    private List<VertuDeLaPlante> vertus;
+
+    public Collecte() {
+        this.statut = StatutCollecte.BROUILLON;
+        this.vertus = new ArrayList<>();
+    }
+
+    @Builder
+    public Collecte(Long id, LocalDateTime dateCollecte, String description, StatutCollecte statut, String photoUrl, String audioUrl, LocalDateTime dateSoumission, String motifRejet, AgentCollecte agentCollecte, Source source, Localisation localisation, List<VertuDeLaPlante> vertus) {
+        this.id = id;
+        this.dateCollecte = dateCollecte;
+        this.description = description;
+        this.statut = statut != null ? statut : StatutCollecte.BROUILLON;
+        this.photoUrl = photoUrl;
+        this.audioUrl = audioUrl;
+        this.dateSoumission = dateSoumission;
+        this.motifRejet = motifRejet;
+        this.agentCollecte = agentCollecte;
+        this.source = source;
+        this.localisation = localisation;
+        this.vertus = vertus != null ? vertus : new ArrayList<>();
+    }
 }

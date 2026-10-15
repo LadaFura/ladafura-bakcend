@@ -23,19 +23,14 @@ import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
 @Table(name = "produits")
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class Produit {
 
     @Id
@@ -58,30 +53,52 @@ public class Produit {
 
     private String photoUrl;
 
-    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private StatutProduit statut = StatutProduit.EN_ATTENTE;
+    private StatutProduit statut;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "categorie_id")
     private CategorieProduit categorie;
 
-    @Builder.Default
     @OneToMany(mappedBy = "produit", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<CompositionProduit> compositions = new ArrayList<>();
+    private List<CompositionProduit> compositions;
 
-    @Builder.Default
     @ManyToMany
     @JoinTable(
             name = "produit_maladies",
             joinColumns = @JoinColumn(name = "produit_id"),
             inverseJoinColumns = @JoinColumn(name = "maladie_id")
     )
-    private Set<Maladie> maladies = new HashSet<>();
+    private Set<Maladie> maladies;
 
-    @Builder.Default
     @OneToMany(mappedBy = "produit", cascade = CascadeType.ALL)
     @JsonIgnore
-    private List<DisponibiliteProduit> disponibilites = new ArrayList<>();
+    private List<DisponibiliteProduit> disponibilites;
+
+    public Produit() {
+        this.statut = StatutProduit.EN_ATTENTE;
+        this.compositions = new ArrayList<>();
+        this.maladies = new HashSet<>();
+        this.disponibilites = new ArrayList<>();
+    }
+
+    @Builder
+    public Produit(Long id, String nom, String description, String forme, String composition,
+                   Double prix, String photoUrl, StatutProduit statut, CategorieProduit categorie,
+                   List<CompositionProduit> compositions, Set<Maladie> maladies,
+                   List<DisponibiliteProduit> disponibilites) {
+        this.id = id;
+        this.nom = nom;
+        this.description = description;
+        this.forme = forme;
+        this.composition = composition;
+        this.prix = prix;
+        this.photoUrl = photoUrl;
+        this.statut = statut != null ? statut : StatutProduit.EN_ATTENTE;
+        this.categorie = categorie;
+        this.compositions = compositions != null ? compositions : new ArrayList<>();
+        this.maladies = maladies != null ? maladies : new HashSet<>();
+        this.disponibilites = disponibilites != null ? disponibilites : new ArrayList<>();
+    }
 }

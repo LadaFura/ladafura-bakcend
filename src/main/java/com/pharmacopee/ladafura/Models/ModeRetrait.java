@@ -14,19 +14,14 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
 @Table(name = "modes_retrait")
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class ModeRetrait {
 
     @Id
@@ -37,16 +32,28 @@ public class ModeRetrait {
     @Column(nullable = false)
     private TypeModeRetrait type;
 
-    @Builder.Default
     @Column(nullable = false)
-    private Boolean actif = true;
+    private Boolean actif;
 
-    @Builder.Default
     @Column(nullable = false)
-    private Double frais = 0.0;
+    private Double frais;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "pharmacopee_id", nullable = false)
     @JsonIgnore
     private Pharmacopee pharmacopee;
+
+    public ModeRetrait() {
+        this.actif = true;
+        this.frais = 0.0;
+    }
+
+    @Builder
+    public ModeRetrait(Long id, TypeModeRetrait type, Boolean actif, Double frais, Pharmacopee pharmacopee) {
+        this.id = id;
+        this.type = type;
+        this.actif = actif != null ? actif : true;
+        this.frais = frais != null ? frais : 0.0;
+        this.pharmacopee = pharmacopee;
+    }
 }

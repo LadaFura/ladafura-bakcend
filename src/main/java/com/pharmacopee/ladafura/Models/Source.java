@@ -18,8 +18,6 @@ import lombok.Setter;
 @Table(name = "sources_connaissances")
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
 public class Source extends Utilisateur {
 
     private String specialite;
@@ -31,4 +29,8 @@ public class Source extends Utilisateur {
     @OneToMany(mappedBy = "source", cascade = CascadeType.ALL)
     @JsonIgnore
     private List<Collecte> collectes = new ArrayList<>();
+
+    public Source() {
+        super();
+    }
 }

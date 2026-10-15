@@ -32,9 +32,6 @@ import lombok.Setter;
 @Table(name = "commandes")
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class Commande {
 
     @Id
@@ -44,26 +41,21 @@ public class Commande {
     @Column(nullable = false, unique = true)
     private String numero;
 
-    @Builder.Default
     @Column(nullable = false)
-    private LocalDateTime dateCommande = LocalDateTime.now();
+    private LocalDateTime dateCommande;
 
-    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private StatutCommande statut = StatutCommande.EN_ATTENTE;
+    private StatutCommande statut;
 
-    @Builder.Default
     @Column(nullable = false)
-    private Double totalProduit = 0.0;
+    private Double totalProduit;
 
-    @Builder.Default
     @Column(nullable = false)
-    private Double montantLivraison = 0.0;
+    private Double montantLivraison;
 
-    @Builder.Default
     @Column(nullable = false)
-    private Double montantTotal = 0.0;
+    private Double montantTotal;
 
     private String adresseLivraison;
 
@@ -81,12 +73,38 @@ public class Commande {
     @JoinColumn(name = "mode_retrait_id")
     private ModeRetrait modeRetrait;
 
-    @Builder.Default
     @OneToMany(mappedBy = "commande", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<LigneCommande> lignes = new ArrayList<>();
+    private List<LigneCommande> lignes;
 
     @OneToOne(mappedBy = "commande", cascade = CascadeType.ALL)
     private Paiement paiement;
+
+    public Commande() {
+        this.dateCommande = LocalDateTime.now();
+        this.statut = StatutCommande.EN_ATTENTE;
+        this.totalProduit = 0.0;
+        this.montantLivraison = 0.0;
+        this.montantTotal = 0.0;
+        this.lignes = new ArrayList<>();
+    }
+
+    @Builder
+    public Commande(Long id, String numero, LocalDateTime dateCommande, StatutCommande statut, Double totalProduit, Double montantLivraison, Double montantTotal, String adresseLivraison, LocalDateTime dateMiseAJour, Utilisateur utilisateur, Pharmacopee pharmacopee, ModeRetrait modeRetrait, List<LigneCommande> lignes, Paiement paiement) {
+        this.id = id;
+        this.numero = numero;
+        this.dateCommande = dateCommande != null ? dateCommande : LocalDateTime.now();
+        this.statut = statut != null ? statut : StatutCommande.EN_ATTENTE;
+        this.totalProduit = totalProduit != null ? totalProduit : 0.0;
+        this.montantLivraison = montantLivraison != null ? montantLivraison : 0.0;
+        this.montantTotal = montantTotal != null ? montantTotal : 0.0;
+        this.adresseLivraison = adresseLivraison;
+        this.dateMiseAJour = dateMiseAJour;
+        this.utilisateur = utilisateur;
+        this.pharmacopee = pharmacopee;
+        this.modeRetrait = modeRetrait;
+        this.lignes = lignes != null ? lignes : new ArrayList<>();
+        this.paiement = paiement;
+    }
 
     @PrePersist
     public void onCreate() {
