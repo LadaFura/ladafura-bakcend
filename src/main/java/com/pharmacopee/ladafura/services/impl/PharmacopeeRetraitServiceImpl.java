@@ -27,7 +27,6 @@ public class PharmacopeeRetraitServiceImpl implements IPharmacopeeRetraitService
     private final ModeRetraitRepository modeRetraitRepository;
 
     @Override
-    @Transactional(readOnly = true)
     public PharmacopeeModesRetraitSummaryResponse getModesRetrait() {
         pharmacopeeAuthService.verifyPharmacopeeValidated();
         Pharmacopee pharmacopee = pharmacopeeAuthService.getCurrentPharmacopee();
@@ -40,7 +39,6 @@ public class PharmacopeeRetraitServiceImpl implements IPharmacopeeRetraitService
     }
 
     @Override
-    @Transactional(readOnly = true)
     public ModeRetraitResponse getModeRetrait(TypeModeRetrait type) {
         pharmacopeeAuthService.verifyPharmacopeeValidated();
         Pharmacopee pharmacopee = pharmacopeeAuthService.getCurrentPharmacopee();
