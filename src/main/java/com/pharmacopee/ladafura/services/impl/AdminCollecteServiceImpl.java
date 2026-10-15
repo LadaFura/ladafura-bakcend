@@ -97,6 +97,16 @@ public class AdminCollecteServiceImpl implements IAdminCollecteService {
     }
 
     @Override
+    public AdminCollecteDetailResponse updateAudio(Long id, String audioUrl) {
+        log.info("Mise à jour de l'enregistrement audio pour la collecte {} : {}", id, audioUrl);
+        Collecte collecte = collecteRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Collecte", "id", id));
+        collecte.setAudioUrl(audioUrl);
+        Collecte saved = collecteRepository.save(collecte);
+        return collecteMapper.toDetailDto(saved);
+    }
+
+    @Override
     public AdminCollecteDetailResponse updateCollecte(Long id, com.pharmacopee.ladafura.dto.admin.collecte.AdminUpdateCollecteRequest request) {
         log.info("Mise à jour complète de la collecte ID: {} par l'administrateur", id);
         Collecte collecte = collecteRepository.findById(id)

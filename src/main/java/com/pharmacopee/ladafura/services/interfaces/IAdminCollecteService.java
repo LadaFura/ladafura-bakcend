@@ -20,5 +20,7 @@ public interface IAdminCollecteService {
 
     AdminCollecteDetailResponse updatePhoto(Long id, String photoUrl);
 
+    AdminCollecteDetailResponse updateAudio(Long id, String audioUrl);
+
     AdminCollecteDetailResponse updateCollecte(Long id, com.pharmacopee.ladafura.dto.admin.collecte.AdminUpdateCollecteRequest request);
 }

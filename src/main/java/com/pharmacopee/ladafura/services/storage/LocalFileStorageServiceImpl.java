@@ -37,7 +37,11 @@ public class LocalFileStorageServiceImpl implements IFileStorageService {
         }
 
         String contentType = file.getContentType();
-        if (contentType == null || !allowedMimeTypes.contains(contentType.toLowerCase())) {
+        String baseContentType = (contentType != null && contentType.contains(";"))
+                ? contentType.split(";")[0].trim().toLowerCase()
+                : (contentType != null ? contentType.toLowerCase() : "");
+
+        if (contentType == null || (!allowedMimeTypes.contains(contentType.toLowerCase()) && !allowedMimeTypes.contains(baseContentType))) {
             throw new BadRequestException(String.format("Type de fichier non autorisé : '%s'. Types acceptés : %s",
                     contentType, allowedMimeTypes));
         }
@@ -51,6 +55,25 @@ public class LocalFileStorageServiceImpl implements IFileStorageService {
         int extIndex = originalFilename.lastIndexOf('.');
         if (extIndex > 0) {
             extension = originalFilename.substring(extIndex).toLowerCase();
+        } else {
+            // Détection automatique de l'extension selon le type MIME pour les blobs navigateur
+            if (baseContentType.contains("webm")) {
+                extension = ".webm";
+            } else if (baseContentType.contains("mpeg") || baseContentType.contains("mp3")) {
+                extension = ".mp3";
+            } else if (baseContentType.contains("ogg")) {
+                extension = ".ogg";
+            } else if (baseContentType.contains("wav")) {
+                extension = ".wav";
+            } else if (baseContentType.contains("m4a") || baseContentType.contains("mp4")) {
+                extension = ".m4a";
+            } else if (baseContentType.contains("jpeg") || baseContentType.contains("jpg")) {
+                extension = ".jpg";
+            } else if (baseContentType.contains("png")) {
+                extension = ".png";
+            } else if (baseContentType.contains("webp")) {
+                extension = ".webp";
+            }
         }
 
         String uniqueFileName = UUID.randomUUID().toString().substring(0, 8) + "_" + System.currentTimeMillis() + extension;
