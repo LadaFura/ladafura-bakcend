@@ -3,7 +3,6 @@ target/
 .github/
 .vscode/
 *.log
-uploads/
 HELP.md
 run-backend.bat
 run-backend.sh

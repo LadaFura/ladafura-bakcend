@@ -167,6 +167,3 @@ firebase-service-account*.json
 *.env
 *.pem
 secrets/
-
-# Uploaded test media
-uploads/
