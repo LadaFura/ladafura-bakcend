@@ -48,9 +48,9 @@ public class PopulationRetraitMapper {
         String adresseRetrait = (isPickup && ph != null) ? formatAdresse(ph.getLocalisation()) : null;
         double frais = isPickup ? 0.0 : (mr.getFrais() != null ? mr.getFrais() : 0.0);
 
-        String libelle = isPickup ? "Retrait en officine (Pickup)" : "Livraison à domicile";
+        String libelle = isPickup ? "Retrait en pharmacopée" : "Livraison à domicile";
         String description = isPickup
-                ? "Retrait gratuit au comptoir de l'officine sur présentation de la référence de commande."
+                ? "Retrait au comptoir de la pharmacopée"
                 : "Livraison directe à votre domicile ou adresse indiquée lors de la commande.";
 
         return PopulationModeRetraitOptionDto.builder()
@@ -112,13 +112,13 @@ public class PopulationRetraitMapper {
         String adresseRetrait = (ph != null) ? formatAdresse(ph.getLocalisation()) : null;
 
         if (mr == null || !Boolean.TRUE.equals(mr.getActif())) {
-            String nomMode = typeDemande == TypeModeRetrait.LIVRAISON ? "La livraison à domicile" : "Le retrait en officine";
+            String nomMode = typeDemande == TypeModeRetrait.LIVRAISON ? "La livraison à domicile" : "Le retrait en pharmacopée";
             return PopulationEstimationRetraitResponse.builder()
                     .pharmacopeeId(phId)
                     .nomPharmacopee(nomPh)
                     .modeRetraitId(null)
                     .type(typeDemande)
-                    .libelle(typeDemande == TypeModeRetrait.LIVRAISON ? "Livraison à domicile" : "Retrait en officine (Pickup)")
+                    .libelle(typeDemande == TypeModeRetrait.LIVRAISON ? "Livraison à domicile" : "Retrait en pharmacopée")
                     .eligible(false)
                     .frais(0.0)
                     .gratuit(false)
@@ -129,9 +129,9 @@ public class PopulationRetraitMapper {
 
         boolean isPickup = typeDemande == TypeModeRetrait.PICKUP;
         double frais = isPickup ? 0.0 : (mr.getFrais() != null ? mr.getFrais() : 0.0);
-        String libelle = isPickup ? "Retrait en officine (Pickup)" : "Livraison à domicile";
+        String libelle = isPickup ? "Retrait en pharmacopée" : "Livraison à domicile";
         String message = isPickup
-                ? "Retrait en officine disponible et gratuit au comptoir de " + nomPh + "."
+                ? "Retrait en pharmacopée disponible et gratuit au comptoir de " + nomPh + "."
                 : "Livraison disponible au tarif de " + frais + " FCFA.";
 
         return PopulationEstimationRetraitResponse.builder()
