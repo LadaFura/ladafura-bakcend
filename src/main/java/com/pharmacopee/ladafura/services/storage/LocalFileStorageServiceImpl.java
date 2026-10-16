@@ -41,7 +41,7 @@ import lombok.extern.slf4j.Slf4j;
 public class LocalFileStorageServiceImpl implements IFileStorageService {
 
     private final FichierMediaStockeRepository fichierMediaStockeRepository;
-    private final ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Value("${file.upload.dir:uploads}")
     private String baseUploadDir;
