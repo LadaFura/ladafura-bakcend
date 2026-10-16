@@ -28,12 +28,13 @@ import lombok.extern.slf4j.Slf4j;
 public class AgentMediaServiceImpl implements IAgentMediaService {
 
     private static final List<String> ALLOWED_PHOTO_MIMES = List.of(
-            "image/jpeg", "image/png", "image/webp"
+            "image/jpeg", "image/jpg", "image/png", "image/webp"
     );
     private static final long MAX_PHOTO_SIZE = 10 * 1024 * 1024L; // 10 MB
 
     private static final List<String> ALLOWED_AUDIO_MIMES = List.of(
-            "audio/mpeg", "audio/mp3", "audio/wav", "audio/ogg", "audio/m4a", "audio/aac", "audio/x-m4a"
+            "audio/mpeg", "audio/mp3", "audio/wav", "audio/ogg", "audio/m4a", "audio/aac", "audio/x-m4a",
+            "audio/webm", "audio/mp4", "video/webm"
     );
     private static final long MAX_AUDIO_SIZE = 25 * 1024 * 1024L; // 25 MB
 
