@@ -31,7 +31,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
-@RequiredArgsConstructor
+@RequiredArgsConstructor(onConstructor_ = @__(@org.springframework.beans.factory.annotation.Autowired))
 @Slf4j
 @Transactional
 public class PopulationAvisServiceImpl implements IPopulationAvisService {
@@ -41,6 +41,16 @@ public class PopulationAvisServiceImpl implements IPopulationAvisService {
     private final PharmacopeeRepository pharmacopeeRepository;
     private final CommandeRepository commandeRepository;
     private final PopulationAvisMapper mapper;
+    private final com.pharmacopee.ladafura.services.interfaces.IPharmacopeeNotificationService pharmacopeeNotificationService;
+
+    public PopulationAvisServiceImpl(
+            IPopulationAuthService populationAuthService,
+            AvisRepository avisRepository,
+            PharmacopeeRepository pharmacopeeRepository,
+            CommandeRepository commandeRepository,
+            PopulationAvisMapper mapper) {
+        this(populationAuthService, avisRepository, pharmacopeeRepository, commandeRepository, mapper, null);
+    }
 
     @Override
     @Transactional(readOnly = true)
@@ -88,6 +98,19 @@ public class PopulationAvisServiceImpl implements IPopulationAvisService {
 
         Avis saved = avisRepository.save(avis);
         log.info("Avis ID: {} créé et publié avec succès pour la pharmacopée ID: {}", saved.getId(), pharmacopee.getId());
+
+        if (pharmacopeeNotificationService != null) {
+            pharmacopeeNotificationService.notifier(
+                    pharmacopee,
+                    com.pharmacopee.ladafura.enums.TypeNotification.AVIS_NOUVEAU,
+                    com.pharmacopee.ladafura.enums.NiveauNotification.INFO,
+                    "Nouvel avis client (" + saved.getNote() + "/5)",
+                    "Un client a publié un avis (" + saved.getNote() + "/5) sur votre pharmacopée : « "
+                            + (saved.getCommentaire() != null ? saved.getCommentaire() : "") + " ».",
+                    String.valueOf(saved.getId()),
+                    "/pharmacopee/avis"
+            );
+        }
 
         return mapper.toResponse(saved);
     }

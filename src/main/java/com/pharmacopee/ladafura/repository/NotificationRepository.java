@@ -1,5 +1,6 @@
 package com.pharmacopee.ladafura.repository;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -64,4 +65,10 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     @Modifying
     @Query("DELETE FROM Notification n WHERE n.utilisateur.id = :utilisateurId AND n.lue = true")
     void deleteAllReadByUtilisateurId(@Param("utilisateurId") Long utilisateurId);
+
+    boolean existsByUtilisateurIdAndTypeAndReferenceIdAndDateNotificationAfter(
+            Long utilisateurId, TypeNotification type, String referenceId, LocalDateTime after);
+
+    boolean existsByPharmacopeeIdAndTypeAndReferenceIdAndDateNotificationAfter(
+            Long pharmacopeeId, TypeNotification type, String referenceId, LocalDateTime after);
 }

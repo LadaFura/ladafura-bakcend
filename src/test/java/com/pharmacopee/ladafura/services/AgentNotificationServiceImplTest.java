@@ -11,9 +11,11 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -235,7 +237,36 @@ class AgentNotificationServiceImplTest {
         assertThat(notif.getType()).isEqualTo(TypeNotification.COLLECTE_REJETEE);
         assertThat(notif.getNiveau()).isEqualTo(NiveauNotification.ATTENTION);
         assertThat(notif.getMessage()).contains("Photos inexploitables");
-        assertThat(notif.getLien()).isEqualTo("/api/v1/agent/suivi/100/motif-rejet");
+        assertThat(notif.getLien()).isEqualTo("/api/v1/agent/collectes/100");
+        assertThat(notif.getTypeEntiteLiee()).isEqualTo("COLLECTE");
+    }
+
+    @Test
+    @DisplayName("Notification : attribution d'une nouvelle collecte à un agent")
+    void notifierAttributionCollecte_Succes() {
+        when(notificationRepository.save(any(Notification.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Notification notif = agentNotificationService.notifierAttributionCollecte(collecte);
+
+        assertThat(notif).isNotNull();
+        assertThat(notif.getType()).isEqualTo(TypeNotification.COLLECTE_ATTRIBUEE);
+        assertThat(notif.getNiveau()).isEqualTo(NiveauNotification.INFO);
+        assertThat(notif.getReferenceId()).isEqualTo("100");
+        assertThat(notif.getTypeEntiteLiee()).isEqualTo("COLLECTE");
+        assertThat(notif.getLien()).isEqualTo("/api/v1/agent/collectes/100");
+    }
+
+    @Test
+    @DisplayName("Notification : prévention des doublons sur un même événement récent")
+    void notifierValidationCollecte_SansDoublon() {
+        when(notificationRepository.existsByUtilisateurIdAndTypeAndReferenceIdAndDateNotificationAfter(
+                eq(10L), eq(TypeNotification.COLLECTE_VALIDEE), eq("100"), any()))
+                .thenReturn(true);
+
+        Notification notif = agentNotificationService.notifierValidationCollecte(collecte);
+
+        assertThat(notif).isNull();
+        verify(notificationRepository, never()).save(any(Notification.class));
     }
 
     @Test

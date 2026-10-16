@@ -30,6 +30,7 @@ public class PharmacopeeReferencementServiceImpl implements IPharmacopeeReferenc
     private final IPharmacopeeAuthService pharmacopeeAuthService;
     private final PharmacopeeRepository pharmacopeeRepository;
     private final PraticienRepository praticienRepository;
+    private final com.pharmacopee.ladafura.services.interfaces.IAdminNotificationService adminNotificationService;
 
     @Override
     public StatutReferencementResponse soumettreDemandeReferencement(DemandeReferencementRequest request) {
@@ -62,6 +63,10 @@ public class PharmacopeeReferencementServiceImpl implements IPharmacopeeReferenc
             Praticien praticien = praticienOpt.get();
             praticien.getPharmacopees().add(saved);
             praticienRepository.save(praticien);
+        }
+
+        if (adminNotificationService != null) {
+            adminNotificationService.notifierDemandeReferencementPharmacopee(saved);
         }
 
         log.info("Nouvelle demande d'établissement (EN_ATTENTE) enregistrée pour l'utilisateur ID: {} (Pharmacopée ID: {})",

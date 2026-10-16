@@ -297,11 +297,28 @@ public class LocalFileStorageServiceImpl implements IFileStorageService {
             JsonNode json = objectMapper.readTree(response.body());
             if (json.hasNonNull("secure_url")) {
                 String secureUrl = json.get("secure_url").asText();
+                secureUrl = toPlayableAudioUrl(secureUrl, baseContentType);
                 log.info("Fichier téléversé sur Cloudinary avec succès : {}", secureUrl);
                 return secureUrl;
             }
         }
         throw new IOException("Réponse Cloudinary HTTP " + response.statusCode() + " : " + response.body());
+    }
+
+    /**
+     * Les enregistrements web/macOS (webm, ogg) ne sont pas lisibles par AVPlayer (iOS).
+     * Cloudinary transcode à la volée : demander l'extension .mp3 sur l'URL de livraison suffit.
+     */
+    public static String toPlayableAudioUrl(String url, String contentType) {
+        if (url == null || !url.contains("res.cloudinary.com") || !url.contains("/video/upload/")) {
+            return url;
+        }
+        boolean audio = contentType != null && contentType.startsWith("audio/");
+        boolean exotic = url.matches("(?i).*\\.(webm|ogg|oga|opus|weba)(\\?.*)?$");
+        if (audio || exotic) {
+            return url.replaceAll("(?i)\\.(webm|ogg|oga|opus|weba|m4a|wav|aac|mp4)(\\?.*)?$", ".mp3");
+        }
+        return url;
     }
 
     private void appendFormField(StringBuilder sb, String boundary, String name, String value) {

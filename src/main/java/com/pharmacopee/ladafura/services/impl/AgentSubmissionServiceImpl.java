@@ -38,6 +38,7 @@ public class AgentSubmissionServiceImpl implements IAgentSubmissionService {
     private final CollecteRepository collecteRepository;
     private final VertuDeLaPlanteRepository vertuDeLaPlanteRepository;
     private final IAgentAuthService agentAuthService;
+    private final com.pharmacopee.ladafura.services.interfaces.IAdminNotificationService adminNotificationService;
 
     @Override
     @Transactional(readOnly = true)
@@ -76,16 +77,22 @@ public class AgentSubmissionServiceImpl implements IAgentSubmissionService {
             throw new BadRequestException("Soumission impossible : le dossier de collecte est incomplet. " + errorMsg);
         }
 
+        boolean estResoumission = (collecte.getStatut() == StatutCollecte.REJETEE);
+
         // Passage au statut SOUMISE (verrouillage immédiat)
         collecte.setStatut(StatutCollecte.SOUMISE);
         collecte.setDateSoumission(LocalDateTime.now());
         collecte.setMotifRejet(null);
-        collecteRepository.save(collecte);
+        Collecte savedCollecte = collecteRepository.save(collecte);
 
         // Passage des connaissances traditionnelles associées en statut EN_ATTENTE
         for (VertuDeLaPlante vertu : vertus) {
             vertu.setStatut(StatutValidation.EN_ATTENTE);
             vertuDeLaPlanteRepository.save(vertu);
+        }
+
+        if (adminNotificationService != null) {
+            adminNotificationService.notifierCollecteSoumise(savedCollecte, estResoumission);
         }
 
         log.info("Collecte ID {} soumise avec succès pour validation avec {} vertu(s) passée(s) en EN_ATTENTE",

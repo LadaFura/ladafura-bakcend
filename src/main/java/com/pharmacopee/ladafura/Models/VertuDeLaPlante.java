@@ -31,8 +31,10 @@ public class VertuDeLaPlante {
     @Column(columnDefinition = "TEXT")
     private String usageRapporte;
 
+    @Column(columnDefinition = "TEXT")
     private String partieUtilisee;
 
+    @Column(columnDefinition = "TEXT")
     private String preparation;
 
     @Column(columnDefinition = "TEXT")

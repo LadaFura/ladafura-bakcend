@@ -134,6 +134,10 @@ public class AgentNotificationServiceImpl implements IAgentNotificationService {
     @Transactional
     public Notification notifierValidationCollecte(Collecte collecte) {
         if (collecte == null || collecte.getAgentCollecte() == null) return null;
+        String refId = String.valueOf(collecte.getId());
+        if (isDuplicateRecent(collecte.getAgentCollecte().getId(), TypeNotification.COLLECTE_VALIDEE, refId)) {
+            return null;
+        }
 
         Notification notification = Notification.builder()
                 .utilisateur(collecte.getAgentCollecte())
@@ -143,7 +147,8 @@ public class AgentNotificationServiceImpl implements IAgentNotificationService {
                 .niveau(NiveauNotification.SUCCES)
                 .lue(false)
                 .dateNotification(LocalDateTime.now())
-                .referenceId(String.valueOf(collecte.getId()))
+                .typeEntiteLiee("COLLECTE")
+                .referenceId(refId)
                 .lien("/api/v1/agent/collectes/" + collecte.getId())
                 .build();
 
@@ -156,18 +161,23 @@ public class AgentNotificationServiceImpl implements IAgentNotificationService {
     @Transactional
     public Notification notifierRejetCollecte(Collecte collecte, String motifRejet) {
         if (collecte == null || collecte.getAgentCollecte() == null) return null;
+        String refId = String.valueOf(collecte.getId());
+        if (isDuplicateRecent(collecte.getAgentCollecte().getId(), TypeNotification.COLLECTE_REJETEE, refId)) {
+            return null;
+        }
 
         String motif = (motifRejet != null && !motifRejet.isBlank()) ? motifRejet : "Non spécifié";
         Notification notification = Notification.builder()
                 .utilisateur(collecte.getAgentCollecte())
                 .titre("Collecte #" + collecte.getId() + " rejetée - Correction requise")
-                .message("Votre collecte #" + collecte.getId() + " a été rejetée lors de l'examen. Motif : " + motif)
+                .message("Votre collecte #" + collecte.getId() + " a été rejetée lors de l'examen. Motif : " + motif + ". Ouvrez la fiche pour la corriger et la soumettre à nouveau.")
                 .type(TypeNotification.COLLECTE_REJETEE)
                 .niveau(NiveauNotification.ATTENTION)
                 .lue(false)
                 .dateNotification(LocalDateTime.now())
-                .referenceId(String.valueOf(collecte.getId()))
-                .lien("/api/v1/agent/suivi/" + collecte.getId() + "/motif-rejet")
+                .typeEntiteLiee("COLLECTE")
+                .referenceId(refId)
+                .lien("/api/v1/agent/collectes/" + collecte.getId())
                 .build();
 
         log.info("Envoi notification de rejet pour la collecte ID {} à l'agent ID {}",
@@ -179,6 +189,10 @@ public class AgentNotificationServiceImpl implements IAgentNotificationService {
     @Transactional
     public Notification notifierDemandeCorrection(Collecte collecte, String instructions) {
         if (collecte == null || collecte.getAgentCollecte() == null) return null;
+        String refId = String.valueOf(collecte.getId());
+        if (isDuplicateRecent(collecte.getAgentCollecte().getId(), TypeNotification.COLLECTE_CORRECTION, refId)) {
+            return null;
+        }
 
         Notification notification = Notification.builder()
                 .utilisateur(collecte.getAgentCollecte())
@@ -188,8 +202,9 @@ public class AgentNotificationServiceImpl implements IAgentNotificationService {
                 .niveau(NiveauNotification.ATTENTION)
                 .lue(false)
                 .dateNotification(LocalDateTime.now())
-                .referenceId(String.valueOf(collecte.getId()))
-                .lien("/api/v1/agent/suivi/" + collecte.getId() + "/motif-rejet")
+                .typeEntiteLiee("COLLECTE")
+                .referenceId(refId)
+                .lien("/api/v1/agent/collectes/" + collecte.getId())
                 .build();
 
         log.info("Envoi notification de demande de correction pour la collecte ID {} à l'agent ID {}",
@@ -201,6 +216,10 @@ public class AgentNotificationServiceImpl implements IAgentNotificationService {
     @Transactional
     public Notification notifierChangementStatut(Collecte collecte, StatutCollecte ancienStatut, StatutCollecte nouveauStatut) {
         if (collecte == null || collecte.getAgentCollecte() == null) return null;
+        String refId = String.valueOf(collecte.getId());
+        if (isDuplicateRecent(collecte.getAgentCollecte().getId(), TypeNotification.COLLECTE_STATUT, refId)) {
+            return null;
+        }
 
         Notification notification = Notification.builder()
                 .utilisateur(collecte.getAgentCollecte())
@@ -210,11 +229,39 @@ public class AgentNotificationServiceImpl implements IAgentNotificationService {
                 .niveau(NiveauNotification.INFO)
                 .lue(false)
                 .dateNotification(LocalDateTime.now())
-                .referenceId(String.valueOf(collecte.getId()))
+                .typeEntiteLiee("COLLECTE")
+                .referenceId(refId)
                 .lien("/api/v1/agent/collectes/" + collecte.getId())
                 .build();
 
         log.info("Envoi notification de changement de statut pour la collecte ID {} à l'agent ID {}",
+                collecte.getId(), collecte.getAgentCollecte().getId());
+        return notificationRepository.save(notification);
+    }
+
+    @Override
+    @Transactional
+    public Notification notifierAttributionCollecte(Collecte collecte) {
+        if (collecte == null || collecte.getAgentCollecte() == null) return null;
+        String refId = String.valueOf(collecte.getId());
+        if (isDuplicateRecent(collecte.getAgentCollecte().getId(), TypeNotification.COLLECTE_ATTRIBUEE, refId)) {
+            return null;
+        }
+
+        Notification notification = Notification.builder()
+                .utilisateur(collecte.getAgentCollecte())
+                .titre("Nouvelle collecte #" + collecte.getId() + " attribuée")
+                .message("Une nouvelle fiche de collecte (#" + collecte.getId() + ") vous a été attribuée. Consultez-la pour compléter et soumettre les données de terrain.")
+                .type(TypeNotification.COLLECTE_ATTRIBUEE)
+                .niveau(NiveauNotification.INFO)
+                .lue(false)
+                .dateNotification(LocalDateTime.now())
+                .typeEntiteLiee("COLLECTE")
+                .referenceId(refId)
+                .lien("/api/v1/agent/collectes/" + collecte.getId())
+                .build();
+
+        log.info("Envoi notification d'attribution pour la collecte ID {} à l'agent ID {}",
                 collecte.getId(), collecte.getAgentCollecte().getId());
         return notificationRepository.save(notification);
     }
@@ -238,5 +285,11 @@ public class AgentNotificationServiceImpl implements IAgentNotificationService {
 
         log.info("Envoi notification administrative à l'agent ID {}", agent.getId());
         return notificationRepository.save(notification);
+    }
+
+    private boolean isDuplicateRecent(Long userId, TypeNotification type, String referenceId) {
+        if (userId == null || referenceId == null) return false;
+        return notificationRepository.existsByUtilisateurIdAndTypeAndReferenceIdAndDateNotificationAfter(
+                userId, type, referenceId, LocalDateTime.now().minusSeconds(15));
     }
 }

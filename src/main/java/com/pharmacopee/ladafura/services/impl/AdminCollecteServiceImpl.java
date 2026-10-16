@@ -30,6 +30,8 @@ public class AdminCollecteServiceImpl implements IAdminCollecteService {
     private final com.pharmacopee.ladafura.repository.LocalisationRepository localisationRepository;
     private final com.pharmacopee.ladafura.repository.VertuDeLaPlanteRepository vertuDeLaPlanteRepository;
     private final com.pharmacopee.ladafura.repository.PlanteRepository planteRepository;
+    private final com.pharmacopee.ladafura.repository.AgentCollecteRepository agentCollecteRepository;
+    private final com.pharmacopee.ladafura.services.interfaces.IAgentNotificationService agentNotificationService;
 
     @Override
     @Transactional(readOnly = true)
@@ -58,12 +60,43 @@ public class AdminCollecteServiceImpl implements IAdminCollecteService {
         Collecte collecte = collecteRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Collecte", "id", id));
 
+        StatutCollecte ancienStatut = collecte.getStatut();
         collecte.setStatut(request.getAction());
         if (request.getMotifRejet() != null) {
             collecte.setMotifRejet(request.getMotifRejet());
+        } else if (request.getAction() == StatutCollecte.VALIDEE) {
+            collecte.setMotifRejet(null);
         }
 
         Collecte saved = collecteRepository.save(collecte);
+
+        // Synchronisation du statut des connaissances traditionnelles associées
+        java.util.List<com.pharmacopee.ladafura.Models.VertuDeLaPlante> vertus = vertuDeLaPlanteRepository.findByCollecteId(saved.getId());
+        if (vertus != null && !vertus.isEmpty()) {
+            for (com.pharmacopee.ladafura.Models.VertuDeLaPlante v : vertus) {
+                if (request.getAction() == StatutCollecte.VALIDEE) {
+                    v.setStatut(com.pharmacopee.ladafura.enums.StatutValidation.VALIDE);
+                    vertuDeLaPlanteRepository.save(v);
+                } else if (request.getAction() == StatutCollecte.REJETEE) {
+                    v.setStatut(com.pharmacopee.ladafura.enums.StatutValidation.REJETE);
+                    vertuDeLaPlanteRepository.save(v);
+                }
+            }
+        }
+
+        // Déclenchement automatique de la notification à l'agent de collecte
+        if (agentNotificationService != null) {
+            if (request.getAction() == StatutCollecte.VALIDEE) {
+                agentNotificationService.notifierValidationCollecte(saved);
+            } else if (request.getAction() == StatutCollecte.REJETEE) {
+                agentNotificationService.notifierRejetCollecte(saved, request.getMotifRejet());
+            } else if (request.getAction() == StatutCollecte.EN_EXAMEN && request.getMotifRejet() != null && !request.getMotifRejet().isBlank()) {
+                agentNotificationService.notifierDemandeCorrection(saved, request.getMotifRejet());
+            } else if (ancienStatut != request.getAction()) {
+                agentNotificationService.notifierChangementStatut(saved, ancienStatut, request.getAction());
+            }
+        }
+
         return collecteMapper.toDetailDto(saved);
     }
 
@@ -220,7 +253,21 @@ public class AdminCollecteServiceImpl implements IAdminCollecteService {
             }
         }
 
+        boolean agentNewlyAssigned = false;
+        if (request.getAgentId() != null) {
+            Long currentAgentId = collecte.getAgentCollecte() != null ? collecte.getAgentCollecte().getId() : null;
+            if (!request.getAgentId().equals(currentAgentId)) {
+                com.pharmacopee.ladafura.Models.AgentCollecte nouvelAgent = agentCollecteRepository.findById(request.getAgentId())
+                        .orElseThrow(() -> new ResourceNotFoundException("AgentCollecte", "id", request.getAgentId()));
+                collecte.setAgentCollecte(nouvelAgent);
+                agentNewlyAssigned = true;
+            }
+        }
+
         Collecte saved = collecteRepository.save(collecte);
+        if (agentNewlyAssigned && agentNotificationService != null) {
+            agentNotificationService.notifierAttributionCollecte(saved);
+        }
         return collecteMapper.toDetailDto(saved);
     }
 }

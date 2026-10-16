@@ -51,7 +51,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
-@RequiredArgsConstructor
+@RequiredArgsConstructor(onConstructor_ = @__(@org.springframework.beans.factory.annotation.Autowired))
 @Slf4j
 @Transactional
 public class PopulationCommandeServiceImpl implements IPopulationCommandeService {
@@ -68,6 +68,23 @@ public class PopulationCommandeServiceImpl implements IPopulationCommandeService
     private final DisponibiliteProduitRepository disponibiliteProduitRepository;
     private final PaiementRepository paiementRepository;
     private final PopulationCommandeMapper mapper;
+    private final com.pharmacopee.ladafura.services.interfaces.IPharmacopeeNotificationService pharmacopeeNotificationService;
+    private final com.pharmacopee.ladafura.services.interfaces.IPopulationNotificationService populationNotificationService;
+
+    public PopulationCommandeServiceImpl(
+            IPopulationAuthService populationAuthService,
+            CommandeRepository commandeRepository,
+            PanierRepository panierRepository,
+            LignePanierRepository lignePanierRepository,
+            PharmacopeeRepository pharmacopeeRepository,
+            ModeRetraitRepository modeRetraitRepository,
+            DisponibiliteProduitRepository disponibiliteProduitRepository,
+            PaiementRepository paiementRepository,
+            PopulationCommandeMapper mapper) {
+        this(populationAuthService, commandeRepository, panierRepository, lignePanierRepository,
+                pharmacopeeRepository, modeRetraitRepository, disponibiliteProduitRepository,
+                paiementRepository, mapper, null, null);
+    }
 
     @Override
     @Transactional(readOnly = true)
@@ -266,6 +283,39 @@ public class PopulationCommandeServiceImpl implements IPopulationCommandeService
         log.info("Panier ID: {} vidé suite à la confirmation du paiement et de la commande ID: {}",
                 panier.getId(), savedCommande.getId());
 
+        // 6. Déclenchement automatique des notifications (Gestionnaire de Pharmacopée & Client)
+        String clientNom = ((user.getPrenom() != null ? user.getPrenom() + " " : "") + (user.getNom() != null ? user.getNom() : "")).trim();
+        String refCmdId = String.valueOf(savedCommande.getId());
+        String infoPaiement = (paiement.getStatut() == StatutPaiement.REUSSI)
+                ? "Paiement réglé (" + paiement.getMethode() + ")."
+                : "Paiement en espèces à la réception.";
+
+        if (pharmacopeeNotificationService != null) {
+            pharmacopeeNotificationService.notifier(
+                    pharmacopee,
+                    com.pharmacopee.ladafura.enums.TypeNotification.COMMANDE_NOUVELLE,
+                    com.pharmacopee.ladafura.enums.NiveauNotification.INFO,
+                    "Nouvelle commande " + savedCommande.getNumero(),
+                    "Une nouvelle commande (" + savedCommande.getNumero() + ") d'un montant de "
+                            + savedCommande.getMontantTotal().intValue() + " FCFA a été passée par " + clientNom + ". " + infoPaiement,
+                    refCmdId,
+                    "/pharmacopee/commandes/" + savedCommande.getId()
+            );
+        }
+
+        if (populationNotificationService != null) {
+            populationNotificationService.envoyerNotification(
+                    user,
+                    "Commande " + savedCommande.getNumero() + " enregistrée",
+                    "Votre commande auprès de « " + pharmacopee.getNom() + " » d'un montant de "
+                            + savedCommande.getMontantTotal().intValue() + " FCFA a bien été enregistrée et transmise à l'officine.",
+                    com.pharmacopee.ladafura.enums.TypeNotification.COMMANDE_NOUVELLE,
+                    com.pharmacopee.ladafura.enums.NiveauNotification.SUCCES,
+                    refCmdId,
+                    "/citizen/commandes/" + savedCommande.getId()
+            );
+        }
+
         return mapper.toDetailResponse(savedCommande);
     }
 
@@ -346,6 +396,32 @@ public class PopulationCommandeServiceImpl implements IPopulationCommandeService
         commande.setStatut(StatutCommande.ANNULEE);
         commande.setDateMiseAJour(LocalDateTime.now());
         Commande updated = commandeRepository.save(commande);
+
+        // Notification automatique au gestionnaire de la pharmacopée et au client
+        String clientNom = ((user.getPrenom() != null ? user.getPrenom() + " " : "") + (user.getNom() != null ? user.getNom() : "")).trim();
+        String refCmdId = String.valueOf(updated.getId());
+        if (updated.getPharmacopee() != null && pharmacopeeNotificationService != null) {
+            pharmacopeeNotificationService.notifier(
+                    updated.getPharmacopee(),
+                    com.pharmacopee.ladafura.enums.TypeNotification.COMMANDE_STATUT,
+                    com.pharmacopee.ladafura.enums.NiveauNotification.ATTENTION,
+                    "Commande " + updated.getNumero() + " annulée par le client",
+                    "Le client " + clientNom + " a annulé la commande " + updated.getNumero() + ". Les stocks ont été réintégrés.",
+                    refCmdId,
+                    "/pharmacopee/commandes/" + updated.getId()
+            );
+        }
+        if (populationNotificationService != null) {
+            populationNotificationService.envoyerNotification(
+                    user,
+                    "Commande " + updated.getNumero() + " annulée",
+                    "Votre commande " + updated.getNumero() + " a bien été annulée à votre demande.",
+                    com.pharmacopee.ladafura.enums.TypeNotification.COMMANDE_STATUT,
+                    com.pharmacopee.ladafura.enums.NiveauNotification.ATTENTION,
+                    refCmdId,
+                    "/citizen/commandes/" + updated.getId()
+            );
+        }
 
         log.info("Commande ID: {} annulée avec succès par l'utilisateur ID: {}", commandeId, user.getId());
         return mapper.toDetailResponse(updated);

@@ -44,6 +44,8 @@ public class PharmacopeeCommandeServiceImpl implements IPharmacopeeCommandeServi
 
     private final IPharmacopeeAuthService pharmacopeeAuthService;
     private final CommandeRepository commandeRepository;
+    private final com.pharmacopee.ladafura.services.interfaces.IPharmacopeeNotificationService pharmacopeeNotificationService;
+    private final com.pharmacopee.ladafura.services.interfaces.IPopulationNotificationService populationNotificationService;
 
     @Override
     @Transactional(readOnly = true)
@@ -125,7 +127,85 @@ public class PharmacopeeCommandeServiceImpl implements IPharmacopeeCommandeServi
         Commande saved = commandeRepository.save(commande);
         log.info("Statut mis à jour avec succès pour la commande ID {} : {}", id, cible);
 
+        notifierEvolutionStatutCommande(saved, cible, request.getMotif());
+
         return mapToDetailResponse(saved);
+    }
+
+    private void notifierEvolutionStatutCommande(Commande cmd, StatutCommande nouveauStatut, String motif) {
+        if (cmd == null) return;
+        String refId = String.valueOf(cmd.getId());
+        String nomPharma = cmd.getPharmacopee() != null ? cmd.getPharmacopee().getNom() : "la pharmacopée";
+        String titreClient;
+        String msgClient;
+        com.pharmacopee.ladafura.enums.NiveauNotification niveau = com.pharmacopee.ladafura.enums.NiveauNotification.INFO;
+
+        switch (nouveauStatut) {
+            case CONFIRMEE -> {
+                titreClient = "Commande " + cmd.getNumero() + " confirmée";
+                msgClient = "Votre commande " + cmd.getNumero() + " a été confirmée par « " + nomPharma + " ».";
+                niveau = com.pharmacopee.ladafura.enums.NiveauNotification.SUCCES;
+            }
+            case PREPAREE -> {
+                titreClient = "Commande " + cmd.getNumero() + " préparée";
+                msgClient = "Les produits de votre commande " + cmd.getNumero() + " sont prêts chez « " + nomPharma + " ».";
+                niveau = com.pharmacopee.ladafura.enums.NiveauNotification.INFO;
+            }
+            case EN_LIVRAISON -> {
+                titreClient = "Commande " + cmd.getNumero() + " en cours de livraison";
+                msgClient = "Votre commande " + cmd.getNumero() + " est en cours d'acheminement vers votre adresse.";
+                niveau = com.pharmacopee.ladafura.enums.NiveauNotification.INFO;
+            }
+            case DISPONIBLE_PICKUP -> {
+                titreClient = "Commande " + cmd.getNumero() + " prête pour retrait";
+                msgClient = "Votre commande " + cmd.getNumero() + " est disponible au comptoir de « " + nomPharma + " ».";
+                niveau = com.pharmacopee.ladafura.enums.NiveauNotification.SUCCES;
+            }
+            case LIVREE -> {
+                titreClient = "Commande " + cmd.getNumero() + " livrée";
+                msgClient = "Votre commande " + cmd.getNumero() + " a été livrée avec succès. Merci de votre confiance !";
+                niveau = com.pharmacopee.ladafura.enums.NiveauNotification.SUCCES;
+            }
+            case RETIREE -> {
+                titreClient = "Commande " + cmd.getNumero() + " retirée";
+                msgClient = "Vous avez retiré votre commande " + cmd.getNumero() + " auprès de « " + nomPharma + " ». Merci !";
+                niveau = com.pharmacopee.ladafura.enums.NiveauNotification.SUCCES;
+            }
+            case ANNULEE -> {
+                titreClient = "Commande " + cmd.getNumero() + " annulée";
+                String detailMotif = (motif != null && !motif.isBlank()) ? " Motif : " + motif : "";
+                msgClient = "Votre commande " + cmd.getNumero() + " auprès de « " + nomPharma + " » a été annulée." + detailMotif;
+                niveau = com.pharmacopee.ladafura.enums.NiveauNotification.ATTENTION;
+            }
+            default -> {
+                titreClient = "Mise à jour de votre commande " + cmd.getNumero();
+                msgClient = "Le statut de votre commande " + cmd.getNumero() + " est passé à " + nouveauStatut + ".";
+            }
+        }
+
+        if (cmd.getUtilisateur() != null && populationNotificationService != null) {
+            populationNotificationService.envoyerNotification(
+                    cmd.getUtilisateur(),
+                    titreClient,
+                    msgClient,
+                    com.pharmacopee.ladafura.enums.TypeNotification.COMMANDE_STATUT,
+                    niveau,
+                    refId,
+                    "/citizen/commandes/" + cmd.getId()
+            );
+        }
+
+        if (cmd.getPharmacopee() != null && pharmacopeeNotificationService != null) {
+            pharmacopeeNotificationService.notifier(
+                    cmd.getPharmacopee(),
+                    com.pharmacopee.ladafura.enums.TypeNotification.COMMANDE_STATUT,
+                    niveau,
+                    titreClient,
+                    "La commande " + cmd.getNumero() + " est passée au statut " + nouveauStatut + ".",
+                    refId,
+                    "/pharmacopee/commandes/" + cmd.getId()
+            );
+        }
     }
 
     @Override

@@ -40,6 +40,7 @@ public class AdminPharmacopeeServiceImpl implements IAdminPharmacopeeService {
     private final com.pharmacopee.ladafura.repository.PraticienRepository praticienRepository;
     private final AdminPharmacopeeMapper pharmacopeeMapper;
     private final jakarta.persistence.EntityManager entityManager;
+    private final com.pharmacopee.ladafura.services.interfaces.IPharmacopeeNotificationService pharmacopeeNotificationService;
 
     @Override
     @Transactional(readOnly = true)
@@ -220,6 +221,45 @@ public class AdminPharmacopeeServiceImpl implements IAdminPharmacopeeService {
 
         pharmacopee.setStatut(request.getAction());
         Pharmacopee saved = pharmacopeeRepository.save(pharmacopee);
+
+        String titre;
+        String msg;
+        com.pharmacopee.ladafura.enums.NiveauNotification niveau;
+        switch (request.getAction()) {
+            case VALIDEE -> {
+                titre = "Établissement agréé et validé";
+                msg = "Votre établissement « " + saved.getNom() + " » a été validé par l'administration LADAFURA. Vous pouvez désormais gérer vos produits et commandes.";
+                niveau = com.pharmacopee.ladafura.enums.NiveauNotification.SUCCES;
+            }
+            case REJETEE -> {
+                titre = "Demande de référencement rejetée";
+                String motif = (request.getMotif() != null && !request.getMotif().isBlank()) ? " Motif : " + request.getMotif() : "";
+                msg = "La demande de référencement de « " + saved.getNom() + " » a été rejetée par l'administration." + motif;
+                niveau = com.pharmacopee.ladafura.enums.NiveauNotification.ATTENTION;
+            }
+            case SUSPENDUE -> {
+                titre = "Établissement temporairement suspendu";
+                String motif = (request.getMotif() != null && !request.getMotif().isBlank()) ? " Motif : " + request.getMotif() : "";
+                msg = "Votre établissement « " + saved.getNom() + " » a été suspendu." + motif;
+                niveau = com.pharmacopee.ladafura.enums.NiveauNotification.URGENT;
+            }
+            default -> {
+                titre = "Statut de référencement mis à jour";
+                msg = "Le statut de votre établissement « " + saved.getNom() + " » est désormais " + request.getAction() + ".";
+                niveau = com.pharmacopee.ladafura.enums.NiveauNotification.INFO;
+            }
+        }
+        if (pharmacopeeNotificationService != null) {
+            pharmacopeeNotificationService.notifier(
+                    saved,
+                    com.pharmacopee.ladafura.enums.TypeNotification.REFERENCEMENT,
+                    niveau,
+                    titre,
+                    msg,
+                    String.valueOf(saved.getId()),
+                    "/pharmacopee/profil"
+            );
+        }
 
         return pharmacopeeMapper.toDetailDto(saved);
     }

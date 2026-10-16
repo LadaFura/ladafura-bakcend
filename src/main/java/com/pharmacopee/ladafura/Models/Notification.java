@@ -54,6 +54,9 @@ public class Notification {
 
     private LocalDateTime dateLecture;
 
+    @Column(name = "type_entite_liee", length = 60)
+    private String typeEntiteLiee;
+
     private String referenceId;
 
     private String lien;
@@ -77,7 +80,8 @@ public class Notification {
     @Builder
     public Notification(Long id, String titre, String message, TypeNotification type, NiveauNotification niveau,
                         Boolean lue, LocalDateTime dateNotification, LocalDateTime dateLecture,
-                        String referenceId, String lien, Pharmacopee pharmacopee, Utilisateur utilisateur) {
+                        String typeEntiteLiee, String referenceId, String lien,
+                        Pharmacopee pharmacopee, Utilisateur utilisateur) {
         this.id = id;
         this.titre = titre;
         this.message = message;
@@ -86,6 +90,7 @@ public class Notification {
         this.lue = lue != null ? lue : false;
         this.dateNotification = dateNotification != null ? dateNotification : LocalDateTime.now();
         this.dateLecture = dateLecture;
+        this.typeEntiteLiee = typeEntiteLiee;
         this.referenceId = referenceId;
         this.lien = lien;
         this.pharmacopee = pharmacopee;
@@ -103,5 +108,21 @@ public class Notification {
         if (this.niveau == null) {
             this.niveau = NiveauNotification.INFO;
         }
+    }
+
+    public String getRelatedEntityType() {
+        return this.typeEntiteLiee;
+    }
+
+    public String getRelatedEntityId() {
+        return this.referenceId;
+    }
+
+    public Boolean getIsRead() {
+        return this.lue;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return this.dateNotification;
     }
 }

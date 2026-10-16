@@ -40,6 +40,7 @@ public class AgentCollecteServiceImpl implements IAgentCollecteService {
     private final AgentCollecteMapper agentCollecteMapper;
     private final SourceRepository sourceRepository;
     private final LocalisationRepository localisationRepository;
+    private final com.pharmacopee.ladafura.services.interfaces.IAdminNotificationService adminNotificationService;
 
     @Override
     public AgentCollecteDetailResponse createCollecte(AgentCreateCollecteRequest request) {
@@ -75,6 +76,10 @@ public class AgentCollecteServiceImpl implements IAgentCollecteService {
 
         Collecte saved = collecteRepository.save(collecte);
         log.info("Collecte créée avec succès (ID={}, Statut={})", saved.getId(), saved.getStatut());
+
+        if (request.isSoumettre() && adminNotificationService != null) {
+            adminNotificationService.notifierCollecteSoumise(saved, false);
+        }
 
         return agentCollecteMapper.toDetailDto(saved);
     }
@@ -166,12 +171,17 @@ public class AgentCollecteServiceImpl implements IAgentCollecteService {
             throw new BadRequestException("Cette collecte ne peut pas être soumise car son statut actuel est : " + collecte.getStatut());
         }
 
+        boolean estResoumission = (collecte.getStatut() == StatutCollecte.REJETEE);
         collecte.setStatut(StatutCollecte.SOUMISE);
         collecte.setDateSoumission(LocalDateTime.now());
         collecte.setMotifRejet(null); // Réinitialisation de l'ancien motif si c'était un renvoi après correction
 
         Collecte saved = collecteRepository.save(collecte);
         log.info("Collecte ID: {} soumise avec succès pour validation", saved.getId());
+
+        if (adminNotificationService != null) {
+            adminNotificationService.notifierCollecteSoumise(saved, estResoumission);
+        }
 
         return agentCollecteMapper.toDetailDto(saved);
     }

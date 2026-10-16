@@ -144,6 +144,21 @@ public class PopulationNotificationServiceImpl implements IPopulationNotificatio
     public void envoyerNotification(Utilisateur destinataire, String titre, String message,
                                      TypeNotification type, NiveauNotification niveau,
                                      String referenceId, String lien) {
+        if (destinataire == null) {
+            return;
+        }
+        if (destinataire.getId() != null && referenceId != null
+                && notificationRepository.existsByUtilisateurIdAndTypeAndReferenceIdAndDateNotificationAfter(
+                        destinataire.getId(), type, referenceId, LocalDateTime.now().minusSeconds(15))) {
+            log.debug("Notification dupliquée ignorée pour l'utilisateur ID {} (type={}, ref={})",
+                    destinataire.getId(), type, referenceId);
+            return;
+        }
+
+        String entityType = (type != null && type.name().startsWith("COMMANDE")) ? "COMMANDE"
+                : (type == TypeNotification.AVIS_NOUVEAU) ? "AVIS"
+                : null;
+
         log.info("Envoi notification de type {} à l'utilisateur ID: {}", type, destinataire.getId());
         Notification notification = Notification.builder()
                 .utilisateur(destinataire)
@@ -151,6 +166,7 @@ public class PopulationNotificationServiceImpl implements IPopulationNotificatio
                 .message(message)
                 .type(type)
                 .niveau(niveau != null ? niveau : NiveauNotification.INFO)
+                .typeEntiteLiee(entityType)
                 .referenceId(referenceId)
                 .lien(lien)
                 .lue(false)

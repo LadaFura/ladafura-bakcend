@@ -105,4 +105,12 @@ public interface IAgentNotificationService {
      * @return Notification persistée
      */
     Notification notifierMessageAdmin(AgentCollecte agent, String titre, String message, NiveauNotification niveau);
+
+    /**
+     * Génère et enregistre une notification lorsqu'une nouvelle collecte est attribuée à l'agent.
+     *
+     * @param collecte Collecte attribuée
+     * @return Notification persistée
+     */
+    Notification notifierAttributionCollecte(Collecte collecte);
 }

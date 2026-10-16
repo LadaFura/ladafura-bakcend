@@ -33,7 +33,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
-@RequiredArgsConstructor
+@RequiredArgsConstructor(onConstructor_ = @__(@org.springframework.beans.factory.annotation.Autowired))
 @Slf4j
 @Transactional
 public class PopulationPaiementServiceImpl implements IPopulationPaiementService {
@@ -44,6 +44,16 @@ public class PopulationPaiementServiceImpl implements IPopulationPaiementService
     private final PaiementRepository paiementRepository;
     private final CommandeRepository commandeRepository;
     private final PopulationPaiementMapper mapper;
+    private final com.pharmacopee.ladafura.services.interfaces.IPharmacopeeNotificationService pharmacopeeNotificationService;
+    private final com.pharmacopee.ladafura.services.interfaces.IPopulationNotificationService populationNotificationService;
+
+    public PopulationPaiementServiceImpl(
+            IPopulationAuthService populationAuthService,
+            PaiementRepository paiementRepository,
+            CommandeRepository commandeRepository,
+            PopulationPaiementMapper mapper) {
+        this(populationAuthService, paiementRepository, commandeRepository, mapper, null, null);
+    }
 
     @Override
     @Transactional(readOnly = true)
@@ -118,6 +128,33 @@ public class PopulationPaiementServiceImpl implements IPopulationPaiementService
         Paiement savedPaiement = paiementRepository.save(paiement);
         log.info("Paiement ID: {} enregistré avec statut: {} pour la commande ID: {}",
                 savedPaiement.getId(), savedPaiement.getStatut(), commande.getId());
+
+        if (savedPaiement.getStatut() == StatutPaiement.REUSSI) {
+            String refCmdId = String.valueOf(commande.getId());
+            if (commande.getPharmacopee() != null && pharmacopeeNotificationService != null) {
+                pharmacopeeNotificationService.notifier(
+                        commande.getPharmacopee(),
+                        com.pharmacopee.ladafura.enums.TypeNotification.COMMANDE_STATUT,
+                        com.pharmacopee.ladafura.enums.NiveauNotification.SUCCES,
+                        "Paiement confirmé - Commande " + commande.getNumero(),
+                        "Le règlement de " + commande.getMontantTotal().intValue() + " FCFA pour la commande "
+                                + commande.getNumero() + " a été confirmé (" + savedPaiement.getReference() + ").",
+                        refCmdId,
+                        "/pharmacopee/commandes/" + commande.getId()
+                );
+            }
+            if (populationNotificationService != null) {
+                populationNotificationService.envoyerNotification(
+                        user,
+                        "Paiement confirmé pour la commande " + commande.getNumero(),
+                        message,
+                        com.pharmacopee.ladafura.enums.TypeNotification.COMMANDE_STATUT,
+                        com.pharmacopee.ladafura.enums.NiveauNotification.SUCCES,
+                        refCmdId,
+                        "/citizen/commandes/" + commande.getId()
+                );
+            }
+        }
 
         return mapper.toResponse(savedPaiement, commande, message);
     }

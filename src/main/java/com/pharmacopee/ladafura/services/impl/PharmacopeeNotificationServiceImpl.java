@@ -152,6 +152,20 @@ public class PharmacopeeNotificationServiceImpl implements IPharmacopeeNotificat
             return;
         }
 
+        if (pharmacopee.getId() != null && referenceId != null
+                && notificationRepository.existsByPharmacopeeIdAndTypeAndReferenceIdAndDateNotificationAfter(
+                        pharmacopee.getId(), type, referenceId, LocalDateTime.now().minusSeconds(15))) {
+            log.debug("Notification dupliquée ignorée pour la pharmacopée ID {} (type={}, ref={})",
+                    pharmacopee.getId(), type, referenceId);
+            return;
+        }
+
+        String entityType = (type != null && type.name().startsWith("COMMANDE")) ? "COMMANDE"
+                : (type == TypeNotification.AVIS_NOUVEAU) ? "AVIS"
+                : (type == TypeNotification.REFERENCEMENT) ? "PHARMACOPEE"
+                : (type == TypeNotification.STOCK_ALERTE) ? "STOCK"
+                : null;
+
         Notification n = Notification.builder()
                 .pharmacopee(pharmacopee)
                 .utilisateur(pharmacopee.getUtilisateur())
@@ -159,6 +173,7 @@ public class PharmacopeeNotificationServiceImpl implements IPharmacopeeNotificat
                 .message(message)
                 .type(type)
                 .niveau(niveau != null ? niveau : NiveauNotification.INFO)
+                .typeEntiteLiee(entityType)
                 .referenceId(referenceId)
                 .lien(lien)
                 .lue(false)

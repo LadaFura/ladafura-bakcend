@@ -2,6 +2,7 @@ package com.pharmacopee.ladafura.services.impl;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.data.domain.Page;
@@ -11,10 +12,14 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.pharmacopee.ladafura.Models.AgentCollecte;
+import com.pharmacopee.ladafura.Models.Collecte;
 import com.pharmacopee.ladafura.Models.Notification;
+import com.pharmacopee.ladafura.Models.Pharmacopee;
 import com.pharmacopee.ladafura.Models.Utilisateur;
 import com.pharmacopee.ladafura.dto.admin.notification.AdminNotificationResponse;
 import com.pharmacopee.ladafura.dto.admin.notification.AdminNotificationStatsResponse;
+import com.pharmacopee.ladafura.enums.NiveauNotification;
 import com.pharmacopee.ladafura.enums.Role;
 import com.pharmacopee.ladafura.enums.TypeNotification;
 import com.pharmacopee.ladafura.exceptions.ResourceNotFoundException;
@@ -118,6 +123,78 @@ public class AdminNotificationServiceImpl implements IAdminNotificationService {
         Notification notification = notificationRepository.findByIdAndUtilisateurId(id, admin.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Notification", "id", id));
         notificationRepository.delete(notification);
+    }
+
+    @Override
+    public void notifierCollecteSoumise(Collecte collecte, boolean estResoumission) {
+        if (collecte == null || collecte.getId() == null) return;
+        List<Utilisateur> admins = utilisateurRepository.findByRole(Role.ADMINISTRATEUR);
+        if (admins.isEmpty()) return;
+
+        AgentCollecte agent = collecte.getAgentCollecte();
+        String agentNom = (agent != null)
+                ? ((agent.getPrenom() != null ? agent.getPrenom() + " " : "") + (agent.getNom() != null ? agent.getNom() : "")).trim()
+                : "un agent de collecte";
+        String refId = String.valueOf(collecte.getId());
+        String titre = estResoumission
+                ? "Collecte #" + collecte.getId() + " corrigée et soumise à nouveau"
+                : "Nouvelle collecte #" + collecte.getId() + " soumise pour validation";
+        String message = estResoumission
+                ? "L'agent " + agentNom + " a corrigé et soumis à nouveau la fiche de collecte #" + collecte.getId() + " pour examen administratif."
+                : "L'agent " + agentNom + " a soumis une nouvelle fiche de collecte #" + collecte.getId() + " en attente de validation.";
+
+        for (Utilisateur admin : admins) {
+            if (notificationRepository.existsByUtilisateurIdAndTypeAndReferenceIdAndDateNotificationAfter(
+                    admin.getId(), TypeNotification.COLLECTE_SOUMISE, refId, LocalDateTime.now().minusSeconds(15))) {
+                continue;
+            }
+            Notification n = Notification.builder()
+                    .utilisateur(admin)
+                    .titre(titre)
+                    .message(message)
+                    .type(TypeNotification.COLLECTE_SOUMISE)
+                    .niveau(NiveauNotification.INFO)
+                    .lue(false)
+                    .dateNotification(LocalDateTime.now())
+                    .typeEntiteLiee("COLLECTE")
+                    .referenceId(refId)
+                    .lien("/admin/collectes/" + collecte.getId())
+                    .build();
+            notificationRepository.save(n);
+        }
+        log.info("Notification administrative émise pour la collecte soumise ID {} (resoumission={})", collecte.getId(), estResoumission);
+    }
+
+    @Override
+    public void notifierDemandeReferencementPharmacopee(Pharmacopee pharmacopee) {
+        if (pharmacopee == null || pharmacopee.getId() == null) return;
+        List<Utilisateur> admins = utilisateurRepository.findByRole(Role.ADMINISTRATEUR);
+        if (admins.isEmpty()) return;
+
+        String refId = String.valueOf(pharmacopee.getId());
+        String titre = "Nouvelle demande d'agrément : " + pharmacopee.getNom();
+        String message = "L'établissement « " + pharmacopee.getNom() + " » a soumis une demande de référencement en attente de validation.";
+
+        for (Utilisateur admin : admins) {
+            if (notificationRepository.existsByUtilisateurIdAndTypeAndReferenceIdAndDateNotificationAfter(
+                    admin.getId(), TypeNotification.REFERENCEMENT, refId, LocalDateTime.now().minusSeconds(15))) {
+                continue;
+            }
+            Notification n = Notification.builder()
+                    .utilisateur(admin)
+                    .titre(titre)
+                    .message(message)
+                    .type(TypeNotification.REFERENCEMENT)
+                    .niveau(NiveauNotification.INFO)
+                    .lue(false)
+                    .dateNotification(LocalDateTime.now())
+                    .typeEntiteLiee("PHARMACOPEE")
+                    .referenceId(refId)
+                    .lien("/admin/pharmacopees/" + pharmacopee.getId())
+                    .build();
+            notificationRepository.save(n);
+        }
+        log.info("Notification administrative émise pour la demande de référencement pharmacopée ID {}", pharmacopee.getId());
     }
 }
 

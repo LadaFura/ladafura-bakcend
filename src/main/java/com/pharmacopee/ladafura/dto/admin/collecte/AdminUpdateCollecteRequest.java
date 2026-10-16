@@ -28,6 +28,9 @@ public class AdminUpdateCollecteRequest {
     @Schema(description = "URL de l'enregistrement audio")
     private String audioUrl;
 
+    @Schema(description = "Identifiant de l'agent de collecte à qui attribuer la fiche")
+    private Long agentId;
+
     // Source (Praticien / Informateur)
     @Schema(description = "ID d'une source existante à rattacher")
     private Long sourceId;

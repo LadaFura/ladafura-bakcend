@@ -37,6 +37,8 @@ public class PharmacopeePaiementServiceImpl implements IPharmacopeePaiementServi
     private final IPharmacopeeAuthService pharmacopeeAuthService;
     private final PaiementRepository paiementRepository;
     private final CommandeRepository commandeRepository;
+    private final com.pharmacopee.ladafura.services.interfaces.IPharmacopeeNotificationService pharmacopeeNotificationService;
+    private final com.pharmacopee.ladafura.services.interfaces.IPopulationNotificationService populationNotificationService;
 
     @Override
     @Transactional(readOnly = true)
@@ -164,6 +166,10 @@ public class PharmacopeePaiementServiceImpl implements IPharmacopeePaiementServi
             log.info("Commande #{} automatiquement passée à CONFIRMEE suite au succès du paiement simulé", commande.getNumero());
         }
 
+        if (succes) {
+            notifierPaiementConfirme(pharmacopee, commande, savedPaiement);
+        }
+
         return mapToResponse(savedPaiement);
     }
 
@@ -197,7 +203,39 @@ public class PharmacopeePaiementServiceImpl implements IPharmacopeePaiementServi
             log.info("Commande #{} confirmée suite à l'encaissement effectif des espèces", commande.getNumero());
         }
 
+        if (commande != null) {
+            notifierPaiementConfirme(pharmacopee, commande, saved);
+        }
+
         return mapToResponse(saved);
+    }
+
+    private void notifierPaiementConfirme(Pharmacopee pharmacopee, Commande commande, Paiement paiement) {
+        String refCmdId = String.valueOf(commande.getId());
+        if (pharmacopeeNotificationService != null) {
+            pharmacopeeNotificationService.notifier(
+                    pharmacopee,
+                    com.pharmacopee.ladafura.enums.TypeNotification.COMMANDE_STATUT,
+                    com.pharmacopee.ladafura.enums.NiveauNotification.SUCCES,
+                    "Paiement encaissé - Commande " + commande.getNumero(),
+                    "Le paiement de " + commande.getMontantTotal().intValue() + " FCFA pour la commande "
+                            + commande.getNumero() + " a été confirmé.",
+                    refCmdId,
+                    "/pharmacopee/commandes/" + commande.getId()
+            );
+        }
+        if (commande.getUtilisateur() != null && populationNotificationService != null) {
+            populationNotificationService.envoyerNotification(
+                    commande.getUtilisateur(),
+                    "Paiement confirmé - Commande " + commande.getNumero(),
+                    "Votre règlement de " + commande.getMontantTotal().intValue() + " FCFA pour la commande "
+                            + commande.getNumero() + " auprès de « " + pharmacopee.getNom() + " » a été validé.",
+                    com.pharmacopee.ladafura.enums.TypeNotification.COMMANDE_STATUT,
+                    com.pharmacopee.ladafura.enums.NiveauNotification.SUCCES,
+                    refCmdId,
+                    "/citizen/commandes/" + commande.getId()
+            );
+        }
     }
 
     private PharmacopeePaiementResponse mapToResponse(Paiement p) {
