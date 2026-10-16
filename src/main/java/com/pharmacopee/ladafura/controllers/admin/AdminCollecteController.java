@@ -79,6 +79,16 @@ public class AdminCollecteController {
         return ResponseEntity.ok(collecteService.updatePhoto(id, body.get("photoUrl")));
     }
 
+    @PatchMapping("/{id}/audio")
+    @Operation(summary = "Mettre à jour l'enregistrement audio", description = "Permet de modifier l'URL de l'enregistrement audio d'une collecte.")
+    @ApiResponse(responseCode = "200", description = "Audio mis à jour avec succès")
+    @ApiResponse(responseCode = "404", description = "Collecte introuvable")
+    public ResponseEntity<AdminCollecteDetailResponse> updateAudio(
+            @PathVariable Long id,
+            @RequestBody java.util.Map<String, String> body) {
+        return ResponseEntity.ok(collecteService.updateAudio(id, body.get("audioUrl")));
+    }
+
     @org.springframework.web.bind.annotation.PutMapping("/{id}")
     @Operation(summary = "Modifier une fiche de collecte complète", description = "Permet à l'administrateur de modifier les données de la collecte : localisation, source, connaissances traditionnelles et médias.")
     @ApiResponse(responseCode = "200", description = "Collecte modifiée avec succès")

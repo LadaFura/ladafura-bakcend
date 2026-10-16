@@ -40,6 +40,20 @@ public class FileUploadController {
     );
     private static final long MAX_IMAGE_SIZE = 10 * 1024 * 1024L; // 10 Mo
 
+    private static final List<String> ALLOWED_AUDIO_TYPES = List.of(
+            "audio/mpeg",
+            "audio/mp3",
+            "audio/wav",
+            "audio/ogg",
+            "audio/m4a",
+            "audio/aac",
+            "audio/x-m4a",
+            "audio/webm",
+            "audio/mp4",
+            "video/webm"
+    );
+    private static final long MAX_AUDIO_SIZE = 25 * 1024 * 1024L; // 25 Mo
+
     private final IFileStorageService fileStorageService;
 
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -67,6 +81,41 @@ public class FileUploadController {
         }
 
         String fileUrl = fileStorageService.storeFile(file, sanitizedDossier, ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE);
+
+        FileUploadResponse response = FileUploadResponse.builder()
+                .url(fileUrl)
+                .fileName(file.getOriginalFilename())
+                .contentType(file.getContentType())
+                .size(file.getSize())
+                .build();
+
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
+    }
+
+    @PostMapping(value = "/upload-audio", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Téléverser un fichier audio ou enregistrement vocal",
+               description = "Téléverse un fichier audio (MP3, WAV, OGG, M4A, AAC, WebM jusqu'à 25 Mo) dans un dossier spécifique (ex: collectes/audios) et retourne son URL d'accès.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "201", description = "Fichier audio téléversé avec succès"),
+        @ApiResponse(responseCode = "400", description = "Fichier manquant, taille dépassée ou format non supporté"),
+        @ApiResponse(responseCode = "401", description = "Utilisateur non authentifié")
+    })
+    public ResponseEntity<FileUploadResponse> uploadAudio(
+            @Parameter(description = "Fichier audio ou enregistrement vocal à téléverser", required = true)
+            @RequestParam("file") MultipartFile file,
+            @Parameter(description = "Dossier de classement (ex: collectes/audios)")
+            @RequestParam(value = "dossier", defaultValue = "collectes/audios") String dossier) {
+
+        log.info("Réception d'un fichier audio pour le dossier '{}', nom: {}, taille: {} octets, contentType: {}",
+                dossier, file.getOriginalFilename(), file.getSize(), file.getContentType());
+
+        String sanitizedDossier = dossier.replaceAll("[^a-zA-Z0-9_/-]", "");
+        if (sanitizedDossier.isBlank()) {
+            sanitizedDossier = "collectes/audios";
+        }
+
+        String fileUrl = fileStorageService.storeFile(file, sanitizedDossier, ALLOWED_AUDIO_TYPES, MAX_AUDIO_SIZE);
 
         FileUploadResponse response = FileUploadResponse.builder()
                 .url(fileUrl)
