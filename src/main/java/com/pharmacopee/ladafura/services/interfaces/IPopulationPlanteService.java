@@ -19,6 +19,12 @@ public interface IPopulationPlanteService {
     Page<PopulationPlanteSummaryResponse> listerPlantes(Pageable pageable);
 
     /**
+     * Liste des plantes médicinales validées les plus consultées (maximum 15),
+     * triées par nombre de consultations décroissant.
+     */
+    List<PopulationPlanteSummaryResponse> listerPlantesPlusConsultees(int limit);
+
+    /**
      * Consultation détaillée d'une plante validée (noms vernaculaires, savoirs traditionnels validés,
      * études scientifiques, maladies, médias et localités associées) avec avertissement médical strict.
      */

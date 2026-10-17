@@ -38,4 +38,7 @@ public class PopulationPlanteSummaryResponse {
 
     @Schema(description = "Nombre d'études scientifiques disponibles", example = "2")
     private int nombreEtudesScientifiques;
+
+    @Schema(description = "Nombre total de consultations de la fiche plante", example = "42")
+    private long nombreConsultations;
 }

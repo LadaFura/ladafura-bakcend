@@ -54,6 +54,7 @@ public class PopulationPlanteMapper {
                 .maladies(maladies)
                 .nombreConnaissances(nombreConnaissances)
                 .nombreEtudesScientifiques(nombreEtudes)
+                .nombreConsultations(plante.getNombreConsultations() != null ? plante.getNombreConsultations() : 0L)
                 .build();
     }
 
@@ -146,6 +147,7 @@ public class PopulationPlanteMapper {
                 .maladiesAssociees(maladiesDto)
                 .medias(mediasDto)
                 .localites(localitesDto)
+                .nombreConsultations(plante.getNombreConsultations() != null ? plante.getNombreConsultations() : 0L)
                 .build();
     }
 

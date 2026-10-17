@@ -39,11 +39,11 @@ public class Notification {
     private String message;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 60)
     private TypeNotification type;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 30)
     private NiveauNotification niveau;
 
     @Column(nullable = false)

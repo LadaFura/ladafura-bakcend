@@ -143,26 +143,30 @@ public class AdminNotificationServiceImpl implements IAdminNotificationService {
                 ? "L'agent " + agentNom + " a corrigé et soumis à nouveau la fiche de collecte #" + collecte.getId() + " pour examen administratif."
                 : "L'agent " + agentNom + " a soumis une nouvelle fiche de collecte #" + collecte.getId() + " en attente de validation.";
 
-        for (Utilisateur admin : admins) {
-            if (notificationRepository.existsByUtilisateurIdAndTypeAndReferenceIdAndDateNotificationAfter(
-                    admin.getId(), TypeNotification.COLLECTE_SOUMISE, refId, LocalDateTime.now().minusSeconds(15))) {
-                continue;
+        try {
+            for (Utilisateur admin : admins) {
+                if (notificationRepository.existsByUtilisateurIdAndTypeAndReferenceIdAndDateNotificationAfter(
+                        admin.getId(), TypeNotification.COLLECTE_SOUMISE, refId, LocalDateTime.now().minusSeconds(15))) {
+                    continue;
+                }
+                Notification n = Notification.builder()
+                        .utilisateur(admin)
+                        .titre(titre)
+                        .message(message)
+                        .type(TypeNotification.COLLECTE_SOUMISE)
+                        .niveau(NiveauNotification.INFO)
+                        .lue(false)
+                        .dateNotification(LocalDateTime.now())
+                        .typeEntiteLiee("COLLECTE")
+                        .referenceId(refId)
+                        .lien("/admin/collectes/" + collecte.getId())
+                        .build();
+                notificationRepository.save(n);
             }
-            Notification n = Notification.builder()
-                    .utilisateur(admin)
-                    .titre(titre)
-                    .message(message)
-                    .type(TypeNotification.COLLECTE_SOUMISE)
-                    .niveau(NiveauNotification.INFO)
-                    .lue(false)
-                    .dateNotification(LocalDateTime.now())
-                    .typeEntiteLiee("COLLECTE")
-                    .referenceId(refId)
-                    .lien("/admin/collectes/" + collecte.getId())
-                    .build();
-            notificationRepository.save(n);
+            log.info("Notification administrative émise pour la collecte soumise ID {} (resoumission={})", collecte.getId(), estResoumission);
+        } catch (Exception e) {
+            log.error("Erreur lors de l'envoi de la notification administrative pour la collecte ID {}: {}", collecte.getId(), e.getMessage());
         }
-        log.info("Notification administrative émise pour la collecte soumise ID {} (resoumission={})", collecte.getId(), estResoumission);
     }
 
     @Override

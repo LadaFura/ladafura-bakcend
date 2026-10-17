@@ -47,6 +47,9 @@ public class Plante {
     @Column(nullable = false)
     private StatutPlante statut;
 
+    @Column(name = "nombre_consultations", nullable = false, columnDefinition = "BIGINT DEFAULT 0")
+    private Long nombreConsultations = 0L;
+
     @OneToMany(mappedBy = "plante", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<NomPlante> nomsPlante;
 
@@ -72,6 +75,7 @@ public class Plante {
 
     public Plante() {
         this.statut = StatutPlante.BROUILLON;
+        this.nombreConsultations = 0L;
         this.nomsPlante = new ArrayList<>();
         this.maladies = new HashSet<>();
         this.etudesScientifiques = new ArrayList<>();
@@ -81,7 +85,7 @@ public class Plante {
 
     @Builder
     public Plante(Long id, String nomScientifique, String description, String photoUrl,
-                  StatutPlante statut, List<NomPlante> nomsPlante, Set<Maladie> maladies,
+                  StatutPlante statut, Long nombreConsultations, List<NomPlante> nomsPlante, Set<Maladie> maladies,
                   List<EtudeScientifique> etudesScientifiques, List<VertuDeLaPlante> vertus,
                   List<CompositionProduit> compositions) {
         this.id = id;
@@ -89,6 +93,7 @@ public class Plante {
         this.description = description;
         this.photoUrl = photoUrl;
         this.statut = statut != null ? statut : StatutPlante.BROUILLON;
+        this.nombreConsultations = nombreConsultations != null ? nombreConsultations : 0L;
         this.nomsPlante = nomsPlante != null ? nomsPlante : new ArrayList<>();
         this.maladies = maladies != null ? maladies : new HashSet<>();
         this.etudesScientifiques = etudesScientifiques != null ? etudesScientifiques : new ArrayList<>();

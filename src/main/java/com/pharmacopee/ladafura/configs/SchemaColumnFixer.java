@@ -25,13 +25,25 @@ public class SchemaColumnFixer {
     private final JdbcTemplate jdbcTemplate;
 
     private static final List<String> STATEMENTS = List.of(
+            // Vertus & Collectes
             "ALTER TABLE vertus_plantes MODIFY COLUMN preparation TEXT NULL",
             "ALTER TABLE vertus_plantes MODIFY COLUMN partie_utilisee TEXT NULL",
             "ALTER TABLE vertus_plantes MODIFY COLUMN usage_rapporte TEXT NULL",
             "ALTER TABLE vertus_plantes MODIFY COLUMN precaution TEXT NULL",
             "ALTER TABLE vertus_plantes MODIFY COLUMN description TEXT NULL",
             "ALTER TABLE collectes MODIFY COLUMN description TEXT NULL",
-            "ALTER TABLE collectes MODIFY COLUMN motif_rejet TEXT NULL"
+            "ALTER TABLE collectes MODIFY COLUMN motif_rejet TEXT NULL",
+
+            // Notifications (élargit type et niveau pour éviter les troncatures MySQL)
+            "ALTER TABLE notifications MODIFY COLUMN type VARCHAR(60) NOT NULL",
+            "ALTER TABLE notifications MODIFY COLUMN niveau VARCHAR(30) NOT NULL",
+            "ALTER TABLE notifications MODIFY COLUMN type_entite_liee VARCHAR(60) NULL",
+            "ALTER TABLE notifications MODIFY COLUMN reference_id VARCHAR(100) NULL",
+            "ALTER TABLE notifications MODIFY COLUMN message TEXT NOT NULL",
+
+            // Compteur de consultations des plantes
+            "ALTER TABLE plantes ADD COLUMN nombre_consultations BIGINT NOT NULL DEFAULT 0",
+            "UPDATE plantes SET nombre_consultations = 0 WHERE nombre_consultations IS NULL"
     );
 
     @EventListener(ApplicationReadyEvent.class)
@@ -43,7 +55,7 @@ public class SchemaColumnFixer {
                 log.debug("Correctif de schéma ignoré [{}] : {}", sql, e.getMessage());
             }
         }
-        log.info("Vérification des largeurs de colonnes texte terminée.");
+        log.info("Vérification des largeurs de colonnes texte et notifications terminée.");
     }
 }
 

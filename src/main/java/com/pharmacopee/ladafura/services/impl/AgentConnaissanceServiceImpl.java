@@ -57,28 +57,53 @@ public class AgentConnaissanceServiceImpl implements IAgentConnaissanceService {
                 .orElseThrow(() -> new ResourceNotFoundException("Plante", "id", request.getPlanteId()));
 
         // Association ou mise à jour de la source sur la fiche de collecte
-        if (request.getSourceId() != null) {
-            Source source = sourceRepository.findById(request.getSourceId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Source", "id", request.getSourceId()));
-            collecte.setSource(source);
-            collecteRepository.save(collecte);
-            log.info("Source ID {} rattachée à la collecte ID {}", request.getSourceId(), collecte.getId());
+        if (request.getSourceId() != null && request.getSourceId() > 0) {
+            Optional<Source> sourceOpt = sourceRepository.findById(request.getSourceId());
+            if (sourceOpt.isPresent()) {
+                collecte.setSource(sourceOpt.get());
+                collecteRepository.save(collecte);
+                log.info("Source ID {} rattachée à la collecte ID {}", request.getSourceId(), collecte.getId());
+            } else {
+                log.warn("Source ID {} introuvable pour la collecte ID {}", request.getSourceId(), collecte.getId());
+            }
         }
 
-        // Association des maladies/symptômes traditionnellement ciblés à la plante
+        // Association des maladies/symptômes traditionnellement ciblés à la plante sans doublon
         if (request.getMaladieIds() != null && !request.getMaladieIds().isEmpty()) {
             List<Maladie> maladies = maladieRepository.findAllById(request.getMaladieIds());
-            plante.getMaladies().addAll(maladies);
+            if (plante.getMaladies() == null) {
+                plante.setMaladies(new java.util.HashSet<>());
+            }
+            java.util.Set<Long> existingIds = plante.getMaladies().stream()
+                    .map(Maladie::getId)
+                    .filter(java.util.Objects::nonNull)
+                    .collect(java.util.stream.Collectors.toSet());
+            for (Maladie m : maladies) {
+                if (m.getId() != null && !existingIds.contains(m.getId())) {
+                    plante.getMaladies().add(m);
+                    existingIds.add(m.getId());
+                }
+            }
             planteRepository.save(plante);
             log.info("{} maladie(s) rattachée(s) à la plante ID {}", maladies.size(), plante.getId());
         }
 
-        // Recherche d'une éventuelle liaison existante créée lors de l'association de la plante
-        Optional<VertuDeLaPlante> existingOpt = vertuDeLaPlanteRepository.findByCollecteIdAndPlanteId(collecte.getId(), plante.getId());
-        VertuDeLaPlante vertu;
+        // Recherche d'une éventuelle liaison existante rattachée à cette collecte
+        List<VertuDeLaPlante> collectesVertus = vertuDeLaPlanteRepository.findByCollecteId(collecte.getId());
+        VertuDeLaPlante vertu = null;
 
-        if (existingOpt.isPresent()) {
-            vertu = existingOpt.get();
+        for (VertuDeLaPlante v : collectesVertus) {
+            if (v.getPlante() != null && v.getPlante().getId().equals(plante.getId())) {
+                vertu = v;
+                break;
+            }
+        }
+        if (vertu == null && !collectesVertus.isEmpty()) {
+            vertu = collectesVertus.get(0);
+        }
+
+        if (vertu != null) {
+            vertu.setPlante(plante);
             vertu.setUsageRapporte(request.getUsageRapporte());
             vertu.setPartieUtilisee(request.getPartieUtilisee());
             vertu.setPreparation(request.getPreparation());

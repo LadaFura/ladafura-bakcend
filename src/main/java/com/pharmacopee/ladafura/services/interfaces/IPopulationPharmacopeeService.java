@@ -19,6 +19,12 @@ public interface IPopulationPharmacopeeService {
             String keyword, String region, String cercle, String commune, Pageable pageable);
 
     /**
+     * Liste des officines de pharmacopée agréées les plus proches de la position GPS du citoyen (maximum 10).
+     */
+    List<PopulationPharmacopeeSummaryResponse> listerPharmacopeesProximite(
+            Double latitude, Double longitude, int limit);
+
+    /**
      * Fiche détaillée complète d'une officine de pharmacopée (profil, contact, localisation GPS, modes de retrait, avis).
      */
     PopulationPharmacopeeDetailResponse getPharmacopeeDetail(Long id);

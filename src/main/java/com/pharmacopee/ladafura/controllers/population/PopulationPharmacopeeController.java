@@ -54,6 +54,23 @@ public class PopulationPharmacopeeController {
         return ResponseEntity.ok(pharmacopeeService.listerPharmacopees(query, region, cercle, commune, pageable));
     }
 
+    @GetMapping("/proximite")
+    @Operation(summary = "Lister les officines de pharmacopée les plus proches du citoyen",
+               description = "Retourne au maximum les 10 officines de pharmacopée agréées les plus proches de la position GPS fournie (triées par distance croissante).")
+    @ApiResponse(responseCode = "200", description = "Liste des pharmacopées à proximité (max 10)")
+    public ResponseEntity<List<PopulationPharmacopeeSummaryResponse>> listerPharmacopeesProximite(
+            @Parameter(description = "Latitude GPS du citoyen", example = "12.6392")
+            @RequestParam(required = false) Double latitude,
+            @Parameter(description = "Longitude GPS du citoyen", example = "-8.0029")
+            @RequestParam(required = false) Double longitude,
+            @Parameter(description = "Nombre maximum de pharmacopées à retourner (plafonné à 10)", example = "10")
+            @RequestParam(defaultValue = "10") int limit) {
+
+        log.info("Requête GET /api/v1/population/pharmacopees/proximite reçue (latitude={}, longitude={}, limit={})",
+                latitude, longitude, limit);
+        return ResponseEntity.ok(pharmacopeeService.listerPharmacopeesProximite(latitude, longitude, limit));
+    }
+
     @GetMapping("/{id}")
     @Operation(summary = "Consulter le profil complet d'une officine de pharmacopée",
                description = "Fournit le profil détaillé de l'officine incluant ses coordonnées, sa localisation géographique, ses modes de retrait actifs et sa note moyenne.")

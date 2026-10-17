@@ -1,5 +1,6 @@
 package com.pharmacopee.ladafura.services.impl;
 
+import java.util.Comparator;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
@@ -33,6 +34,10 @@ import lombok.extern.slf4j.Slf4j;
 @Transactional(readOnly = true)
 public class PopulationPharmacopeeServiceImpl implements IPopulationPharmacopeeService {
 
+    private static final int MAX_NEARBY_PHARMACOPEES = 10;
+    private static final double DEFAULT_BAMAKO_LAT = 12.6392;
+    private static final double DEFAULT_BAMAKO_LNG = -8.0029;
+
     private final PharmacopeeRepository pharmacopeeRepository;
     private final ModeRetraitRepository modeRetraitRepository;
     private final DisponibiliteProduitRepository disponibiliteProduitRepository;
@@ -49,13 +54,48 @@ public class PopulationPharmacopeeServiceImpl implements IPopulationPharmacopeeS
         Page<Pharmacopee> page = pharmacopeeRepository.searchPharmacopees(
                 StatutPharmacopee.VALIDEE, keyword, region, cercle, commune, pageable);
 
-        return page.map(ph -> {
-            List<ModeRetrait> modes = modeRetraitRepository.findByPharmacopeeId(ph.getId());
-            long nbProduits = disponibiliteProduitRepository.countProduitsValidesByPharmacopeeId(ph.getId());
-            Double noteMoyenne = avisRepository.findAverageNoteByPharmacopeeIdAndStatut(ph.getId(), StatutAvis.PUBLIE);
-            long nbAvis = avisRepository.countByPharmacopeeIdAndStatut(ph.getId(), StatutAvis.PUBLIE);
-            return mapper.toSummaryResponse(ph, modes, nbProduits, noteMoyenne, nbAvis);
-        });
+        return page.map(this::mapToSummary);
+    }
+
+    @Override
+    public List<PopulationPharmacopeeSummaryResponse> listerPharmacopeesProximite(
+            Double latitude, Double longitude, int limit) {
+
+        int safeLimit = Math.min(Math.max(limit, 1), MAX_NEARBY_PHARMACOPEES);
+        double refLat = latitude != null ? latitude : DEFAULT_BAMAKO_LAT;
+        double refLng = longitude != null ? longitude : DEFAULT_BAMAKO_LNG;
+
+        log.info("Recherche des {} pharmacopées agréées les plus proches de ({}, {})", safeLimit, refLat, refLng);
+
+        List<Pharmacopee> validees = pharmacopeeRepository.findByStatut(StatutPharmacopee.VALIDEE);
+
+        return validees.stream()
+                .map(this::mapToSummary)
+                .sorted(Comparator.comparingDouble(ph -> calculateDistanceKm(
+                        refLat, refLng,
+                        ph.getLatitude() != null ? ph.getLatitude() : DEFAULT_BAMAKO_LAT,
+                        ph.getLongitude() != null ? ph.getLongitude() : DEFAULT_BAMAKO_LNG)))
+                .limit(safeLimit)
+                .toList();
+    }
+
+    private PopulationPharmacopeeSummaryResponse mapToSummary(Pharmacopee ph) {
+        List<ModeRetrait> modes = modeRetraitRepository.findByPharmacopeeId(ph.getId());
+        long nbProduits = disponibiliteProduitRepository.countProduitsValidesByPharmacopeeId(ph.getId());
+        Double noteMoyenne = avisRepository.findAverageNoteByPharmacopeeIdAndStatut(ph.getId(), StatutAvis.PUBLIE);
+        long nbAvis = avisRepository.countByPharmacopeeIdAndStatut(ph.getId(), StatutAvis.PUBLIE);
+        return mapper.toSummaryResponse(ph, modes, nbProduits, noteMoyenne, nbAvis);
+    }
+
+    private static double calculateDistanceKm(double lat1, double lon1, double lat2, double lon2) {
+        final double earthRadiusKm = 6371.0;
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return earthRadiusKm * c;
     }
 
     @Override

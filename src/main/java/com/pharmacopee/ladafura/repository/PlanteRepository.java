@@ -51,4 +51,7 @@ public interface PlanteRepository extends JpaRepository<Plante, Long> {
             "OR LOWER(n.nom) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
             "OR LOWER(m.nom) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     List<Plante> searchTopByStatutAndKeyword(@Param("statut") StatutPlante statut, @Param("keyword") String keyword, Pageable pageable);
+
+    @Query("SELECT p FROM Plante p WHERE p.statut = :statut AND COALESCE(p.nombreConsultations, 0) > 0 ORDER BY p.nombreConsultations DESC, p.id ASC")
+    List<Plante> findTopConsultedByStatut(@Param("statut") StatutPlante statut, Pageable pageable);
 }

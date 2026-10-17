@@ -47,4 +47,17 @@ public class Maladie {
         this.description = description;
         this.plantes = plantes != null ? plantes : new HashSet<>();
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Maladie maladie = (Maladie) o;
+        return id != null && id.equals(maladie.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return id != null ? id.hashCode() : 0;
+    }
 }

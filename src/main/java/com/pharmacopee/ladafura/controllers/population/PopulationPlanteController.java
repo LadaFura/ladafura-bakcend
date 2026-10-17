@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.pharmacopee.ladafura.dto.population.plante.PopulationConnaissanceTraditionnelleDto;
@@ -43,6 +44,17 @@ public class PopulationPlanteController {
         log.info("Requête GET /api/v1/population/plantes reçue (page={}, size={})",
                 pageable.getPageNumber(), pageable.getPageSize());
         return ResponseEntity.ok(planteService.listerPlantes(pageable));
+    }
+
+    @GetMapping("/plus-consultees")
+    @Operation(summary = "Lister les plantes médicinales les plus consultées",
+               description = "Retourne au maximum les 15 plantes médicinales validées les plus consultées selon les statistiques réelles de consultation.")
+    @ApiResponse(responseCode = "200", description = "Liste des plantes les plus consultées (max 15)")
+    public ResponseEntity<List<PopulationPlanteSummaryResponse>> listerPlantesPlusConsultees(
+            @Parameter(description = "Nombre maximum de plantes à retourner (plafonné à 15)", example = "15")
+            @RequestParam(defaultValue = "15") int limit) {
+        log.info("Requête GET /api/v1/population/plantes/plus-consultees reçue (limit={})", limit);
+        return ResponseEntity.ok(planteService.listerPlantesPlusConsultees(limit));
     }
 
     @GetMapping("/{id}")

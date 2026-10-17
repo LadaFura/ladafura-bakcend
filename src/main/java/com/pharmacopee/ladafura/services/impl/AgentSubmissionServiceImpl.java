@@ -171,7 +171,17 @@ public class AgentSubmissionServiceImpl implements IAgentSubmissionService {
         }
 
         if (!connaissanceRenseignee) {
-            erreursBloquantes.add("Aucune connaissance traditionnelle (usage rapporté sur le terrain) n'a été documentée.");
+            // Auto-récupération : si la collecte possède une description saisie sur le terrain, l'utiliser comme usage traditionnel
+            if (collecte.getDescription() != null && !collecte.getDescription().isBlank()) {
+                connaissanceRenseignee = true;
+                usages.add(collecte.getDescription());
+                if (!vertus.isEmpty() && (vertus.get(0).getUsageRapporte() == null || vertus.get(0).getUsageRapporte().isBlank())) {
+                    vertus.get(0).setUsageRapporte(collecte.getDescription());
+                    vertuDeLaPlanteRepository.save(vertus.get(0));
+                }
+            } else {
+                erreursBloquantes.add("Aucune connaissance traditionnelle (usage rapporté sur le terrain) n'a été documentée.");
+            }
         }
 
         // 3. Synthèse Source (Thérapeute / Herboriste)

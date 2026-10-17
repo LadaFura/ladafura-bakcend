@@ -48,4 +48,7 @@ public class PopulationPlanteDetailResponse {
 
     @Schema(description = "Localités maliennes répertoriées où la plante est présente")
     private List<PopulationPlanteLocaliteDto> localites;
+
+    @Schema(description = "Nombre total de consultations de la fiche plante", example = "42")
+    private long nombreConsultations;
 }
