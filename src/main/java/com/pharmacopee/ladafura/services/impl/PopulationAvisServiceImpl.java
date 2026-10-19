@@ -62,7 +62,7 @@ public class PopulationAvisServiceImpl implements IPopulationAvisService {
                 .orElseThrow(() -> new ResourceNotFoundException("Pharmacopée", "id", pharmacopeeId));
 
         boolean eligible = commandeRepository.existsByUtilisateurIdAndPharmacopeeIdAndStatutIn(
-                user.getId(), pharmacopee.getId(), List.of(StatutCommande.LIVREE));
+                user.getId(), pharmacopee.getId(), List.of(StatutCommande.LIVREE, StatutCommande.RETIREE));
 
         Optional<Avis> existingAvis = avisRepository.findByUtilisateurIdAndPharmacopeeId(user.getId(), pharmacopeeId);
 
@@ -78,9 +78,9 @@ public class PopulationAvisServiceImpl implements IPopulationAvisService {
                 .orElseThrow(() -> new ResourceNotFoundException("Pharmacopée", "id", request.getPharmacopeeId()));
 
         boolean eligible = commandeRepository.existsByUtilisateurIdAndPharmacopeeIdAndStatutIn(
-                user.getId(), pharmacopee.getId(), List.of(StatutCommande.LIVREE));
+                user.getId(), pharmacopee.getId(), List.of(StatutCommande.LIVREE, StatutCommande.RETIREE));
         if (!eligible) {
-            throw new BadRequestException("Vous devez avoir passé au moins une commande livrée auprès de cette pharmacopée pour pouvoir donner votre avis.");
+            throw new BadRequestException("Vous devez avoir passé au moins une commande livrée ou retirée auprès de cette pharmacopée pour pouvoir donner votre avis.");
         }
 
         if (avisRepository.existsByUtilisateurIdAndPharmacopeeId(user.getId(), pharmacopee.getId())) {

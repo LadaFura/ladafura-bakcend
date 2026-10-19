@@ -153,8 +153,8 @@ class PopulationAvisServiceImplTest {
         assertThat(response).isNotNull();
         assertThat(response.getId()).isEqualTo(100L);
         assertThat(response.getNote()).isEqualTo(5);
-        assertThat(response.getStatut()).isEqualTo(StatutAvis.EN_ATTENTE);
-        assertThat(response.getStatutLibelle()).contains("modération");
+        assertThat(response.getStatut()).isEqualTo(StatutAvis.PUBLIE);
+        assertThat(response.getStatutLibelle()).contains("Publié");
         verify(avisRepository).save(any(Avis.class));
     }
 
@@ -174,7 +174,7 @@ class PopulationAvisServiceImplTest {
 
         assertThatThrownBy(() -> avisService.creerAvis(request))
                 .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("Vous devez avoir passé au moins une commande livrée auprès de cette pharmacopée");
+                .hasMessageContaining("Vous devez avoir passé au moins une commande livrée ou retirée");
     }
 
     @Test
@@ -197,7 +197,7 @@ class PopulationAvisServiceImplTest {
     }
 
     @Test
-    @DisplayName("modifierAvis - Modifie note et commentaire et remet statut à EN_ATTENTE")
+    @DisplayName("modifierAvis - Modifie note et commentaire et conserve statut PUBLIE")
     void modifierAvis_Success() {
         avis.setStatut(StatutAvis.PUBLIE);
         PopulationUpdateAvisRequest request = PopulationUpdateAvisRequest.builder()
@@ -214,7 +214,7 @@ class PopulationAvisServiceImplTest {
         assertThat(response).isNotNull();
         assertThat(avis.getNote()).isEqualTo(4);
         assertThat(avis.getCommentaire()).isEqualTo("Mise à jour du commentaire");
-        assertThat(avis.getStatut()).isEqualTo(StatutAvis.EN_ATTENTE);
+        assertThat(avis.getStatut()).isEqualTo(StatutAvis.PUBLIE);
         verify(avisRepository).save(avis);
     }
 
