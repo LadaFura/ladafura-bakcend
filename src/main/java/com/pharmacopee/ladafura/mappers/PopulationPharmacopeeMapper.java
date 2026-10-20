@@ -110,9 +110,6 @@ public class PopulationPharmacopeeMapper {
                     }
                 });
             }
-            if (p.getComposition() != null && !p.getComposition().isBlank()) {
-                plantesSet.add(p.getComposition().trim());
-            }
             if (p.getCompositions() != null) {
                 p.getCompositions().forEach(cp -> {
                     if (cp != null && cp.getPlante() != null) {
