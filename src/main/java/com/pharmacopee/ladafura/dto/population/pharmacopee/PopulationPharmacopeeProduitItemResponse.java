@@ -30,6 +30,9 @@ public class PopulationPharmacopeeProduitItemResponse {
     @Schema(description = "Forme galénique", example = "Sachet de 100g")
     private String forme;
 
+    @Schema(description = "Posologie et conseils d'utilisation", example = "1 sachet matin et soir en infusion tiède")
+    private String posologie;
+
     @Schema(description = "Prix appliqué par cette pharmacopée en FCFA", example = "2500.0")
     private Double prix;
 

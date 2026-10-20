@@ -87,6 +87,7 @@ public class AdminProduitServiceImpl implements IAdminProduitService {
                 .description(request.getDescription())
                 .forme(request.getForme())
                 .composition(request.getComposition())
+                .posologie(request.getPosologie())
                 .prix(request.getPrix())
                 .photoUrl(request.getPhotoUrl())
                 .statut(request.getStatut() != null ? request.getStatut() : StatutProduit.VALIDE)
@@ -127,6 +128,7 @@ public class AdminProduitServiceImpl implements IAdminProduitService {
         if (request.getDescription() != null) produit.setDescription(request.getDescription());
         if (request.getForme() != null) produit.setForme(request.getForme());
         if (request.getComposition() != null) produit.setComposition(request.getComposition());
+        if (request.getPosologie() != null) produit.setPosologie(request.getPosologie());
         if (request.getPrix() != null) produit.setPrix(request.getPrix());
         if (request.getPhotoUrl() != null) produit.setPhotoUrl(request.getPhotoUrl());
         if (request.getStatut() != null) produit.setStatut(request.getStatut());

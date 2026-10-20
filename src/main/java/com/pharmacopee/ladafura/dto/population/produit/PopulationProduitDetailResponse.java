@@ -30,6 +30,9 @@ public class PopulationProduitDetailResponse {
     @Schema(description = "Composition textuelle déclarée", example = "Feuilles séchées de Combretum micranthum")
     private String compositionTexte;
 
+    @Schema(description = "Posologie et conseils d'utilisation", example = "Prendre 1 sachet matin et soir en infusion tiède.")
+    private String posologie;
+
     @Schema(description = "Prix indicatif de base en FCFA", example = "2500.0")
     private Double prixIndicatif;
 

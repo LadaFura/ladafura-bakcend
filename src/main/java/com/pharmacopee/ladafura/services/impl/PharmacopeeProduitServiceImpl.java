@@ -215,6 +215,7 @@ public class PharmacopeeProduitServiceImpl implements IPharmacopeeProduitService
                 .nom(request.getNom().trim())
                 .description(request.getDescription())
                 .forme(request.getForme())
+                .posologie(request.getPosologie())
                 .prix(request.getPrix())
                 .photoUrl(request.getPhotoUrl())
                 .statut(StatutProduit.EN_ATTENTE)

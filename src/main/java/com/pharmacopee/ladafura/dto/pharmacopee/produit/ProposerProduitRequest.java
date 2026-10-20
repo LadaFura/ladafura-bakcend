@@ -17,6 +17,8 @@ public class ProposerProduitRequest {
     @NotBlank(message = "La forme du produit est requise")
     private String forme;
 
+    private String posologie;
+
     private List<Long> planteIds;
 
     private List<PharmacopeeCompositionRequestDto> compositions;

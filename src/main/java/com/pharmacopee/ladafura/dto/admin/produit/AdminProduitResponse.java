@@ -23,6 +23,7 @@ public class AdminProduitResponse {
     private String description;
     private String forme;
     private String composition;
+    private String posologie;
     private Double prix;
     private String photoUrl;
     private StatutProduit statut;

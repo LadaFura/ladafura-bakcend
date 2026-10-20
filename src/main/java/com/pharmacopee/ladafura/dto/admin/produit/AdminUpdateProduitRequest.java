@@ -26,6 +26,8 @@ public class AdminUpdateProduitRequest {
 
     private String composition;
 
+    private String posologie;
+
     @PositiveOrZero(message = "Le prix doit être positif ou nul")
     private Double prix;
 

@@ -48,6 +48,9 @@ public class Produit {
     @Column(columnDefinition = "TEXT")
     private String composition;
 
+    @Column(columnDefinition = "TEXT")
+    private String posologie;
+
     @Column(nullable = false)
     private Double prix;
 
@@ -85,7 +88,7 @@ public class Produit {
 
     @Builder
     public Produit(Long id, String nom, String description, String forme, String composition,
-                   Double prix, String photoUrl, StatutProduit statut, CategorieProduit categorie,
+                   String posologie, Double prix, String photoUrl, StatutProduit statut, CategorieProduit categorie,
                    List<CompositionProduit> compositions, Set<Maladie> maladies,
                    List<DisponibiliteProduit> disponibilites) {
         this.id = id;
@@ -93,6 +96,7 @@ public class Produit {
         this.description = description;
         this.forme = forme;
         this.composition = composition;
+        this.posologie = posologie;
         this.prix = prix;
         this.photoUrl = photoUrl;
         this.statut = statut != null ? statut : StatutProduit.EN_ATTENTE;

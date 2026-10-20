@@ -139,12 +139,19 @@ public class PopulationPharmacopeeMapper {
             }
         }
 
+        String posologieEffective = p != null
+                ? ((p.getPosologie() != null && !p.getPosologie().isBlank())
+                        ? p.getPosologie()
+                        : p.getComposition())
+                : null;
+
         return PopulationPharmacopeeProduitItemResponse.builder()
                 .disponibiliteId(disp.getId())
                 .produitId(p != null ? p.getId() : null)
                 .nom(p != null ? p.getNom() : null)
                 .description(p != null ? p.getDescription() : null)
                 .forme(p != null ? p.getForme() : null)
+                .posologie(posologieEffective)
                 .prix(prixEffectif)
                 .photoUrl(p != null ? p.getPhotoUrl() : null)
                 .categorieId(p != null && p.getCategorie() != null ? p.getCategorie().getId() : null)

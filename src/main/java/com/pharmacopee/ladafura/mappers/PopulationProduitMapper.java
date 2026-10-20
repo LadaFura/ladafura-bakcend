@@ -142,12 +142,17 @@ public class PopulationProduitMapper {
             }
         }
 
+        String posologieEffective = (produit.getPosologie() != null && !produit.getPosologie().isBlank())
+                ? produit.getPosologie()
+                : produit.getComposition();
+
         return PopulationProduitDetailResponse.builder()
                 .id(produit.getId())
                 .nom(produit.getNom())
                 .description(produit.getDescription())
                 .forme(produit.getForme())
                 .compositionTexte(produit.getComposition())
+                .posologie(posologieEffective)
                 .prixIndicatif(produit.getPrix())
                 .photoUrl(produit.getPhotoUrl())
                 .categorieId(produit.getCategorie() != null ? produit.getCategorie().getId() : null)

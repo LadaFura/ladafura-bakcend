@@ -30,6 +30,8 @@ public class AdminCreateProduitRequest {
 
     private String composition;
 
+    private String posologie;
+
     @NotNull(message = "Le prix indicatif est obligatoire")
     @PositiveOrZero(message = "Le prix doit être positif ou nul")
     private Double prix;
