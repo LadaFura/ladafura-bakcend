@@ -37,7 +37,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final Map<String, RateLimitWindow> buckets = new ConcurrentHashMap<>();
 
-    @Value("${rate-limit.enabled:true}")
+    @Value("${rate-limit.enabled:false}")
     private boolean enabled;
 
     @Value("${rate-limit.max-requests:5}")

@@ -107,8 +107,8 @@ public class SecurityConfig {
 
                 // Ajout du filtre Firebase avant le filtre standard d'authentification Spring
                 .addFilterBefore(firebaseAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-                // Ajout du filtre de Rate Limiting (max 5 requêtes / 5 min) après l'identification Firebase
-               // .addFilterAfter(rateLimitFilter, FirebaseAuthenticationFilter.class);
+                // Rate limiting désactivé par défaut via rate-limit.enabled=false.
+                // Le filtre n'est pas branché ici pour éviter tout blocage de requêtes API.
 
         return http.build();
     }
