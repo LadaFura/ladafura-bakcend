@@ -22,7 +22,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import com.pharmacopee.ladafura.configs.security.CustomAccessDeniedHandler;
 import com.pharmacopee.ladafura.configs.security.CustomAuthenticationEntryPoint;
 import com.pharmacopee.ladafura.configs.security.FirebaseAuthenticationFilter;
-import com.pharmacopee.ladafura.configs.security.RateLimitFilter;
+//import com.pharmacopee.ladafura.configs.security.RateLimitFilter;
 
 import lombok.RequiredArgsConstructor;
 
@@ -33,7 +33,7 @@ import lombok.RequiredArgsConstructor;
 public class SecurityConfig {
 
     private final FirebaseAuthenticationFilter firebaseAuthenticationFilter;
-    private final RateLimitFilter rateLimitFilter;
+    //private final RateLimitFilter rateLimitFilter;
     private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
     private final CustomAccessDeniedHandler customAccessDeniedHandler;
 
@@ -106,9 +106,9 @@ public class SecurityConfig {
                 )
 
                 // Ajout du filtre Firebase avant le filtre standard d'authentification Spring
-                .addFilterBefore(firebaseAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(firebaseAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
                 // Ajout du filtre de Rate Limiting (max 5 requêtes / 5 min) après l'identification Firebase
-                .addFilterAfter(rateLimitFilter, FirebaseAuthenticationFilter.class);
+               // .addFilterAfter(rateLimitFilter, FirebaseAuthenticationFilter.class);
 
         return http.build();
     }
