@@ -36,10 +36,6 @@ public interface MembrePharmacopeeRepository extends JpaRepository<MembrePharmac
     /** Consommation du quota MAX_PHARMACOPEES_PAR_GERANT. */
     long countByUtilisateurIdAndEstProprietaireTrueAndStatut(Long utilisateurId, StatutMembre statut);
 
-    /** Membres présentés par l'ancien endpoint /collaborateurs (retiré au lot 7). */
-    @EntityGraph(attributePaths = "utilisateur")
-    Page<MembrePharmacopee> findByPharmacopeeIdAndEstProprietaireFalseAndStatutNot(Long pharmacopeeId, StatutMembre statut, Pageable pageable);
-
     boolean existsByUtilisateurIdAndPharmacopeeId(Long utilisateurId, Long pharmacopeeId);
 
     /** Une invitation n'est accessible qu'à l'utilisateur invité. */
