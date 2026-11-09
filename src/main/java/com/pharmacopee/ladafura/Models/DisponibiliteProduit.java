@@ -13,6 +13,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -20,7 +21,9 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "disponibilites_produits")
+@Table(name = "disponibilites_produits", uniqueConstraints = {
+    @UniqueConstraint(name = "uk_disponibilite_pharmacopee_produit", columnNames = {"pharmacopee_id", "produit_id"})
+})
 @Getter
 @Setter
 public class DisponibiliteProduit {
