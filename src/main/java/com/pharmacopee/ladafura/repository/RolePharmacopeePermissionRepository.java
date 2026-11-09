@@ -15,6 +15,9 @@ public interface RolePharmacopeePermissionRepository extends JpaRepository<RoleP
 
     List<RolePharmacopeePermission> findByRolePharmacopeeId(Long rolePharmacopeeId);
 
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = "permission")
+    List<RolePharmacopeePermission> findByRolePharmacopeeIdIn(java.util.Collection<Long> roleIds);
+
     boolean existsByRolePharmacopeeIdAndPermissionId(Long rolePharmacopeeId, Long permissionId);
 
     void deleteByRolePharmacopeeIdAndPermissionId(Long rolePharmacopeeId, Long permissionId);

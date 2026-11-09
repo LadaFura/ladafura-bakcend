@@ -11,6 +11,11 @@ import com.pharmacopee.ladafura.Models.Pharmacopee;
  */
 public interface IPharmacopeeContexteService {
 
+    String MEMBRES_CONSULTER = "MEMBRES_CONSULTER";
+    String MEMBRES_INVITER = "MEMBRES_INVITER";
+    String MEMBRES_GERER = "MEMBRES_GERER";
+    String ROLES_GERER = "ROLES_GERER";
+
     /** Membre courant, sa pharmacopée et ses permissions effectives. */
     record ContexteMembre(MembrePharmacopee membre, Pharmacopee pharmacopee, Set<String> permissions) {
     }

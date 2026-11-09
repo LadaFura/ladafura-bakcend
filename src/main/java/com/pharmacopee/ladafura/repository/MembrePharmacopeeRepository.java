@@ -27,6 +27,12 @@ public interface MembrePharmacopeeRepository extends JpaRepository<MembrePharmac
 
     boolean existsByUtilisateurIdAndPharmacopeeId(Long utilisateurId, Long pharmacopeeId);
 
+    /** Une invitation n'est accessible qu'à l'utilisateur invité. */
+    @EntityGraph(attributePaths = "pharmacopee")
+    Optional<MembrePharmacopee> findByIdAndUtilisateurIdAndStatut(Long id, Long utilisateurId, StatutMembre statut);
+
+    Optional<MembrePharmacopee> findFirstByPharmacopeeIdAndEstProprietaireTrue(Long pharmacopeeId);
+
     /** Espaces de travail d'un utilisateur (sélection de la pharmacopée active). */
     @EntityGraph(attributePaths = "pharmacopee")
     List<MembrePharmacopee> findByUtilisateurIdAndStatut(Long utilisateurId, StatutMembre statut);

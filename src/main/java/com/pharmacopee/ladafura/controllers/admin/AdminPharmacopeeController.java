@@ -23,7 +23,10 @@ import com.pharmacopee.ladafura.dto.admin.pharmacopee.AdminPharmacopeeDetailResp
 import com.pharmacopee.ladafura.dto.admin.pharmacopee.AdminPharmacopeeSummaryResponse;
 import com.pharmacopee.ladafura.dto.admin.pharmacopee.AdminUpdatePharmacopeeRequest;
 import com.pharmacopee.ladafura.enums.StatutPharmacopee;
+import com.pharmacopee.ladafura.dto.pharmacopee.membre.MembreResponse;
+import com.pharmacopee.ladafura.dto.pharmacopee.membre.TransfertProprieteRequest;
 import com.pharmacopee.ladafura.services.interfaces.IAdminPharmacopeeService;
+import com.pharmacopee.ladafura.services.interfaces.IPharmacopeeMembreService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -39,6 +42,7 @@ import lombok.RequiredArgsConstructor;
 public class AdminPharmacopeeController {
 
     private final IAdminPharmacopeeService pharmacopeeService;
+    private final IPharmacopeeMembreService membreService;
 
     @GetMapping
     @Operation(summary = "Lister les pharmacopées avec pagination et filtre par statut", description = "Permet de lister les structures selon leur état (EN_ATTENTE, VALIDEE, SUSPENDUE, REJETEE).")
@@ -93,5 +97,14 @@ public class AdminPharmacopeeController {
     public ResponseEntity<Void> deletePharmacopee(@PathVariable Long id) {
         pharmacopeeService.deletePharmacopee(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/transfert-propriete")
+    @Operation(summary = "Transférer la propriété d'une pharmacopée", description = "En cas de litige ou de gérant indisponible. Opération tracée.")
+    @ApiResponse(responseCode = "200", description = "Propriété transférée")
+    @ApiResponse(responseCode = "404", description = "Pharmacopée ou membre introuvable")
+    @ApiResponse(responseCode = "409", description = "Le membre n'est pas actif ou est déjà gérant")
+    public ResponseEntity<MembreResponse> transfererPropriete(@PathVariable Long id, @Valid @RequestBody TransfertProprieteRequest request) {
+        return ResponseEntity.ok(membreService.transfererProprieteParAdmin(id, request));
     }
 }

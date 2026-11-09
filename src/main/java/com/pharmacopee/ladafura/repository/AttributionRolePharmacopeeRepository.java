@@ -15,6 +15,9 @@ public interface AttributionRolePharmacopeeRepository extends JpaRepository<Attr
     @EntityGraph(attributePaths = "rolePharmacopee")
     List<AttributionRolePharmacopee> findByMembrePharmacopeeId(Long membrePharmacopeeId);
 
+    @EntityGraph(attributePaths = "rolePharmacopee")
+    List<AttributionRolePharmacopee> findByMembrePharmacopeeIdIn(java.util.Collection<Long> membreIds);
+
     /** Recherche bornée par la pharmacopée du membre (isolation multi-tenant). */
     Optional<AttributionRolePharmacopee> findByIdAndMembrePharmacopeePharmacopeeId(Long id, Long pharmacopeeId);
 
