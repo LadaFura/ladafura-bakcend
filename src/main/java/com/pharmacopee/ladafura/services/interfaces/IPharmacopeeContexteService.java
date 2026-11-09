@@ -17,6 +17,10 @@ public interface IPharmacopeeContexteService {
     String ROLES_GERER = "ROLES_GERER";
     String ABONNEMENT_CONSULTER = "ABONNEMENT_CONSULTER";
     String ABONNEMENT_GERER = "ABONNEMENT_GERER";
+    String FOURNISSEURS_CONSULTER = "FOURNISSEURS_CONSULTER";
+    String FOURNISSEURS_GERER = "FOURNISSEURS_GERER";
+    String ACHATS_CONSULTER = "ACHATS_CONSULTER";
+    String ACHATS_GERER = "ACHATS_GERER";
 
     /** Membre courant, sa pharmacopée et ses permissions effectives. */
     record ContexteMembre(MembrePharmacopee membre, Pharmacopee pharmacopee, Set<String> permissions) {
@@ -44,4 +48,11 @@ public interface IPharmacopeeContexteService {
      * @throws com.pharmacopee.ladafura.exceptions.ForbiddenException sinon
      */
     void verifierEcritureAutorisee(Long pharmacopeeId);
+
+    /**
+     * Contrôles d'une opération commerciale : permission, pharmacopée VALIDEE, abonnement ACTIF.
+     *
+     * @throws com.pharmacopee.ladafura.exceptions.ForbiddenException si l'un des contrôles échoue
+     */
+    ContexteMembre verifierOperationCommerciale(String codePermission);
 }

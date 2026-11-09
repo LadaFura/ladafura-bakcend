@@ -74,6 +74,16 @@ public class PharmacopeeContexteServiceImpl implements IPharmacopeeContexteServi
         }
     }
 
+    @Override
+    public ContexteMembre verifierOperationCommerciale(String codePermission) {
+        ContexteMembre contexte = verifierPermission(codePermission);
+        if (contexte.pharmacopee().getStatut() != StatutPharmacopee.VALIDEE) {
+            throw new ForbiddenException("Opération impossible : cette pharmacopée n'est pas encore validée par l'administrateur.");
+        }
+        verifierEcritureAutorisee(contexte.pharmacopee().getId());
+        return contexte;
+    }
+
     private MembrePharmacopee resoudreMembre(Utilisateur utilisateur) {
         Long pharmacopeeDemandee = lireEnTetePharmacopee();
         if (pharmacopeeDemandee != null) {

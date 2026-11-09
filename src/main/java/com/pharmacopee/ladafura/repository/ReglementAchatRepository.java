@@ -21,6 +21,14 @@ public interface ReglementAchatRepository extends JpaRepository<ReglementAchat, 
 
     List<ReglementAchat> findByAchatId(Long achatId);
 
+    /** Montants payés d'une page d'achats, en une requête : lignes [achatId, somme]. */
+    @Query("""
+           select r.achat.id, sum(r.montant) from ReglementAchat r
+           where r.achat.id in :achatIds and r.statut = com.pharmacopee.ladafura.enums.StatutEcriture.VALIDE
+           group by r.achat.id
+           """)
+    List<Object[]> sommesValidesParAchat(@Param("achatIds") java.util.Collection<Long> achatIds);
+
     /** Montant payé d'un achat : somme des règlements valides. */
     @Query("""
            select coalesce(sum(r.montant), 0BD) from ReglementAchat r

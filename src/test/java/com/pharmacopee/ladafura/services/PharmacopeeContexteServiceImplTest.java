@@ -163,6 +163,24 @@ class PharmacopeeContexteServiceImplTest {
     }
 
     @Test
+    @DisplayName("opération commerciale : une pharmacopée non validée est refusée")
+    void commercialeNonValidee() {
+        contexteAvec(StatutPharmacopee.EN_ATTENTE, Set.of("ACHATS_GERER"));
+
+        assertThatThrownBy(() -> service.verifierOperationCommerciale("ACHATS_GERER")).isInstanceOf(ForbiddenException.class);
+    }
+
+    @Test
+    @DisplayName("opération commerciale : pharmacopée validée et abonnement ACTIF")
+    void commercialeAutorisee() {
+        contexteAvec(StatutPharmacopee.VALIDEE, Set.of("ACHATS_GERER"));
+        when(abonnementRepository.findEnVigueur(5L))
+                .thenReturn(Optional.of(Abonnement.builder().statut(StatutAbonnement.ACTIF).build()));
+
+        assertThat(service.verifierOperationCommerciale("ACHATS_GERER").pharmacopee().getId()).isEqualTo(5L);
+    }
+
+        @Test
     @DisplayName("un abonnement ACTIF autorise les écritures")
     void ecritureAbonnementActif() {
         when(abonnementRepository.findEnVigueur(5L))

@@ -22,4 +22,6 @@ public interface FournisseurProduitRepository extends JpaRepository<FournisseurP
     Page<FournisseurProduit> findByFournisseurId(Long fournisseurId, Pageable pageable);
 
     boolean existsByFournisseurIdAndProduitId(Long fournisseurId, Long produitId);
+
+    void deleteByFournisseurId(Long fournisseurId);
 }

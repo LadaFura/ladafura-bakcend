@@ -26,6 +26,9 @@ public interface OperationCaisseRepository extends JpaRepository<OperationCaisse
     /** Une opération n'est contre-passée qu'une seule fois. */
     boolean existsByOperationLieeIdAndNature(Long operationLieeId, NatureOperationCaisse nature);
 
+    /** Opération créée par un règlement d'achat, hors contre-passation. */
+    Optional<OperationCaisse> findFirstByReglementAchatIdAndNatureNot(Long reglementAchatId, NatureOperationCaisse nature);
+
     /** Entrées moins sorties de toute la caisse. */
     @Query("""
            select coalesce(sum(case when o.sens = com.pharmacopee.ladafura.enums.SensOperation.ENTREE
