@@ -35,5 +35,8 @@ public interface IPharmacopeeMembreService {
     MembreResponse transfererPropriete(TransfertProprieteRequest request);
 
     /** Transfert décidé par l'administrateur LADAFURA (litige, gérant indisponible). */
+    /** Membres d'une pharmacopée, pour l'administrateur (choix du nouveau gérant). */
+    org.springframework.data.domain.Page<MembreResponse> getMembresParAdmin(Long pharmacopeeId, org.springframework.data.domain.Pageable pageable);
+
     MembreResponse transfererProprieteParAdmin(Long pharmacopeeId, TransfertProprieteRequest request);
 }

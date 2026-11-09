@@ -99,6 +99,14 @@ public class AdminPharmacopeeController {
         return ResponseEntity.noContent().build();
     }
 
+    @GetMapping("/{id}/membres")
+    @Operation(summary = "Membres d'une pharmacopée", description = "Permet de choisir le nouveau gérant lors d'un transfert de propriété.")
+    @ApiResponse(responseCode = "200", description = "Membres récupérés")
+    @ApiResponse(responseCode = "404", description = "Pharmacopée introuvable")
+    public ResponseEntity<Page<MembreResponse>> getMembres(@PathVariable Long id, @ParameterObject Pageable pageable) {
+        return ResponseEntity.ok(membreService.getMembresParAdmin(id, pageable));
+    }
+
     @PostMapping("/{id}/transfert-propriete")
     @Operation(summary = "Transférer la propriété d'une pharmacopée", description = "En cas de litige ou de gérant indisponible. Opération tracée.")
     @ApiResponse(responseCode = "200", description = "Propriété transférée")

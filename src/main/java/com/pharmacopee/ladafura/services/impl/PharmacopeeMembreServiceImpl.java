@@ -75,11 +75,24 @@ public class PharmacopeeMembreServiceImpl implements IPharmacopeeMembreService {
 
     @Override
     @Transactional(readOnly = true)
+    public Page<MembreResponse> getMembresParAdmin(Long pharmacopeeId, Pageable pageable) {
+        if (!pharmacopeeRepository.existsById(pharmacopeeId)) {
+            throw new ResourceNotFoundException("Pharmacopée", "id", pharmacopeeId);
+        }
+        return versPage(membreRepository.findByPharmacopeeId(pharmacopeeId, pageable));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Page<MembreResponse> getMembres(StatutMembre statut, Pageable pageable) {
         Long pharmacopeeId = contexteService.verifierPermission(IPharmacopeeContexteService.MEMBRES_CONSULTER).pharmacopee().getId();
         Page<MembrePharmacopee> membres = statut != null
                 ? membreRepository.findByPharmacopeeIdAndStatut(pharmacopeeId, statut, pageable)
                 : membreRepository.findByPharmacopeeId(pharmacopeeId, pageable);
+        return versPage(membres);
+    }
+
+    private Page<MembreResponse> versPage(Page<MembrePharmacopee> membres) {
         Map<Long, List<AttributionRolePharmacopee>> attributions = attributionRepository
                 .findByMembrePharmacopeeIdIn(membres.map(MembrePharmacopee::getId).getContent()).stream()
                 .collect(Collectors.groupingBy(a -> a.getMembrePharmacopee().getId()));
