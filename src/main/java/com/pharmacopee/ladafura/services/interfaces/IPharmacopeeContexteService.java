@@ -34,6 +34,7 @@ public interface IPharmacopeeContexteService {
     String DEPENSES_CONSULTER = "DEPENSES_CONSULTER";
     String DEPENSES_GERER = "DEPENSES_GERER";
     String COMPTABILITE_CONSULTER = "COMPTABILITE_CONSULTER";
+    String AUDIT_CONSULTER = "AUDIT_CONSULTER";
 
     /** Membre courant, sa pharmacopée et ses permissions effectives. */
     record ContexteMembre(MembrePharmacopee membre, Pharmacopee pharmacopee, Set<String> permissions) {
