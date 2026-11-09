@@ -7,6 +7,8 @@ import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.pharmacopee.ladafura.Models.Abonnement;
@@ -28,6 +30,21 @@ public interface AbonnementRepository extends JpaRepository<Abonnement, Long> {
     }
 
     Optional<Abonnement> findByIdAndPharmacopeeId(Long id, Long pharmacopeeId);
+
+    Optional<Abonnement> findFirstByPharmacopeeIdAndStatut(Long pharmacopeeId, StatutAbonnement statut);
+
+    boolean existsByPharmacopeeIdAndStatut(Long pharmacopeeId, StatutAbonnement statut);
+
+    /** Une demande de contrat ne donne lieu qu'à un seul abonnement. */
+    boolean existsByDemandeContratId(Long demandeContratId);
+
+    /** Liste d'administration, filtres facultatifs. */
+    @Query("""
+           select a from Abonnement a join fetch a.pharmacopee
+           where (:statut is null or a.statut = :statut)
+             and (:pharmacopeeId is null or a.pharmacopee.id = :pharmacopeeId)
+           """)
+    Page<Abonnement> rechercher(@Param("statut") StatutAbonnement statut, @Param("pharmacopeeId") Long pharmacopeeId, Pageable pageable);
 
     Page<Abonnement> findByPharmacopeeIdOrderByDateCreationDesc(Long pharmacopeeId, Pageable pageable);
 

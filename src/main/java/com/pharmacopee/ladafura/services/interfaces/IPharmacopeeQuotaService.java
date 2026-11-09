@@ -15,4 +15,7 @@ public interface IPharmacopeeQuotaService {
      *         la pharmacopée n'a pas d'abonnement en vigueur ou pas de valeur pour cette limite
      */
     void verifierQuota(Long pharmacopeeId, String codeLimite);
+
+    /** Consommation actuelle d'une limite. */
+    long consommationActuelle(Long pharmacopeeId, String codeLimite);
 }

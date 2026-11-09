@@ -51,7 +51,8 @@ public class PharmacopeeQuotaServiceImpl implements IPharmacopeeQuotaService {
         }
     }
 
-    private long consommationActuelle(Long pharmacopeeId, String codeLimite) {
+    @Override
+    public long consommationActuelle(Long pharmacopeeId, String codeLimite) {
         return switch (codeLimite) {
             case MAX_UTILISATEURS_ACTIFS ->
                     membrePharmacopeeRepository.countByPharmacopeeIdAndStatut(pharmacopeeId, StatutMembre.ACTIF);

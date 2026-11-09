@@ -48,4 +48,11 @@ public interface MembrePharmacopeeRepository extends JpaRepository<MembrePharmac
 
     /** Consommation du quota MAX_UTILISATEURS_ACTIFS. */
     long countByPharmacopeeIdAndStatut(Long pharmacopeeId, StatutMembre statut);
+
+    /** Membres à réactiver quand le quota le permet. */
+    List<MembrePharmacopee> findByPharmacopeeIdAndStatutAndMotifSuspensionOrderByIdAsc(Long pharmacopeeId, StatutMembre statut,
+                                                                                       com.pharmacopee.ladafura.enums.MotifSuspensionMembre motif);
+
+    /** Membres à suspendre en cas de dépassement : les plus récents d'abord, jamais le propriétaire. */
+    List<MembrePharmacopee> findByPharmacopeeIdAndStatutAndEstProprietaireFalseOrderByDateAdhesionDescIdDesc(Long pharmacopeeId, StatutMembre statut);
 }

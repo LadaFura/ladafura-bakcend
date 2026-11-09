@@ -14,6 +14,9 @@ public interface FactureAbonnementRepository extends JpaRepository<FactureAbonne
 
     Optional<FactureAbonnement> findByNumeroFacture(String numeroFacture);
 
+    /** Dernière facture de l'année, pour la numérotation sans trou. */
+    Optional<FactureAbonnement> findFirstByNumeroFactureStartingWithOrderByNumeroFactureDesc(String prefixe);
+
     Optional<FactureAbonnement> findByIdAndAbonnementPharmacopeeId(Long id, Long pharmacopeeId);
 
     Page<FactureAbonnement> findByAbonnementPharmacopeeId(Long pharmacopeeId, Pageable pageable);
