@@ -15,6 +15,7 @@ import com.pharmacopee.ladafura.Models.MouvementStock;
 @Repository
 public interface MouvementStockRepository extends JpaRepository<MouvementStock, Long> {
 
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"disponibiliteProduit.produit", "lot", "effectuePar.utilisateur"})
     Page<MouvementStock> findByPharmacopeeIdOrderByDateMouvementDesc(Long pharmacopeeId, Pageable pageable);
 
     Page<MouvementStock> findByPharmacopeeIdAndDisponibiliteProduitIdOrderByDateMouvementDesc(Long pharmacopeeId,

@@ -47,5 +47,11 @@ public interface IPharmacopeeStockService {
     com.pharmacopee.ladafura.Models.DisponibiliteProduit ajusterQuantite(IPharmacopeeContexteService.ContexteMembre contexte,
             com.pharmacopee.ladafura.Models.DisponibiliteProduit fiche, int nouvelleQuantite, String motif);
 
+    /** Mouvements de la pharmacopée courante, du plus récent au plus ancien. */
+    Page<com.pharmacopee.ladafura.dto.pharmacopee.stock.MouvementStockResponse> getMouvements(Pageable pageable);
+
+    /** Lots encore en stock de la pharmacopée courante, les plus proches de la péremption d'abord. */
+    Page<com.pharmacopee.ladafura.dto.pharmacopee.stock.LotStockResponse> getLots(Pageable pageable);
+
     PharmacopeeStockResponse updateStockComplet(Long produitId, UpdateStockCompletRequest request);
 }

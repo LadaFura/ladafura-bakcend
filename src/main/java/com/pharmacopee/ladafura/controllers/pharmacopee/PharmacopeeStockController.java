@@ -59,6 +59,26 @@ public class PharmacopeeStockController {
         return ResponseEntity.ok(stockService.getSummary());
     }
 
+    @GetMapping("/mouvements")
+    @Operation(summary = "Historique des mouvements de stock",
+            description = "Variations de stock de la pharmacopée courante, de la plus récente à la plus ancienne. Permission STOCK_CONSULTER.")
+    @ApiResponse(responseCode = "200", description = "Mouvements récupérés")
+    @ApiResponse(responseCode = "403", description = "Permission manquante")
+    public ResponseEntity<org.springframework.data.domain.Page<com.pharmacopee.ladafura.dto.pharmacopee.stock.MouvementStockResponse>> getMouvements(
+            @org.springdoc.core.annotations.ParameterObject org.springframework.data.domain.Pageable pageable) {
+        return ResponseEntity.ok(stockService.getMouvements(pageable));
+    }
+
+    @GetMapping("/lots")
+    @Operation(summary = "Lots encore en stock",
+            description = "Lots de la pharmacopée courante, les plus proches de la péremption d'abord. Permission STOCK_CONSULTER.")
+    @ApiResponse(responseCode = "200", description = "Lots récupérés")
+    @ApiResponse(responseCode = "403", description = "Permission manquante")
+    public ResponseEntity<org.springframework.data.domain.Page<com.pharmacopee.ladafura.dto.pharmacopee.stock.LotStockResponse>> getLots(
+            @org.springdoc.core.annotations.ParameterObject org.springframework.data.domain.Pageable pageable) {
+        return ResponseEntity.ok(stockService.getLots(pageable));
+    }
+
     @GetMapping("/{produitId}")
     @Operation(summary = "Consulter le stock et le prix d'un produit précis",
                description = "Détaille la quantité restante, le prix de vente effectif et l'historique de mise à jour pour ce remède.")

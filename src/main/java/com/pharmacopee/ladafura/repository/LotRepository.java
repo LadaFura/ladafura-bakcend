@@ -35,6 +35,16 @@ public interface LotRepository extends JpaRepository<Lot, Long> {
 
     boolean existsByDisponibiliteProduitId(Long disponibiliteProduitId);
 
+    /** Lots encore en stock, les plus proches de la péremption d'abord, sans date en dernier. */
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = "disponibiliteProduit.produit")
+    @Query(value = """
+           select l from Lot l
+           where l.pharmacopee.id = :pharmacopeeId and l.quantiteRestante > 0
+           order by case when l.datePeremption is null then 1 else 0 end, l.datePeremption asc, l.id asc
+           """, countQuery = "select count(l) from Lot l where l.pharmacopee.id = :pharmacopeeId and l.quantiteRestante > 0")
+    org.springframework.data.domain.Page<Lot> findLotsEnStock(@Param("pharmacopeeId") Long pharmacopeeId,
+                                                              org.springframework.data.domain.Pageable pageable);
+
     /** Lots vendables à la date donnée : les plus proches de la péremption d'abord, sans date en dernier. */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""

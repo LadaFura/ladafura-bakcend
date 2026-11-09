@@ -1,5 +1,12 @@
 package com.pharmacopee.ladafura.services.impl;
 
+import java.time.LocalDate;
+
+import com.pharmacopee.ladafura.Models.Lot;
+import com.pharmacopee.ladafura.Models.MembrePharmacopee;
+import com.pharmacopee.ladafura.Models.MouvementStock;
+import com.pharmacopee.ladafura.dto.pharmacopee.stock.LotStockResponse;
+import com.pharmacopee.ladafura.dto.pharmacopee.stock.MouvementStockResponse;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -38,9 +45,12 @@ public class PharmacopeeStockServiceImpl implements IPharmacopeeStockService {
 
     private final IPharmacopeeContexteService contexteService;
     private static final String MOTIF_AJUSTEMENT_PAR_DEFAUT = "Ajustement manuel du stock";
+    private static final int JOURS_ALERTE_PEREMPTION = 30;
 
     private final DisponibiliteProduitRepository disponibiliteProduitRepository;
     private final IPharmacopeeMouvementStockService mouvementStockService;
+    private final com.pharmacopee.ladafura.repository.MouvementStockRepository mouvementStockRepository;
+    private final com.pharmacopee.ladafura.repository.LotRepository lotRepository;
     private final IJournalAuditService journalAuditService;
 
     @Override
@@ -210,6 +220,57 @@ public class PharmacopeeStockServiceImpl implements IPharmacopeeStockService {
                 produitId, contexte.pharmacopee().getId());
 
         return mapToResponse(saved);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<MouvementStockResponse> getMouvements(Pageable pageable) {
+        Long pharmacopeeId = contexteService.verifierPermission(IPharmacopeeContexteService.STOCK_CONSULTER).pharmacopee().getId();
+        return mouvementStockRepository.findByPharmacopeeIdOrderByDateMouvementDesc(pharmacopeeId, pageable).map(this::versMouvement);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<LotStockResponse> getLots(Pageable pageable) {
+        Long pharmacopeeId = contexteService.verifierPermission(IPharmacopeeContexteService.STOCK_CONSULTER).pharmacopee().getId();
+        return lotRepository.findLotsEnStock(pharmacopeeId, pageable).map(this::versLot);
+    }
+
+    private MouvementStockResponse versMouvement(MouvementStock mouvement) {
+        Produit produit = mouvement.getDisponibiliteProduit().getProduit();
+        MembrePharmacopee auteur = mouvement.getEffectuePar();
+        return MouvementStockResponse.builder()
+                .id(mouvement.getId())
+                .dateMouvement(mouvement.getDateMouvement())
+                .type(mouvement.getType())
+                .produitId(produit.getId())
+                .produitNom(produit.getNom())
+                .quantite(mouvement.getQuantite())
+                .stockAvant(mouvement.getStockAvant())
+                .stockApres(mouvement.getStockApres())
+                .numeroLot(mouvement.getLot() != null ? mouvement.getLot().getNumeroLot() : null)
+                .motif(mouvement.getMotif())
+                .auteur(auteur != null ? auteur.getUtilisateur().getPrenom() + " " + auteur.getUtilisateur().getNom() : null)
+                .build();
+    }
+
+    private LotStockResponse versLot(Lot lot) {
+        Produit produit = lot.getDisponibiliteProduit().getProduit();
+        LocalDate aujourdhui = LocalDate.now();
+        LocalDate peremption = lot.getDatePeremption();
+        boolean perime = peremption != null && peremption.isBefore(aujourdhui);
+        return LotStockResponse.builder()
+                .id(lot.getId())
+                .produitId(produit.getId())
+                .produitNom(produit.getNom())
+                .numeroLot(lot.getNumeroLot())
+                .datePeremption(peremption)
+                .quantiteInitiale(lot.getQuantiteInitiale())
+                .quantiteRestante(lot.getQuantiteRestante())
+                .dateReception(lot.getDateReception())
+                .perime(perime)
+                .prochePeremption(!perime && peremption != null && !peremption.isAfter(aujourdhui.plusDays(JOURS_ALERTE_PEREMPTION)))
+                .build();
     }
 
     private PharmacopeeStockResponse mapToResponse(DisponibiliteProduit dispo) {
