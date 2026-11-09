@@ -39,4 +39,7 @@ public interface MembrePharmacopeeRepository extends JpaRepository<MembrePharmac
 
     /** Garde-fou : une pharmacopée doit toujours conserver au moins un propriétaire actif. */
     long countByPharmacopeeIdAndEstProprietaireTrueAndStatut(Long pharmacopeeId, StatutMembre statut);
+
+    /** Consommation du quota MAX_UTILISATEURS_ACTIFS. */
+    long countByPharmacopeeIdAndStatut(Long pharmacopeeId, StatutMembre statut);
 }

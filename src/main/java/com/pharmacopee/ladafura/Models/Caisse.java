@@ -25,7 +25,8 @@ import lombok.Setter;
 
 /**
  * Caisse physique ou compte de trésorerie (Mobile Money, banque) d'une pharmacopée.
- * Le solde est calculé à partir des {@link OperationCaisse} : jamais stocké.
+ * Le solde est calculé à partir des {@link OperationCaisse} et, pour une caisse physique,
+ * des sessions (le fond d'ouverture n'est pas une opération) : jamais stocké.
  * Une caisse ayant des opérations est désactivée, jamais supprimée.
  */
 @Entity

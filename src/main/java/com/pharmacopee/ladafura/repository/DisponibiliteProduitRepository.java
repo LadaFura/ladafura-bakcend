@@ -30,6 +30,19 @@ public interface DisponibiliteProduitRepository extends JpaRepository<Disponibil
 
     boolean existsByPharmacopeeIdAndProduitId(Long pharmacopeeId, Long produitId);
 
+    /** Verrou : sérialise les écritures de stock et de lots d'une même fiche. */
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @org.springframework.data.jpa.repository.Query("SELECT d FROM DisponibiliteProduit d WHERE d.id = :id AND d.pharmacopee.id = :pharmacopeeId")
+    Optional<DisponibiliteProduit> findByIdAndPharmacopeeIdForUpdate(
+            @org.springframework.data.repository.query.Param("id") Long id,
+            @org.springframework.data.repository.query.Param("pharmacopeeId") Long pharmacopeeId);
+
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @org.springframework.data.jpa.repository.Query("SELECT d FROM DisponibiliteProduit d WHERE d.pharmacopee.id = :pharmacopeeId AND d.produit.id = :produitId")
+    Optional<DisponibiliteProduit> findByPharmacopeeIdAndProduitIdForUpdate(
+            @org.springframework.data.repository.query.Param("pharmacopeeId") Long pharmacopeeId,
+            @org.springframework.data.repository.query.Param("produitId") Long produitId);
+
     long countByPharmacopeeId(Long pharmacopeeId);
 
     @org.springframework.data.jpa.repository.Query(value = "SELECT d FROM DisponibiliteProduit d JOIN FETCH d.produit p LEFT JOIN FETCH p.categorie WHERE d.pharmacopee.id = :pharmacopeeId AND p.statut = com.pharmacopee.ladafura.enums.StatutProduit.VALIDE AND (:disponibleOnly IS NULL OR :disponibleOnly = false OR d.disponible = true)",

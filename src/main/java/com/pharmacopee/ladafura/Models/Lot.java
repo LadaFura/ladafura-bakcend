@@ -22,8 +22,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
- * Lot de produit, facultatif. Si des lots existent pour une ligne de stock, la somme de leurs
- * quantités restantes doit être égale à la quantité en stock (règle portée par le service de stock).
+ * Lot de produit, facultatif. La somme des quantités restantes ne dépasse pas la quantité en stock :
+ * le reste est du stock non suivi par lot (règle portée par le service de stock).
  */
 @Entity
 @Table(name = "lots",
