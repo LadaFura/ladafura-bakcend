@@ -30,6 +30,8 @@ public interface DisponibiliteProduitRepository extends JpaRepository<Disponibil
 
     boolean existsByPharmacopeeIdAndProduitId(Long pharmacopeeId, Long produitId);
 
+    Optional<DisponibiliteProduit> findByIdAndPharmacopeeId(Long id, Long pharmacopeeId);
+
     /** Verrou : sérialise les écritures de stock et de lots d'une même fiche. */
     @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
     @org.springframework.data.jpa.repository.Query("SELECT d FROM DisponibiliteProduit d WHERE d.id = :id AND d.pharmacopee.id = :pharmacopeeId")

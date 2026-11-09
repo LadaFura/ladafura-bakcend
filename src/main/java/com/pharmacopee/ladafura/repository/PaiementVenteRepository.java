@@ -21,6 +21,24 @@ public interface PaiementVenteRepository extends JpaRepository<PaiementVente, Lo
 
     List<PaiementVente> findByVenteId(Long venteId);
 
+    /** Montants payés d'une page de ventes : lignes [venteId, somme]. */
+    @Query("""
+           select p.vente.id, sum(p.montant) from PaiementVente p
+           where p.vente.id in :venteIds and p.statut = com.pharmacopee.ladafura.enums.StatutEcriture.VALIDE
+           group by p.vente.id
+           """)
+    List<Object[]> sommesValidesParVente(@Param("venteIds") java.util.Collection<Long> venteIds);
+
+    /** Paiements valides des ventes validées, par client : lignes [clientId, somme]. */
+    @Query("""
+           select p.vente.client.id, sum(p.montant) from PaiementVente p
+           where p.vente.client.id in :clientIds
+             and p.statut = com.pharmacopee.ladafura.enums.StatutEcriture.VALIDE
+             and p.vente.statut = com.pharmacopee.ladafura.enums.StatutVente.VALIDEE
+           group by p.vente.client.id
+           """)
+    List<Object[]> paiementsValidesParClient(@Param("clientIds") java.util.Collection<Long> clientIds);
+
     /** Montant payé d'une vente : somme des paiements valides. */
     @Query("""
            select coalesce(sum(p.montant), 0BD) from PaiementVente p

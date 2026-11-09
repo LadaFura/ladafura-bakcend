@@ -26,6 +26,9 @@ public interface OperationCaisseRepository extends JpaRepository<OperationCaisse
     /** Une opération n'est contre-passée qu'une seule fois. */
     boolean existsByOperationLieeIdAndNature(Long operationLieeId, NatureOperationCaisse nature);
 
+    /** Opération créée par un paiement de vente, hors contre-passation. */
+    Optional<OperationCaisse> findFirstByPaiementVenteIdAndNatureNot(Long paiementVenteId, NatureOperationCaisse nature);
+
     /** Opération créée par un règlement d'achat, hors contre-passation. */
     Optional<OperationCaisse> findFirstByReglementAchatIdAndNatureNot(Long reglementAchatId, NatureOperationCaisse nature);
 

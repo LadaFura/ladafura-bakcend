@@ -21,6 +21,13 @@ public interface IPharmacopeeContexteService {
     String FOURNISSEURS_GERER = "FOURNISSEURS_GERER";
     String ACHATS_CONSULTER = "ACHATS_CONSULTER";
     String ACHATS_GERER = "ACHATS_GERER";
+    String CLIENTS_CONSULTER = "CLIENTS_CONSULTER";
+    String CLIENTS_GERER = "CLIENTS_GERER";
+    String VENTES_CONSULTER = "VENTES_CONSULTER";
+    String VENTES_CREER = "VENTES_CREER";
+    String VENTES_ANNULER = "VENTES_ANNULER";
+    String VENTES_REMISE = "VENTES_REMISE";
+    String PAIEMENTS_ENCAISSER = "PAIEMENTS_ENCAISSER";
 
     /** Membre courant, sa pharmacopée et ses permissions effectives. */
     record ContexteMembre(MembrePharmacopee membre, Pharmacopee pharmacopee, Set<String> permissions) {
