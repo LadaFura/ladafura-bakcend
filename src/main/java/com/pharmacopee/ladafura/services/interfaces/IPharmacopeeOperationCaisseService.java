@@ -24,7 +24,8 @@ public interface IPharmacopeeOperationCaisseService {
     @Builder
     record NouvelleOperation(Long caisseId, SensOperation sens, NatureOperationCaisse nature, BigDecimal montant,
                              MethodePaiement methode, String libelle, MembrePharmacopee auteur,
-                             PaiementVente paiementVente, Paiement paiement, ReglementAchat reglementAchat, Depense depense) {
+                             PaiementVente paiementVente, Paiement paiement, ReglementAchat reglementAchat, Depense depense,
+                             OperationCaisse operationLiee) {
     }
 
     /**

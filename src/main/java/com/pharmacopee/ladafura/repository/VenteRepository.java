@@ -35,6 +35,14 @@ public interface VenteRepository extends JpaRepository<Vente, Long> {
     Page<Vente> rechercher(@Param("pharmacopeeId") Long pharmacopeeId, @Param("statut") StatutVente statut,
                            @Param("clientId") Long clientId, Pageable pageable);
 
+    /** Chiffre d'affaires des ventes au comptoir validées sur une période. */
+    @Query("""
+           select coalesce(sum(v.montantTotal), 0BD) from Vente v
+           where v.pharmacopee.id = :pharmacopeeId and v.statut = com.pharmacopee.ladafura.enums.StatutVente.VALIDEE
+             and v.dateVente between :debut and :fin
+           """)
+    java.math.BigDecimal chiffreAffaires(@Param("pharmacopeeId") Long pharmacopeeId, @Param("debut") LocalDateTime debut, @Param("fin") LocalDateTime fin);
+
     /** Total des ventes validées par client : lignes [clientId, somme]. */
     @Query("""
            select v.client.id, sum(v.montantTotal) from Vente v

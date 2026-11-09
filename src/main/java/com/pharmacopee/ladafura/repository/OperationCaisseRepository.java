@@ -1,6 +1,7 @@
 package com.pharmacopee.ladafura.repository;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -25,6 +26,17 @@ public interface OperationCaisseRepository extends JpaRepository<OperationCaisse
 
     /** Une opération n'est contre-passée qu'une seule fois. */
     boolean existsByOperationLieeIdAndNature(Long operationLieeId, NatureOperationCaisse nature);
+
+    /** Opération créée par une dépense, hors contre-passation. */
+    Optional<OperationCaisse> findFirstByDepenseIdAndNatureNot(Long depenseId, NatureOperationCaisse nature);
+
+    /** Mouvements par compte et par sens sur une période : lignes [caisseId, nom, type, sens, somme]. */
+    @Query("""
+           select o.caisse.id, o.caisse.nom, o.caisse.type, o.sens, sum(o.montant) from OperationCaisse o
+           where o.pharmacopee.id = :pharmacopeeId and o.dateOperation between :debut and :fin
+           group by o.caisse.id, o.caisse.nom, o.caisse.type, o.sens
+           """)
+    List<Object[]> fluxParCompte(@Param("pharmacopeeId") Long pharmacopeeId, @Param("debut") java.time.LocalDateTime debut, @Param("fin") java.time.LocalDateTime fin);
 
     /** Opération créée par un paiement de vente, hors contre-passation. */
     Optional<OperationCaisse> findFirstByPaiementVenteIdAndNatureNot(Long paiementVenteId, NatureOperationCaisse nature);

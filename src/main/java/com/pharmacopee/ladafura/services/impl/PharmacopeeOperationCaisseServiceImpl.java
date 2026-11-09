@@ -62,6 +62,7 @@ public class PharmacopeeOperationCaisseServiceImpl implements IPharmacopeeOperat
                 .paiement(operation.paiement())
                 .reglementAchat(operation.reglementAchat())
                 .depense(operation.depense())
+                .operationLiee(operation.operationLiee())
                 .sens(operation.sens())
                 .nature(operation.nature())
                 .montant(operation.montant())

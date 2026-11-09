@@ -24,6 +24,8 @@ public interface CaisseRepository extends JpaRepository<Caisse, Long> {
 
     List<Caisse> findByPharmacopeeIdAndActifTrue(Long pharmacopeeId);
 
+    List<Caisse> findByPharmacopeeIdOrderByNomAsc(Long pharmacopeeId);
+
     Optional<Caisse> findFirstByPharmacopeeIdAndTypeAndActifTrue(Long pharmacopeeId, TypeCaisse type);
 
     /** Verrou : sérialise les opérations d'une même caisse pour le contrôle du solde. */
