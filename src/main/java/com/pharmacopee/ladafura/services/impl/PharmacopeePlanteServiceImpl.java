@@ -12,7 +12,7 @@ import com.pharmacopee.ladafura.dto.pharmacopee.plante.CreatePharmacopeePlanteRe
 import com.pharmacopee.ladafura.dto.pharmacopee.plante.PharmacopeePlanteDto;
 import com.pharmacopee.ladafura.enums.StatutPlante;
 import com.pharmacopee.ladafura.repository.PlanteRepository;
-import com.pharmacopee.ladafura.services.interfaces.IPharmacopeeAuthService;
+import com.pharmacopee.ladafura.services.interfaces.IPharmacopeeContexteService;
 import com.pharmacopee.ladafura.services.interfaces.IPharmacopeePlanteService;
 
 import lombok.RequiredArgsConstructor;
@@ -23,13 +23,13 @@ import lombok.extern.slf4j.Slf4j;
 public class PharmacopeePlanteServiceImpl implements IPharmacopeePlanteService {
 
     private final PlanteRepository planteRepository;
-    private final IPharmacopeeAuthService pharmacopeeAuthService;
+    private final IPharmacopeeContexteService contexteService;
 
     public PharmacopeePlanteServiceImpl(
             PlanteRepository planteRepository,
-            IPharmacopeeAuthService pharmacopeeAuthService) {
+            IPharmacopeeContexteService contexteService) {
         this.planteRepository = planteRepository;
-        this.pharmacopeeAuthService = pharmacopeeAuthService;
+        this.contexteService = contexteService;
     }
 
     @Override
@@ -66,8 +66,7 @@ public class PharmacopeePlanteServiceImpl implements IPharmacopeePlanteService {
     @Override
     @Transactional
     public PharmacopeePlanteDto createPlante(CreatePharmacopeePlanteRequest request) {
-        pharmacopeeAuthService.verifyPharmacopeeValidated();
-        pharmacopeeAuthService.verifyPraticienPrincipal();
+        contexteService.verifierOperationCommerciale(IPharmacopeeContexteService.PRODUITS_GERER);
         
         String nom = request.getNom().trim();
 

@@ -215,6 +215,11 @@ FROM pharmacopees ph
 WHERE NOT EXISTS (SELECT 1 FROM caisses c WHERE c.pharmacopee_id = ph.id AND c.type = 'PHYSIQUE');
 
 INSERT INTO caisses (pharmacopee_id, nom, type, description, actif, date_creation)
+SELECT ph.id, 'Banque', 'BANQUE', 'Compte créé automatiquement', 1, NOW(6)
+FROM pharmacopees ph
+WHERE NOT EXISTS (SELECT 1 FROM caisses c WHERE c.pharmacopee_id = ph.id AND c.type = 'BANQUE');
+
+INSERT INTO caisses (pharmacopee_id, nom, type, description, actif, date_creation)
 SELECT ph.id, 'Mobile Money', 'MOBILE_MONEY', 'Compte créé automatiquement', 1, NOW(6)
 FROM pharmacopees ph
 WHERE NOT EXISTS (SELECT 1 FROM caisses c WHERE c.pharmacopee_id = ph.id AND c.type = 'MOBILE_MONEY');

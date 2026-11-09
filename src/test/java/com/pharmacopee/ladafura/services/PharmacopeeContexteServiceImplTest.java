@@ -31,7 +31,6 @@ import com.pharmacopee.ladafura.enums.StatutPharmacopee;
 import com.pharmacopee.ladafura.exceptions.BadRequestException;
 import com.pharmacopee.ladafura.exceptions.ForbiddenException;
 import com.pharmacopee.ladafura.repository.AbonnementRepository;
-import com.pharmacopee.ladafura.repository.MembrePharmacopeeRepository;
 import com.pharmacopee.ladafura.repository.RolePharmacopeePermissionRepository;
 import com.pharmacopee.ladafura.services.impl.PharmacopeeContexteServiceImpl;
 import com.pharmacopee.ladafura.services.interfaces.IPharmacopeeAuthService;
@@ -43,7 +42,6 @@ class PharmacopeeContexteServiceImplTest {
     private static final Long UTILISATEUR_ID = 1L;
 
     @Mock private IPharmacopeeAuthService pharmacopeeAuthService;
-    @Mock private MembrePharmacopeeRepository membrePharmacopeeRepository;
     @Mock private RolePharmacopeePermissionRepository rolePharmacopeePermissionRepository;
     @Mock private AbonnementRepository abonnementRepository;
 
@@ -65,21 +63,14 @@ class PharmacopeeContexteServiceImplTest {
 
     private MembrePharmacopee membre(Long id, Long pharmacopeeId, StatutPharmacopee statut) {
         Pharmacopee pharmacopee = Pharmacopee.builder().id(pharmacopeeId).nom("Officine de Bamako").statut(statut).build();
-        return MembrePharmacopee.builder().id(id).pharmacopee(pharmacopee).statut(StatutMembre.ACTIF).build();
-    }
-
-    private void utilisateurConnecte() {
-        when(pharmacopeeAuthService.getCurrentUtilisateur()).thenReturn(utilisateur);
+        return MembrePharmacopee.builder().id(id).utilisateur(utilisateur).pharmacopee(pharmacopee).statut(StatutMembre.ACTIF).build();
     }
 
     @Test
-    @DisplayName("l'en-tête désigne une pharmacopée dont l'utilisateur est membre actif")
-    void enTeteValide() {
-        utilisateurConnecte();
-        requete.addHeader("X-Pharmacopee-Id", "7");
+    @DisplayName("le contexte reprend l'adhésion courante et ses permissions effectives")
+    void contexteDeLAdhesionCourante() {
         MembrePharmacopee membre = membre(10L, 7L, StatutPharmacopee.VALIDEE);
-        when(membrePharmacopeeRepository.findByUtilisateurIdAndPharmacopeeIdAndStatut(UTILISATEUR_ID, 7L, StatutMembre.ACTIF))
-                .thenReturn(Optional.of(membre));
+        when(pharmacopeeAuthService.getMembreCourant()).thenReturn(membre);
         when(rolePharmacopeePermissionRepository.findCodesPermissionsEffectives(UTILISATEUR_ID, 7L))
                 .thenReturn(Set.of("VENTES_CREER"));
 
@@ -89,52 +80,8 @@ class PharmacopeeContexteServiceImplTest {
         assertThat(contexte.permissions()).containsExactly("VENTES_CREER");
     }
 
-    @Test
-    @DisplayName("un en-tête hors appartenance donne 403, sans repli sur une autre pharmacopée")
-    void enTeteHorsAppartenance() {
-        utilisateurConnecte();
-        requete.addHeader("X-Pharmacopee-Id", "99");
-        when(membrePharmacopeeRepository.findByUtilisateurIdAndPharmacopeeIdAndStatut(UTILISATEUR_ID, 99L, StatutMembre.ACTIF))
-                .thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> service.getContexte()).isInstanceOf(ForbiddenException.class);
-    }
-
-    @Test
-    @DisplayName("un en-tête non numérique donne 400")
-    void enTeteNonNumerique() {
-        utilisateurConnecte();
-        requete.addHeader("X-Pharmacopee-Id", "abc");
-
-        assertThatThrownBy(() -> service.getContexte()).isInstanceOf(BadRequestException.class);
-    }
-
-    @Test
-    @DisplayName("sans en-tête, la première pharmacopée VALIDEE est retenue")
-    void sansEnTetePremiereValidee() {
-        utilisateurConnecte();
-        MembrePharmacopee enAttente = membre(1L, 1L, StatutPharmacopee.EN_ATTENTE);
-        MembrePharmacopee validee = membre(2L, 2L, StatutPharmacopee.VALIDEE);
-        when(membrePharmacopeeRepository.findByUtilisateurIdAndStatut(UTILISATEUR_ID, StatutMembre.ACTIF))
-                .thenReturn(List.of(enAttente, validee));
-        when(rolePharmacopeePermissionRepository.findCodesPermissionsEffectives(UTILISATEUR_ID, 2L)).thenReturn(Set.of());
-
-        assertThat(service.getContexte().membre()).isSameAs(validee);
-    }
-
-    @Test
-    @DisplayName("sans appartenance active, l'accès est refusé")
-    void sansAppartenance() {
-        utilisateurConnecte();
-        when(membrePharmacopeeRepository.findByUtilisateurIdAndStatut(UTILISATEUR_ID, StatutMembre.ACTIF)).thenReturn(List.of());
-
-        assertThatThrownBy(() -> service.getContexte()).isInstanceOf(ForbiddenException.class);
-    }
-
     private void contexteAvec(StatutPharmacopee statut, Set<String> permissions) {
-        utilisateurConnecte();
-        when(membrePharmacopeeRepository.findByUtilisateurIdAndStatut(UTILISATEUR_ID, StatutMembre.ACTIF))
-                .thenReturn(List.of(membre(1L, 5L, statut)));
+        when(pharmacopeeAuthService.getMembreCourant()).thenReturn(membre(1L, 5L, statut));
         when(rolePharmacopeePermissionRepository.findCodesPermissionsEffectives(UTILISATEUR_ID, 5L)).thenReturn(permissions);
     }
 

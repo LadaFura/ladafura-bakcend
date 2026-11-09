@@ -20,6 +20,8 @@ import com.pharmacopee.ladafura.enums.NatureOperationCaisse;
 @Repository
 public interface OperationCaisseRepository extends JpaRepository<OperationCaisse, Long> {
 
+    Optional<OperationCaisse> findFirstByPaiementIdAndNature(Long paiementId, com.pharmacopee.ladafura.enums.NatureOperationCaisse nature);
+
     Optional<OperationCaisse> findByIdAndPharmacopeeId(Long id, Long pharmacopeeId);
 
     Page<OperationCaisse> findByCaisseIdOrderByDateOperationDesc(Long caisseId, Pageable pageable);

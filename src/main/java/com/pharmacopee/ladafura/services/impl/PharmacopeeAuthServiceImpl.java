@@ -1,10 +1,8 @@
 package com.pharmacopee.ladafura.services.impl;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
+import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.security.core.Authentication;
@@ -14,29 +12,37 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
+import com.pharmacopee.ladafura.Models.Abonnement;
 import com.pharmacopee.ladafura.Models.Localisation;
+import com.pharmacopee.ladafura.Models.MembrePharmacopee;
 import com.pharmacopee.ladafura.Models.Pharmacopee;
 import com.pharmacopee.ladafura.Models.Praticien;
 import com.pharmacopee.ladafura.Models.Utilisateur;
 import com.pharmacopee.ladafura.dto.pharmacopee.auth.PharmacopeeAuthResponse;
 import com.pharmacopee.ladafura.dto.pharmacopee.auth.PharmacopeeItemSummaryDto;
+import com.pharmacopee.ladafura.dto.pharmacopee.auth.PraticienRegisterRequest;
 import com.pharmacopee.ladafura.enums.Role;
+import com.pharmacopee.ladafura.enums.StatutMembre;
 import com.pharmacopee.ladafura.enums.StatutPharmacopee;
 import com.pharmacopee.ladafura.enums.StatutUtilisateur;
-import com.pharmacopee.ladafura.exceptions.ForbiddenException;
-import com.pharmacopee.ladafura.exceptions.ResourceNotFoundException;
-import com.pharmacopee.ladafura.exceptions.UnauthorizedException;
-import com.pharmacopee.ladafura.repository.PharmacopeeRepository;
-import com.pharmacopee.ladafura.repository.PraticienRepository;
-import com.pharmacopee.ladafura.repository.UtilisateurRepository;
 import com.pharmacopee.ladafura.exceptions.BadRequestException;
 import com.pharmacopee.ladafura.exceptions.ConflictException;
-import com.pharmacopee.ladafura.dto.pharmacopee.auth.PraticienRegisterRequest;
+import com.pharmacopee.ladafura.exceptions.ForbiddenException;
+import com.pharmacopee.ladafura.exceptions.UnauthorizedException;
+import com.pharmacopee.ladafura.repository.AbonnementRepository;
+import com.pharmacopee.ladafura.repository.AttributionRolePharmacopeeRepository;
 import com.pharmacopee.ladafura.repository.LocalisationRepository;
+import com.pharmacopee.ladafura.repository.MembrePharmacopeeRepository;
+import com.pharmacopee.ladafura.repository.PharmacopeeRepository;
+import com.pharmacopee.ladafura.repository.PraticienRepository;
+import com.pharmacopee.ladafura.repository.RolePharmacopeePermissionRepository;
+import com.pharmacopee.ladafura.repository.UtilisateurRepository;
+import com.pharmacopee.ladafura.services.interfaces.IAbonnementCycleService;
 import com.pharmacopee.ladafura.services.interfaces.IFirebaseAuthService;
 import com.pharmacopee.ladafura.services.interfaces.IPharmacopeeAuthService;
+import com.pharmacopee.ladafura.services.interfaces.IPharmacopeeInitialisationService;
+import com.pharmacopee.ladafura.services.interfaces.IPharmacopeeQuotaService;
 
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -46,10 +52,21 @@ import lombok.extern.slf4j.Slf4j;
 @Transactional(readOnly = true)
 public class PharmacopeeAuthServiceImpl implements IPharmacopeeAuthService {
 
+    private static final String EN_TETE_PHARMACOPEE = "X-Pharmacopee-Id";
+    private static final List<StatutMembre> STATUTS_ADHESION_EN_COURS = List.of(StatutMembre.ACTIF, StatutMembre.INVITE);
+    /** Valeur attendue par le portail Angular pour l'offre gratuite. */
+    private static final String PLAN_GRATUIT = "GRATUIT";
+
     private final UtilisateurRepository utilisateurRepository;
     private final PharmacopeeRepository pharmacopeeRepository;
     private final PraticienRepository praticienRepository;
     private final LocalisationRepository localisationRepository;
+    private final MembrePharmacopeeRepository membreRepository;
+    private final AttributionRolePharmacopeeRepository attributionRepository;
+    private final RolePharmacopeePermissionRepository rolePermissionRepository;
+    private final AbonnementRepository abonnementRepository;
+    private final IPharmacopeeQuotaService quotaService;
+    private final IPharmacopeeInitialisationService initialisationService;
     private final IFirebaseAuthService firebaseAuthService;
 
     @Override
@@ -73,108 +90,84 @@ public class PharmacopeeAuthServiceImpl implements IPharmacopeeAuthService {
             throw new ForbiddenException("Votre compte utilisateur est inactif ou désactivé. Veuillez contacter un administrateur.");
         }
 
-        if (utilisateur.getRole() != Role.PHARMACOPEE && utilisateur.getRole() != Role.ADMINISTRATEUR) {
+        if (!peutAccederEspacePharmacopee(utilisateur)) {
             log.warn("Rôle non autorisé pour l'utilisateur ID: {} (rôle={})", utilisateur.getId(), utilisateur.getRole());
-            throw new ForbiddenException("Accès réservé exclusivement aux acteurs de type PHARMACOPEE.");
+            throw new ForbiddenException("Accès réservé aux membres d'une pharmacopée.");
         }
 
         return utilisateur;
     }
 
+    private boolean peutAccederEspacePharmacopee(Utilisateur utilisateur) {
+        return utilisateur.getRole() == Role.PHARMACOPEE
+                || utilisateur.getRole() == Role.ADMINISTRATEUR
+                || membreRepository.existsByUtilisateurIdAndStatutIn(utilisateur.getId(), STATUTS_ADHESION_EN_COURS);
+    }
+
+    @Override
+    public MembrePharmacopee getMembreCourant() {
+        Utilisateur utilisateur = getCurrentUtilisateur();
+        Long pharmacopeeDemandee = lireEnTetePharmacopee();
+        if (pharmacopeeDemandee != null) {
+            return membreRepository
+                    .findByUtilisateurIdAndPharmacopeeIdAndStatut(utilisateur.getId(), pharmacopeeDemandee, StatutMembre.ACTIF)
+                    .orElseThrow(() -> {
+                        log.warn("L'utilisateur ID {} n'est pas membre actif de la pharmacopée ID {}",
+                                utilisateur.getId(), pharmacopeeDemandee);
+                        return new ForbiddenException("Accès refusé : vous n'êtes pas membre actif de cette pharmacopée.");
+                    });
+        }
+        return membreParDefaut(adhesionsActives(utilisateur))
+                .orElseThrow(() -> new ForbiddenException("Vous n'êtes membre actif d'aucune pharmacopée."));
+    }
+
+    private List<MembrePharmacopee> adhesionsActives(Utilisateur utilisateur) {
+        return membreRepository.findByUtilisateurIdAndStatut(utilisateur.getId(), StatutMembre.ACTIF);
+    }
+
+    private static Optional<MembrePharmacopee> membreParDefaut(List<MembrePharmacopee> adhesions) {
+        return adhesions.stream().min(Comparator
+                .comparing((MembrePharmacopee m) -> m.getPharmacopee().getStatut() != StatutPharmacopee.VALIDEE)
+                .thenComparing(MembrePharmacopee::getId));
+    }
+
+    private Long lireEnTetePharmacopee() {
+        if (!(RequestContextHolder.getRequestAttributes() instanceof ServletRequestAttributes attributs)) {
+            return null;
+        }
+        String valeur = attributs.getRequest().getHeader(EN_TETE_PHARMACOPEE);
+        if (valeur == null || valeur.isBlank()) {
+            return null;
+        }
+        try {
+            return Long.parseLong(valeur.trim());
+        } catch (NumberFormatException e) {
+            throw new BadRequestException("L'en-tête " + EN_TETE_PHARMACOPEE + " doit être un identifiant numérique.");
+        }
+    }
+
     @Override
     public List<Pharmacopee> getMyPharmacopees() {
-        Utilisateur user = getCurrentUtilisateur();
-        Map<Long, Pharmacopee> map = new LinkedHashMap<>();
-
-        // 1. Structures dont l'utilisateur est le créateur / propriétaire direct
-        List<Pharmacopee> directes = pharmacopeeRepository.findAllByUtilisateurId(user.getId());
-        for (Pharmacopee p : directes) {
-            map.put(p.getId(), p);
-        }
-
-        // 2. Structures associées via la table d'association Praticien (N:N)
-        Optional<Praticien> praticienOpt = praticienRepository.findById(user.getId());
-        if (praticienOpt.isPresent()) {
-            Praticien praticien = praticienOpt.get();
-            if (praticien.getPharmacopees() != null) {
-                for (Pharmacopee p : praticien.getPharmacopees()) {
-                    map.put(p.getId(), p);
-                }
-            }
-        }
-
-        return new ArrayList<>(map.values());
+        return adhesionsActives(getCurrentUtilisateur()).stream()
+                .map(MembrePharmacopee::getPharmacopee)
+                .toList();
     }
 
     @Override
     public Pharmacopee getCurrentPharmacopee() {
-        List<Pharmacopee> structures = getMyPharmacopees();
-        Utilisateur user = getCurrentUtilisateur();
-
-        Optional<Praticien> praticienOpt = praticienRepository.findById(user.getId());
-        boolean estPrincipal = praticienOpt.map(p -> p.getEstPraticienPrincipal() == null || p.getEstPraticienPrincipal()).orElse(true);
-
-        Long targetId = getHeaderTargetPharmacopeeId();
-        if (estPrincipal || user.getRole() == Role.ADMINISTRATEUR) {
-            if (targetId != null) {
-                if (user.getRole() == Role.ADMINISTRATEUR) {
-                    return pharmacopeeRepository.findById(targetId)
-                        .orElseThrow(() -> new ResourceNotFoundException("Pharmacopée", "id", targetId));
-                }
-                for (Pharmacopee p : structures) {
-                    if (p.getId().equals(targetId)) {
-                        return p;
-                    }
-                }
-                log.warn("L'établissement ID {} spécifié par X-Pharmacopee-Id n'appartient pas à l'utilisateur ID {}", targetId, user.getId());
-            }
-        }
-
-        if (structures.isEmpty()) {
-            throw new ResourceNotFoundException("Pharmacopée", "utilisateurId", user.getId());
-        }
-
-        // Par défaut, retourner la première validée ou la première existante
-        return structures.stream()
-                .filter(p -> p.getStatut() == StatutPharmacopee.VALIDEE)
-                .findFirst()
-                .orElse(structures.get(0));
+        return getMembreCourant().getPharmacopee();
     }
 
     @Override
     public PharmacopeeAuthResponse getMe() {
         Utilisateur user = getCurrentUtilisateur();
-        List<Pharmacopee> structures = getMyPharmacopees();
+        List<MembrePharmacopee> adhesions = adhesionsActives(user);
+        Optional<MembrePharmacopee> membreActif = membreAffiche(adhesions);
 
-        Optional<Praticien> praticienOpt = praticienRepository.findById(user.getId());
-        String planAbonnement = praticienOpt.map(Praticien::getPlanAbonnement).orElse("GRATUIT");
-        int quotaMax = praticienOpt.map(p -> (p.getQuotaMaxStructures() != null && p.getQuotaMaxStructures() > 0) ? p.getQuotaMaxStructures() : 2).orElse(2);
-        boolean estPrincipal = praticienOpt.map(p -> p.getEstPraticienPrincipal() == null || p.getEstPraticienPrincipal()).orElse(true);
-
-        Pharmacopee activePharmacopee = null;
-        if (!structures.isEmpty()) {
-            try {
-                activePharmacopee = getCurrentPharmacopee();
-            } catch (Exception ignored) {
-                activePharmacopee = structures.get(0);
-            }
-        }
-
-        List<PharmacopeeItemSummaryDto> dtoList = new ArrayList<>();
-        for (Pharmacopee p : structures) {
-            Localisation loc = p.getLocalisation();
-            dtoList.add(PharmacopeeItemSummaryDto.builder()
-                    .id(p.getId())
-                    .nom(p.getNom())
-                    .telephone(p.getTelephone())
-                    .statut(p.getStatut())
-                    .validee(p.getStatut() == StatutPharmacopee.VALIDEE)
-                    .region(loc != null ? loc.getRegion() : null)
-                    .cercle(loc != null ? loc.getCercle() : null)
-                    .commune(loc != null ? loc.getCommune() : null)
-                    .localite(loc != null ? loc.getLocalite() : null)
-                    .build());
-        }
+        int quotaMax = quotaService.maxPharmacopeesParGerant();
+        long possedees = quotaService.pharmacopeesPossedees(user.getId());
+        // Un compte sans pharmacopée crée la sienne : il en sera le gérant.
+        boolean estPrincipal = membreActif.map(m -> Boolean.TRUE.equals(m.getEstProprietaire())).orElse(true);
 
         PharmacopeeAuthResponse.PharmacopeeAuthResponseBuilder builder = PharmacopeeAuthResponse.builder()
                 .utilisateurId(user.getId())
@@ -185,25 +178,69 @@ public class PharmacopeeAuthServiceImpl implements IPharmacopeeAuthService {
                 .role(user.getRole())
                 .statutUtilisateur(user.getStatut())
                 .firebaseUid(user.getFirebaseUid())
-                .structures(dtoList)
-                .planAbonnement(planAbonnement)
+                .structures(adhesions.stream().map(m -> versResume(m.getPharmacopee())).toList())
+                .planAbonnement(PLAN_GRATUIT)
                 .quotaMaxStructures(quotaMax)
-                .structuresActuelles(structures.size())
-                .peutCreerStructure(estPrincipal && (structures.size() < quotaMax))
+                .structuresActuelles((int) possedees)
+                .peutCreerStructure(estPrincipal && possedees < quotaMax)
                 .estPraticienPrincipal(estPrincipal)
-                .titrePraticien(estPrincipal ? "Praticien Principal" : "Praticien Collaborateur");
+                .titrePraticien(estPrincipal ? "Praticien Principal" : "Praticien Collaborateur")
+                .validee(false);
 
-        if (activePharmacopee != null) {
-            builder.pharmacopeeId(activePharmacopee.getId())
-                   .nomPharmacopee(activePharmacopee.getNom())
-                   .telephonePharmacopee(activePharmacopee.getTelephone())
-                   .statutReferencement(activePharmacopee.getStatut())
-                   .validee(activePharmacopee.getStatut() == StatutPharmacopee.VALIDEE);
-        } else {
-            builder.validee(false);
-        }
-
+        membreActif.ifPresent(membre -> completerAvecPharmacopeeActive(builder, membre));
         return builder.build();
+    }
+
+    /** Contrairement aux autres appels, /me ne doit pas échouer sur un en-tête périmé : il sert à en choisir un autre. */
+    private Optional<MembrePharmacopee> membreAffiche(List<MembrePharmacopee> adhesions) {
+        Long demande;
+        try {
+            demande = lireEnTetePharmacopee();
+        } catch (BadRequestException e) {
+            log.debug("En-tête de pharmacopée ignoré pour /me : {}", e.getMessage());
+            demande = null;
+        }
+        Long pharmacopeeId = demande;
+        return adhesions.stream()
+                .filter(m -> m.getPharmacopee().getId().equals(pharmacopeeId))
+                .findFirst()
+                .or(() -> membreParDefaut(adhesions));
+    }
+
+    private void completerAvecPharmacopeeActive(PharmacopeeAuthResponse.PharmacopeeAuthResponseBuilder builder, MembrePharmacopee membre) {
+        Pharmacopee pharmacopee = membre.getPharmacopee();
+        Optional<Abonnement> abonnement = abonnementRepository.findEnVigueur(pharmacopee.getId());
+        builder.pharmacopeeId(pharmacopee.getId())
+                .nomPharmacopee(pharmacopee.getNom())
+                .telephonePharmacopee(pharmacopee.getTelephone())
+                .statutReferencement(pharmacopee.getStatut())
+                .validee(pharmacopee.getStatut() == StatutPharmacopee.VALIDEE)
+                .membreId(membre.getId())
+                .roles(attributionRepository.findByMembrePharmacopeeId(membre.getId()).stream()
+                        .map(a -> a.getRolePharmacopee().getCode())
+                        .toList())
+                .permissions(rolePermissionRepository.findCodesPermissionsEffectives(membre.getUtilisateur().getId(), pharmacopee.getId()))
+                .statutAbonnement(abonnement.map(a -> a.getStatut().name()).orElse(null))
+                .planAbonnement(abonnement.map(a -> libellePlan(a.getCodeOffreSouscrite())).orElse(PLAN_GRATUIT));
+    }
+
+    private static String libellePlan(String codeOffre) {
+        return IAbonnementCycleService.OFFRE_GRATUITE.equals(codeOffre) ? PLAN_GRATUIT : codeOffre;
+    }
+
+    private static PharmacopeeItemSummaryDto versResume(Pharmacopee p) {
+        Localisation loc = p.getLocalisation();
+        return PharmacopeeItemSummaryDto.builder()
+                .id(p.getId())
+                .nom(p.getNom())
+                .telephone(p.getTelephone())
+                .statut(p.getStatut())
+                .validee(p.getStatut() == StatutPharmacopee.VALIDEE)
+                .region(loc != null ? loc.getRegion() : null)
+                .cercle(loc != null ? loc.getCercle() : null)
+                .commune(loc != null ? loc.getCommune() : null)
+                .localite(loc != null ? loc.getLocalite() : null)
+                .build();
     }
 
     @Override
@@ -212,8 +249,7 @@ public class PharmacopeeAuthServiceImpl implements IPharmacopeeAuthService {
             throw new ForbiddenException("Identifiant de pharmacopée manquant.");
         }
 
-        List<Pharmacopee> structures = getMyPharmacopees();
-        boolean owns = structures.stream().anyMatch(p -> p.getId().equals(requestedPharmacopeeId));
+        boolean owns = getMyPharmacopees().stream().anyMatch(p -> p.getId().equals(requestedPharmacopeeId));
 
         if (!owns) {
             log.warn("Violation d'accès : l'utilisateur a tenté d'accéder aux ressources de la pharmacopée non autorisée ID {}", requestedPharmacopeeId);
@@ -233,85 +269,51 @@ public class PharmacopeeAuthServiceImpl implements IPharmacopeeAuthService {
         }
     }
 
-    private Long getHeaderTargetPharmacopeeId() {
-        ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-        if (attrs != null) {
-            HttpServletRequest request = attrs.getRequest();
-            String headerVal = request.getHeader("X-Pharmacopee-Id");
-            if (headerVal != null && !headerVal.isBlank()) {
-                try {
-                    return Long.parseLong(headerVal.trim());
-                } catch (NumberFormatException ignored) {}
-            }
-        }
-        return null;
-    }
-    @Override
-    public void verifyPraticienPrincipal() {
-        // Implementation mock
-    }
-
     @Override
     @Transactional
     public PharmacopeeAuthResponse registerPraticien(PraticienRegisterRequest request) {
-        log.info("Inscription d'un praticien principal (email: {})", request.getEmail());
+        log.info("Inscription d'un praticien principal");
 
         if (utilisateurRepository.existsByEmail(request.getEmail())) {
             throw new ConflictException("Utilisateur", "email", request.getEmail());
         }
 
-        String displayName = request.getPrenom() + " " + request.getNom();
         String firebaseUid;
         try {
-            firebaseUid = firebaseAuthService.createUser(request.getEmail(), request.getMotDePasse(), displayName);
+            firebaseUid = firebaseAuthService.createUser(request.getEmail(), request.getMotDePasse(),
+                    request.getPrenom() + " " + request.getNom());
         } catch (Exception e) {
             log.error("Échec de création du compte Firebase : {}", e.getMessage());
             throw new BadRequestException("Échec de la création du compte dans le service d'authentification : " + e.getMessage());
         }
 
         try {
+            return enregistrerPraticien(request, firebaseUid);
+        } catch (RuntimeException e) {
+            supprimerCompteFirebase(firebaseUid);
+            throw e;
+        }
+    }
+
+    private PharmacopeeAuthResponse enregistrerPraticien(PraticienRegisterRequest request, String firebaseUid) {
+        try {
             firebaseAuthService.setRole(firebaseUid, Role.PHARMACOPEE.name());
         } catch (Exception e) {
             log.warn("Impossible d'attribuer le rôle PHARMACOPEE dans Firebase pour l'UID {}: {}", firebaseUid, e.getMessage());
         }
 
-        Praticien praticien = new Praticien();
-        praticien.setNom(request.getNom());
-        praticien.setPrenom(request.getPrenom());
-        praticien.setEmail(request.getEmail());
-        praticien.setTelephone(request.getTelephone());
-        praticien.setRole(Role.PHARMACOPEE);
-        praticien.setStatut(StatutUtilisateur.ACTIF);
-        praticien.setFirebaseUid(firebaseUid);
-        praticien.setDateCreation(LocalDateTime.now());
-        praticien.setNumeroAgrement(request.getNumeroAgrement());
-        praticien.setSpecialite(request.getSpecialite());
-        praticien.setPlanAbonnement("GRATUIT");
-        praticien.setQuotaMaxStructures(2);
-        praticien.setEstPraticienPrincipal(true);
-        Praticien saved = praticienRepository.save(praticien);
+        Praticien saved = praticienRepository.saveAndFlush(nouveauPraticien(request, firebaseUid));
 
-        Localisation localisation = null;
-        if (hasText(request.getRegion()) && hasText(request.getCommune())) {
-            localisation = localisationRepository.save(Localisation.builder()
-                    .region(request.getRegion())
-                    .cercle(hasText(request.getCercle()) ? request.getCercle() : request.getRegion())
-                    .commune(request.getCommune())
-                    .localite(hasText(request.getLocalite()) ? request.getLocalite() : request.getCommune())
-                    .latitude(request.getLatitude())
-                    .longitude(request.getLongitude())
-                    .build());
-        }
-
-        Pharmacopee pharmacopee = Pharmacopee.builder()
+        Pharmacopee pharmacopee = pharmacopeeRepository.saveAndFlush(Pharmacopee.builder()
                 .nom(request.getNomPharmacopee())
                 .description(request.getDescriptionPharmacopee())
                 .telephone(request.getTelephonePharmacopee())
                 .statut(StatutPharmacopee.EN_ATTENTE)
                 .utilisateur(saved)
-                .localisation(localisation)
-                .build();
-        pharmacopeeRepository.save(pharmacopee);
+                .localisation(enregistrerLocalisation(request))
+                .build());
+        saved.getPharmacopees().add(pharmacopee);
+        initialisationService.initialiser(pharmacopee, saved);
 
         log.info("Praticien principal créé (ID={}) avec pharmacopée EN_ATTENTE", saved.getId());
 
@@ -333,8 +335,47 @@ public class PharmacopeeAuthServiceImpl implements IPharmacopeeAuthService {
                 .build();
     }
 
+    private static Praticien nouveauPraticien(PraticienRegisterRequest request, String firebaseUid) {
+        Praticien praticien = new Praticien();
+        praticien.setNom(request.getNom());
+        praticien.setPrenom(request.getPrenom());
+        praticien.setEmail(request.getEmail());
+        praticien.setTelephone(request.getTelephone());
+        praticien.setRole(Role.PHARMACOPEE);
+        praticien.setStatut(StatutUtilisateur.ACTIF);
+        praticien.setFirebaseUid(firebaseUid);
+        praticien.setDateCreation(LocalDateTime.now());
+        praticien.setNumeroAgrement(request.getNumeroAgrement());
+        praticien.setSpecialite(request.getSpecialite());
+        praticien.setPlanAbonnement(PLAN_GRATUIT);
+        praticien.setQuotaMaxStructures(2);
+        praticien.setEstPraticienPrincipal(true);
+        return praticien;
+    }
+
+    private Localisation enregistrerLocalisation(PraticienRegisterRequest request) {
+        if (!hasText(request.getRegion()) || !hasText(request.getCommune())) {
+            return null;
+        }
+        return localisationRepository.save(Localisation.builder()
+                .region(request.getRegion())
+                .cercle(hasText(request.getCercle()) ? request.getCercle() : request.getRegion())
+                .commune(request.getCommune())
+                .localite(hasText(request.getLocalite()) ? request.getLocalite() : request.getCommune())
+                .latitude(request.getLatitude())
+                .longitude(request.getLongitude())
+                .build());
+    }
+
+    private void supprimerCompteFirebase(String firebaseUid) {
+        try {
+            firebaseAuthService.deleteUser(firebaseUid);
+        } catch (Exception e) {
+            log.error("Compte Firebase orphelin après une inscription échouée (UID : {}) : {}", firebaseUid, e.getMessage());
+        }
+    }
+
     private static boolean hasText(String s) {
         return s != null && !s.isBlank();
     }
 }
-

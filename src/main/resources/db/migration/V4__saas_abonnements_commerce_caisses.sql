@@ -490,7 +490,7 @@ CREATE TABLE IF NOT EXISTS mouvements_stock (
   lot_id bigint,
   pharmacopee_id bigint not null,
   motif varchar(255),
-  type enum ('ANNULATION_ACHAT','ANNULATION_COMMANDE','ANNULATION_VENTE','ENTREE_ACHAT','SORTIE_COMMANDE','SORTIE_VENTE') not null,
+  type enum ('AJUSTEMENT_INVENTAIRE','ANNULATION_ACHAT','ANNULATION_COMMANDE','ANNULATION_VENTE','ENTREE_ACHAT','SORTIE_COMMANDE','SORTIE_VENTE') not null,
   PRIMARY KEY (id),
   KEY idx_mouvements_pharmacopee_date (pharmacopee_id, date_mouvement),
   KEY idx_mouvements_disponibilite (disponibilite_produit_id),

@@ -78,6 +78,46 @@ public class PharmacopeeMouvementStockServiceImpl implements IPharmacopeeMouveme
     }
 
     @Override
+    public List<MouvementStock> ajuster(Long pharmacopeeId, Long disponibiliteId, int nouvelleQuantite, String motif, MembrePharmacopee auteur) {
+        if (nouvelleQuantite < 0) {
+            throw new BadRequestException("La quantité en stock ne peut pas être négative.");
+        }
+        DisponibiliteProduit fiche = verrouillerFiche(pharmacopeeId, disponibiliteId);
+        int stock = stockDe(fiche);
+        if (nouvelleQuantite == stock) {
+            return List.of();
+        }
+        fiche.setQuantiteStock(nouvelleQuantite);
+        if (nouvelleQuantite > stock) {
+            return List.of(tracer(fiche, null, TypeMouvementStock.AJUSTEMENT_INVENTAIRE, nouvelleQuantite - stock, stock, null, motif, auteur));
+        }
+        return baisserStock(fiche, stock, stock - nouvelleQuantite, motif, auteur);
+    }
+
+    private List<MouvementStock> baisserStock(DisponibiliteProduit fiche, int stock, int baisse, String motif, MembrePharmacopee auteur) {
+        List<MouvementStock> mouvements = new ArrayList<>();
+        int stockCourant = stock;
+        int reste = baisse;
+        int horsLot = Math.min(reste, Math.max(0, stock - lotRepository.sumQuantiteRestante(fiche.getId())));
+        if (horsLot > 0) {
+            mouvements.add(tracer(fiche, null, TypeMouvementStock.AJUSTEMENT_INVENTAIRE, -horsLot, stockCourant, null, motif, auteur));
+            stockCourant -= horsLot;
+            reste -= horsLot;
+        }
+        for (Lot lot : lotRepository.findLotsPourAjustementForUpdate(fiche.getId(), LocalDate.now())) {
+            if (reste == 0) {
+                break;
+            }
+            int preleve = Math.min(reste, lot.getQuantiteRestante());
+            lot.setQuantiteRestante(lot.getQuantiteRestante() - preleve);
+            mouvements.add(tracer(fiche, lot, TypeMouvementStock.AJUSTEMENT_INVENTAIRE, -preleve, stockCourant, null, motif, auteur));
+            stockCourant -= preleve;
+            reste -= preleve;
+        }
+        return mouvements;
+    }
+
+    @Override
     public List<MouvementStock> annuler(List<MouvementStock> mouvements, TypeMouvementStock typeAnnulation,
                                         String motif, MembrePharmacopee auteur) {
         List<MouvementStock> inverses = new ArrayList<>();

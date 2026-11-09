@@ -25,7 +25,7 @@ import com.pharmacopee.ladafura.repository.CommandeRepository;
 import com.pharmacopee.ladafura.repository.DisponibiliteProduitRepository;
 import com.pharmacopee.ladafura.repository.ModeRetraitRepository;
 import com.pharmacopee.ladafura.repository.NotificationRepository;
-import com.pharmacopee.ladafura.services.interfaces.IPharmacopeeAuthService;
+import com.pharmacopee.ladafura.services.interfaces.IPharmacopeeContexteService;
 import com.pharmacopee.ladafura.services.interfaces.IPharmacopeeDashboardService;
 
 import lombok.RequiredArgsConstructor;
@@ -37,7 +37,7 @@ import lombok.extern.slf4j.Slf4j;
 @Transactional(readOnly = true)
 public class PharmacopeeDashboardServiceImpl implements IPharmacopeeDashboardService {
 
-    private final IPharmacopeeAuthService pharmacopeeAuthService;
+    private final IPharmacopeeContexteService contexteService;
     private final DisponibiliteProduitRepository disponibiliteProduitRepository;
     private final CommandeRepository commandeRepository;
     private final AvisRepository avisRepository;
@@ -46,7 +46,7 @@ public class PharmacopeeDashboardServiceImpl implements IPharmacopeeDashboardSer
 
     @Override
     public PharmacopeeDashboardResponse getDashboard() {
-        Pharmacopee pharmacopee = pharmacopeeAuthService.getCurrentPharmacopee();
+        Pharmacopee pharmacopee = contexteService.verifierPermission(IPharmacopeeContexteService.STATISTIQUES_CONSULTER).pharmacopee();
         Long pId = pharmacopee.getId();
         log.info("Génération du tableau de bord consolidé pour la pharmacopée ID {} ({})", pId, pharmacopee.getNom());
 

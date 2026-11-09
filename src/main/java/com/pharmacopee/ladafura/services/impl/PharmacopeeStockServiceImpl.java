@@ -18,7 +18,13 @@ import com.pharmacopee.ladafura.dto.pharmacopee.stock.UpdateStockCompletRequest;
 import com.pharmacopee.ladafura.dto.pharmacopee.stock.UpdateStockRequest;
 import com.pharmacopee.ladafura.exceptions.ResourceNotFoundException;
 import com.pharmacopee.ladafura.repository.DisponibiliteProduitRepository;
-import com.pharmacopee.ladafura.services.interfaces.IPharmacopeeAuthService;
+import com.pharmacopee.ladafura.enums.OrigineAction;
+import com.pharmacopee.ladafura.enums.TypeActionAudit;
+import com.pharmacopee.ladafura.services.interfaces.IJournalAuditService;
+import com.pharmacopee.ladafura.services.interfaces.IJournalAuditService.EvenementAudit;
+import com.pharmacopee.ladafura.services.interfaces.IPharmacopeeContexteService;
+import com.pharmacopee.ladafura.services.interfaces.IPharmacopeeContexteService.ContexteMembre;
+import com.pharmacopee.ladafura.services.interfaces.IPharmacopeeMouvementStockService;
 import com.pharmacopee.ladafura.services.interfaces.IPharmacopeeStockService;
 
 import lombok.RequiredArgsConstructor;
@@ -30,13 +36,17 @@ import lombok.extern.slf4j.Slf4j;
 @Transactional
 public class PharmacopeeStockServiceImpl implements IPharmacopeeStockService {
 
-    private final IPharmacopeeAuthService pharmacopeeAuthService;
+    private final IPharmacopeeContexteService contexteService;
+    private static final String MOTIF_AJUSTEMENT_PAR_DEFAUT = "Ajustement manuel du stock";
+
     private final DisponibiliteProduitRepository disponibiliteProduitRepository;
+    private final IPharmacopeeMouvementStockService mouvementStockService;
+    private final IJournalAuditService journalAuditService;
 
     @Override
     @Transactional(readOnly = true)
     public Page<PharmacopeeStockResponse> getStocks(Boolean disponible, Boolean enRupture, Pageable pageable) {
-        Pharmacopee pharmacopee = pharmacopeeAuthService.getCurrentPharmacopee();
+        Pharmacopee pharmacopee = contexteService.verifierPermission(IPharmacopeeContexteService.STOCK_CONSULTER).pharmacopee();
         log.info("Consultation paginée des stocks pour la pharmacopée ID {} (disponible={})",
                 pharmacopee.getId(), disponible);
 
@@ -53,7 +63,7 @@ public class PharmacopeeStockServiceImpl implements IPharmacopeeStockService {
     @Override
     @Transactional(readOnly = true)
     public PharmacopeeStockSummaryResponse getSummary() {
-        Pharmacopee pharmacopee = pharmacopeeAuthService.getCurrentPharmacopee();
+        Pharmacopee pharmacopee = contexteService.verifierPermission(IPharmacopeeContexteService.STOCK_CONSULTER).pharmacopee();
         List<DisponibiliteProduit> list = disponibiliteProduitRepository.findByPharmacopeeId(pharmacopee.getId());
 
         int totalReferences = list.size();
@@ -92,7 +102,7 @@ public class PharmacopeeStockServiceImpl implements IPharmacopeeStockService {
     @Override
     @Transactional(readOnly = true)
     public PharmacopeeStockResponse getStockByProduit(Long produitId) {
-        Pharmacopee pharmacopee = pharmacopeeAuthService.getCurrentPharmacopee();
+        Pharmacopee pharmacopee = contexteService.verifierPermission(IPharmacopeeContexteService.STOCK_CONSULTER).pharmacopee();
 
         DisponibiliteProduit dispo = disponibiliteProduitRepository
                 .findByPharmacopeeIdAndProduitId(pharmacopee.getId(), produitId)
@@ -103,27 +113,42 @@ public class PharmacopeeStockServiceImpl implements IPharmacopeeStockService {
 
     @Override
     public PharmacopeeStockResponse updateQuantiteStock(Long produitId, UpdateStockRequest request) {
-        pharmacopeeAuthService.verifyPharmacopeeValidated();
-        Pharmacopee pharmacopee = pharmacopeeAuthService.getCurrentPharmacopee();
-
-        DisponibiliteProduit dispo = disponibiliteProduitRepository
-                .findByPharmacopeeIdAndProduitId(pharmacopee.getId(), produitId)
-                .orElseThrow(() -> new ResourceNotFoundException("DisponibiliteProduit", "produitId", produitId));
-
-        dispo.setQuantiteStock(request.getQuantiteStock());
-        dispo.setDateMiseAJour(LocalDateTime.now());
-
-        DisponibiliteProduit saved = disponibiliteProduitRepository.save(dispo);
-        log.info("Stock du produit ID {} mis à jour: {} unités pour pharmacopée ID {}",
-                produitId, request.getQuantiteStock(), pharmacopee.getId());
-
+        ContexteMembre contexte = contexteService.verifierOperationCommerciale(IPharmacopeeContexteService.STOCK_AJUSTER);
+        DisponibiliteProduit dispo = chargerFiche(contexte.pharmacopee().getId(), produitId);
+        DisponibiliteProduit saved = ajusterQuantite(contexte, dispo, request.getQuantiteStock(), request.getMotif());
         return mapToResponse(saved);
     }
 
     @Override
+    public DisponibiliteProduit ajusterQuantite(ContexteMembre contexte, DisponibiliteProduit fiche, int nouvelleQuantite, String motif) {
+        int ancienneQuantite = fiche.getQuantiteStock() != null ? fiche.getQuantiteStock() : 0;
+        String motifRetenu = (motif != null && !motif.isBlank()) ? motif.trim() : MOTIF_AJUSTEMENT_PAR_DEFAUT;
+        boolean modifie = !mouvementStockService.ajuster(contexte.pharmacopee().getId(), fiche.getId(), nouvelleQuantite, motifRetenu, contexte.membre()).isEmpty();
+        fiche.setDateMiseAJour(LocalDateTime.now());
+        if (modifie) {
+            journalAuditService.tracer(EvenementAudit.builder()
+                    .action(TypeActionAudit.STOCK_AJUSTE)
+                    .origine(OrigineAction.PHARMACOPEE)
+                    .pharmacopee(contexte.pharmacopee())
+                    .utilisateur(contexte.membre().getUtilisateur())
+                    .typeEntite("DisponibiliteProduit")
+                    .entiteId(fiche.getId())
+                    .ancienneValeur(String.valueOf(ancienneQuantite))
+                    .nouvelleValeur(String.valueOf(nouvelleQuantite))
+                    .description(motifRetenu)
+                    .build());
+        }
+        return fiche;
+    }
+
+    private DisponibiliteProduit chargerFiche(Long pharmacopeeId, Long produitId) {
+        return disponibiliteProduitRepository.findByPharmacopeeIdAndProduitId(pharmacopeeId, produitId)
+                .orElseThrow(() -> new ResourceNotFoundException("DisponibiliteProduit", "produitId", produitId));
+    }
+
+    @Override
     public PharmacopeeStockResponse updatePrix(Long produitId, UpdatePrixRequest request) {
-        pharmacopeeAuthService.verifyPharmacopeeValidated();
-        Pharmacopee pharmacopee = pharmacopeeAuthService.getCurrentPharmacopee();
+        Pharmacopee pharmacopee = contexteService.verifierOperationCommerciale(IPharmacopeeContexteService.PRODUITS_GERER).pharmacopee();
 
         DisponibiliteProduit dispo = disponibiliteProduitRepository
                 .findByPharmacopeeIdAndProduitId(pharmacopee.getId(), produitId)
@@ -141,8 +166,7 @@ public class PharmacopeeStockServiceImpl implements IPharmacopeeStockService {
 
     @Override
     public PharmacopeeStockResponse toggleDisponibilite(Long produitId) {
-        pharmacopeeAuthService.verifyPharmacopeeValidated();
-        Pharmacopee pharmacopee = pharmacopeeAuthService.getCurrentPharmacopee();
+        Pharmacopee pharmacopee = contexteService.verifierOperationCommerciale(IPharmacopeeContexteService.PRODUITS_GERER).pharmacopee();
 
         DisponibiliteProduit dispo = disponibiliteProduitRepository
                 .findByPharmacopeeIdAndProduitId(pharmacopee.getId(), produitId)
@@ -161,15 +185,17 @@ public class PharmacopeeStockServiceImpl implements IPharmacopeeStockService {
 
     @Override
     public PharmacopeeStockResponse updateStockComplet(Long produitId, UpdateStockCompletRequest request) {
-        pharmacopeeAuthService.verifyPharmacopeeValidated();
-        Pharmacopee pharmacopee = pharmacopeeAuthService.getCurrentPharmacopee();
+        boolean modifieQuantite = request.getQuantiteStock() != null;
+        boolean modifieVente = request.getPrix() != null || request.getDisponible() != null;
+        ContexteMembre contexte = contexteService.verifierOperationCommerciale(
+                modifieVente ? IPharmacopeeContexteService.PRODUITS_GERER : IPharmacopeeContexteService.STOCK_AJUSTER);
+        if (modifieVente && modifieQuantite) {
+            contexteService.verifierPermission(IPharmacopeeContexteService.STOCK_AJUSTER);
+        }
+        DisponibiliteProduit dispo = chargerFiche(contexte.pharmacopee().getId(), produitId);
 
-        DisponibiliteProduit dispo = disponibiliteProduitRepository
-                .findByPharmacopeeIdAndProduitId(pharmacopee.getId(), produitId)
-                .orElseThrow(() -> new ResourceNotFoundException("DisponibiliteProduit", "produitId", produitId));
-
-        if (request.getQuantiteStock() != null) {
-            dispo.setQuantiteStock(request.getQuantiteStock());
+        if (modifieQuantite) {
+            ajusterQuantite(contexte, dispo, request.getQuantiteStock(), request.getMotif());
         }
         if (request.getPrix() != null) {
             dispo.setPrix(request.getPrix());
@@ -181,7 +207,7 @@ public class PharmacopeeStockServiceImpl implements IPharmacopeeStockService {
 
         DisponibiliteProduit saved = disponibiliteProduitRepository.save(dispo);
         log.info("Mise à jour complète du stock/prix pour le produit ID {} dans pharmacopée ID {}",
-                produitId, pharmacopee.getId());
+                produitId, contexte.pharmacopee().getId());
 
         return mapToResponse(saved);
     }

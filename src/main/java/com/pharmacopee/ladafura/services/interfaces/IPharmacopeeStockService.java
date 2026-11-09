@@ -44,5 +44,8 @@ public interface IPharmacopeeStockService {
     /**
      * Mise à jour complète (quantité, prix de vente et disponibilité).
      */
+    com.pharmacopee.ladafura.Models.DisponibiliteProduit ajusterQuantite(IPharmacopeeContexteService.ContexteMembre contexte,
+            com.pharmacopee.ladafura.Models.DisponibiliteProduit fiche, int nouvelleQuantite, String motif);
+
     PharmacopeeStockResponse updateStockComplet(Long produitId, UpdateStockCompletRequest request);
 }

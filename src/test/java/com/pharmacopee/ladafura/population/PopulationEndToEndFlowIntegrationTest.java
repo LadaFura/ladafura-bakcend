@@ -1,5 +1,9 @@
 package com.pharmacopee.ladafura.population;
 
+import com.pharmacopee.ladafura.Models.Abonnement;
+import com.pharmacopee.ladafura.enums.StatutAbonnement;
+import com.pharmacopee.ladafura.repository.AbonnementRepository;
+import com.pharmacopee.ladafura.services.interfaces.ICommandeStockCaisseService;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -131,8 +135,16 @@ class PopulationEndToEndFlowIntegrationTest {
     private ModeRetrait modeLivraison;
     private Panier panier;
 
+    @Mock
+    private ICommandeStockCaisseService commandeStockCaisseService;
+
+    @Mock
+    private AbonnementRepository abonnementRepository;
+
     @BeforeEach
     void setUp() {
+        org.mockito.Mockito.lenient().when(abonnementRepository.findEnVigueur(org.mockito.ArgumentMatchers.anyLong()))
+                .thenReturn(java.util.Optional.of(Abonnement.builder().statut(StatutAbonnement.ACTIF).build()));
         citoyen = new Utilisateur();
         citoyen.setId(100L);
         citoyen.setEmail("citoyen.bamako@ladafura.ml");
@@ -184,11 +196,11 @@ class PopulationEndToEndFlowIntegrationTest {
                 authService, panierRepository, lignePanierRepository, produitRepository, panierMapper);
 
         commandeService = new PopulationCommandeServiceImpl(
-                authService, commandeRepository, panierRepository, lignePanierRepository,
+                authService, commandeStockCaisseService, abonnementRepository, commandeRepository, panierRepository, lignePanierRepository,
                 pharmacopeeRepository, modeRetraitRepository, dispoRepo, paiementRepository, commandeMapper);
 
         paiementService = new PopulationPaiementServiceImpl(
-                authService, paiementRepository, commandeRepository, paiementMapper);
+                authService, commandeStockCaisseService, paiementRepository, commandeRepository, paiementMapper);
 
         avisService = new PopulationAvisServiceImpl(
                 authService, avisRepository, pharmacopeeRepository, commandeRepository, avisMapper);

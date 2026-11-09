@@ -16,6 +16,7 @@ import com.pharmacopee.ladafura.enums.StatutPharmacopee;
 import com.pharmacopee.ladafura.repository.PharmacopeeRepository;
 import com.pharmacopee.ladafura.repository.UtilisateurRepository;
 import com.pharmacopee.ladafura.services.interfaces.IPharmacopeeAuthService;
+import com.pharmacopee.ladafura.services.interfaces.IPharmacopeeContexteService;
 import com.pharmacopee.ladafura.services.interfaces.IPharmacopeeLocalisationService;
 import com.pharmacopee.ladafura.services.interfaces.IPharmacopeeProfileService;
 
@@ -29,6 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 public class PharmacopeeProfileServiceImpl implements IPharmacopeeProfileService {
 
     private final IPharmacopeeAuthService pharmacopeeAuthService;
+    private final IPharmacopeeContexteService contexteService;
     private final IPharmacopeeLocalisationService localisationService;
     private final PharmacopeeRepository pharmacopeeRepository;
     private final UtilisateurRepository utilisateurRepository;
@@ -42,8 +44,7 @@ public class PharmacopeeProfileServiceImpl implements IPharmacopeeProfileService
 
     @Override
     public PharmacopeeProfileResponse updateProfile(PharmacopeeUpdateProfileRequest request) {
-        pharmacopeeAuthService.verifyPharmacopeeValidated();
-        Pharmacopee pharmacopee = pharmacopeeAuthService.getCurrentPharmacopee();
+        Pharmacopee pharmacopee = contexteService.verifierOperationCommerciale(IPharmacopeeContexteService.PROFIL_PHARMACOPEE_GERER).pharmacopee();
 
         log.info("Mise à jour du profil de la pharmacopée ID {}", pharmacopee.getId());
 

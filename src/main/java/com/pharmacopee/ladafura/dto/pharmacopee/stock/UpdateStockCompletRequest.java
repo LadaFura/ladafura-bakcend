@@ -19,6 +19,10 @@ public class UpdateStockCompletRequest {
     @Schema(description = "Quantité en stock physique", example = "40")
     private Integer quantiteStock;
 
+    @jakarta.validation.constraints.Size(max = 255, message = "Le motif ne doit pas dépasser 255 caractères")
+    @Schema(description = "Motif de l'ajustement de stock (facultatif)", example = "Inventaire de fin de mois")
+    private String motif;
+
     @Positive(message = "Le prix de vente doit être strictement positif s'il est spécifié")
     @Schema(description = "Prix de vente spécifique en FCFA (optionnel)", example = "2750.0")
     private Double prix;

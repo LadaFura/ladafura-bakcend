@@ -18,4 +18,10 @@ public interface IPharmacopeeQuotaService {
 
     /** Consommation actuelle d'une limite. */
     long consommationActuelle(Long pharmacopeeId, String codeLimite);
+
+    /** Paramètre plateforme MAX_PHARMACOPEES_PAR_GERANT. */
+    int maxPharmacopeesParGerant();
+
+    /** Nombre de pharmacopées dont l'utilisateur est propriétaire actif. */
+    long pharmacopeesPossedees(Long utilisateurId);
 }

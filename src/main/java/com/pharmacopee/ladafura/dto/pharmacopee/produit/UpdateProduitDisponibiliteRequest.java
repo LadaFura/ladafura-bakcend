@@ -18,6 +18,10 @@ public class UpdateProduitDisponibiliteRequest {
     @Schema(description = "Quantité en stock physique", example = "35")
     private Integer quantiteStock;
 
+    @jakarta.validation.constraints.Size(max = 255, message = "Le motif ne doit pas dépasser 255 caractères")
+    @Schema(description = "Motif de l'ajustement de stock (facultatif)", example = "Inventaire de fin de mois")
+    private String motif;
+
     @Schema(description = "Activer ou désactiver la mise en vente de ce produit dans votre pharmacopée", example = "true")
     private Boolean disponible;
 }

@@ -1,6 +1,14 @@
 package com.pharmacopee.ladafura.services.impl;
 
 import java.util.LinkedHashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import com.pharmacopee.ladafura.enums.OrigineAction;
+import com.pharmacopee.ladafura.enums.TypeActionAudit;
+import com.pharmacopee.ladafura.exceptions.ConflictException;
+import com.pharmacopee.ladafura.services.interfaces.IJournalAuditService.EvenementAudit;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -41,6 +49,9 @@ public class AdminPharmacopeeServiceImpl implements IAdminPharmacopeeService {
     private final AdminPharmacopeeMapper pharmacopeeMapper;
     private final jakarta.persistence.EntityManager entityManager;
     private final com.pharmacopee.ladafura.services.interfaces.IPharmacopeeNotificationService pharmacopeeNotificationService;
+    private final com.pharmacopee.ladafura.services.interfaces.IPharmacopeeInitialisationService initialisationService;
+    private final com.pharmacopee.ladafura.services.interfaces.IPharmacopeeAuthService pharmacopeeAuthService;
+    private final com.pharmacopee.ladafura.services.interfaces.IJournalAuditService journalAuditService;
 
     @Override
     @Transactional(readOnly = true)
@@ -95,7 +106,9 @@ public class AdminPharmacopeeServiceImpl implements IAdminPharmacopeeService {
                 .utilisateur(proprietaire)
                 .build();
 
-        Pharmacopee saved = pharmacopeeRepository.save(pharmacopee);
+        Pharmacopee saved = pharmacopeeRepository.saveAndFlush(pharmacopee);
+
+        initialisationService.initialiser(saved, proprietaire);
 
         // Synchronisation des praticiens affiliés
         synchroniserPraticiens(saved, request.getPraticienIds(), request.getUtilisateurId());
@@ -109,6 +122,7 @@ public class AdminPharmacopeeServiceImpl implements IAdminPharmacopeeService {
 
         Pharmacopee pharmacopee = pharmacopeeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Pharmacopée", "id", id));
+        StatutPharmacopee ancienStatut = pharmacopee.getStatut();
 
         if (request.getNom() != null) {
             pharmacopee.setNom(request.getNom().trim());
@@ -128,6 +142,9 @@ public class AdminPharmacopeeServiceImpl implements IAdminPharmacopeeService {
         if (request.getUtilisateurId() != null) {
             Utilisateur proprietaire = utilisateurRepository.findById(request.getUtilisateurId()).orElse(null);
             pharmacopee.setUtilisateur(proprietaire);
+            if (proprietaire != null) {
+                initialisationService.definirProprietaire(pharmacopee, proprietaire);
+            }
         }
 
         // Localisation
@@ -155,6 +172,8 @@ public class AdminPharmacopeeServiceImpl implements IAdminPharmacopeeService {
             synchroniserPraticiens(saved, request.getPraticienIds(), principalId);
         }
 
+        tracerModificationAdmin(saved, ancienStatut);
+
         return pharmacopeeMapper.toDetailDto(saved);
     }
 
@@ -176,6 +195,8 @@ public class AdminPharmacopeeServiceImpl implements IAdminPharmacopeeService {
             ensurePraticienRowExists(uid, isPrincipal);
         }
 
+        Set<Long> anciensRattaches = praticiensRattaches(pharmacopee.getId());
+
         // Nettoyage et ré-insertion des liaisons
         entityManager.createNativeQuery("DELETE FROM praticiens_pharmacopees WHERE pharmacopee_id = :pharmaId")
                 .setParameter("pharmaId", pharmacopee.getId())
@@ -194,8 +215,45 @@ public class AdminPharmacopeeServiceImpl implements IAdminPharmacopeeService {
             });
         }
 
+        List<Utilisateur> rattaches = utilisateurRepository.findAllById(allIds).stream()
+                .filter(u -> u.getRole() == com.pharmacopee.ladafura.enums.Role.PHARMACOPEE)
+                .toList();
+        anciensRattaches.removeAll(allIds);
+        initialisationService.synchroniserPraticiens(pharmacopee, rattaches, anciensRattaches);
+
         entityManager.flush();
         entityManager.refresh(pharmacopee);
+    }
+
+    @SuppressWarnings("unchecked")
+    private Set<Long> praticiensRattaches(Long pharmacopeeId) {
+        List<Number> ids = entityManager.createNativeQuery("SELECT praticien_id FROM praticiens_pharmacopees WHERE pharmacopee_id = :pharmaId")
+                .setParameter("pharmaId", pharmacopeeId)
+                .getResultList();
+        return ids.stream().map(Number::longValue).collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    private void tracerModificationAdmin(Pharmacopee pharmacopee, StatutPharmacopee ancienStatut) {
+        boolean statutModifie = ancienStatut != pharmacopee.getStatut();
+        tracerAdmin(pharmacopee,
+                statutModifie ? TypeActionAudit.PHARMACOPEE_STATUT_MODIFIE : TypeActionAudit.ACCES_ADMIN_PHARMACOPEE,
+                statutModifie ? ancienStatut.name() : null,
+                statutModifie ? pharmacopee.getStatut().name() : null,
+                statutModifie ? "Statut modifié par l'administration" : "Fiche modifiée par l'administration");
+    }
+
+    private void tracerAdmin(Pharmacopee pharmacopee, TypeActionAudit action, String ancienne, String nouvelle, String description) {
+        journalAuditService.tracer(EvenementAudit.builder()
+                .action(action)
+                .origine(OrigineAction.ADMINISTRATION)
+                .pharmacopee(pharmacopee)
+                .utilisateur(pharmacopeeAuthService.getCurrentUtilisateur())
+                .typeEntite("Pharmacopee")
+                .entiteId(pharmacopee.getId())
+                .ancienneValeur(ancienne)
+                .nouvelleValeur(nouvelle)
+                .description(description)
+                .build());
     }
 
     private void ensurePraticienRowExists(Long userId, boolean isPrincipal) {
@@ -219,8 +277,10 @@ public class AdminPharmacopeeServiceImpl implements IAdminPharmacopeeService {
         Pharmacopee pharmacopee = pharmacopeeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Pharmacopée", "id", id));
 
+        StatutPharmacopee ancienStatut = pharmacopee.getStatut();
         pharmacopee.setStatut(request.getAction());
         Pharmacopee saved = pharmacopeeRepository.save(pharmacopee);
+        tracerAdmin(saved, TypeActionAudit.PHARMACOPEE_STATUT_MODIFIE, ancienStatut.name(), saved.getStatut().name(), request.getMotif());
 
         String titre;
         String msg;
@@ -266,10 +326,9 @@ public class AdminPharmacopeeServiceImpl implements IAdminPharmacopeeService {
 
     @Override
     public void deletePharmacopee(Long id) {
-        log.info("Suppression de la pharmacopée ID {}", id);
-        Pharmacopee pharmacopee = pharmacopeeRepository.findById(id)
+        pharmacopeeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Pharmacopée", "id", id));
-
-        pharmacopeeRepository.delete(pharmacopee);
+        // L'abonnement, les caisses et le journal d'audit d'une pharmacopée doivent être conservés.
+        throw new ConflictException("Une pharmacopée ne peut pas être supprimée : suspendez-la ou rejetez sa demande.");
     }
 }

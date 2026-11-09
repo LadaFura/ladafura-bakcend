@@ -11,6 +11,8 @@ import com.pharmacopee.ladafura.Models.LigneVente;
 @Repository
 public interface LigneVenteRepository extends JpaRepository<LigneVente, Long> {
 
+    boolean existsByDisponibiliteProduitId(Long disponibiliteProduitId);
+
     @EntityGraph(attributePaths = "disponibiliteProduit")
     List<LigneVente> findByVenteId(Long venteId);
 }

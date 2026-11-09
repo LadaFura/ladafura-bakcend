@@ -200,10 +200,20 @@ public class AbonnementCycleServiceImpl implements IAbonnementCycleService {
     }
 
     @Override
-    public Abonnement retournerAuGratuit(Pharmacopee pharmacopee, Abonnement precedent, Utilisateur acteur) {
-        OffreAbonnement gratuite = offreRepository.findByCode(OFFRE_GRATUITE)
+    public Abonnement attribuerGratuit(Pharmacopee pharmacopee, Utilisateur acteur) {
+        Abonnement abonnement = creerDepuisOffre(pharmacopee, offreGratuite(), null);
+        activer(abonnement, LocalDateTime.now(), TypeEvenementAbonnement.ACTIVATION, acteur);
+        return abonnement;
+    }
+
+    private OffreAbonnement offreGratuite() {
+        return offreRepository.findByCode(OFFRE_GRATUITE)
                 .orElseThrow(() -> new ResourceNotFoundException("Offre", "code", OFFRE_GRATUITE));
-        Abonnement abonnement = creerDepuisOffre(pharmacopee, gratuite, null);
+    }
+
+    @Override
+    public Abonnement retournerAuGratuit(Pharmacopee pharmacopee, Abonnement precedent, Utilisateur acteur) {
+        Abonnement abonnement = creerDepuisOffre(pharmacopee, offreGratuite(), null);
         abonnement.setAbonnementPrecedent(precedent);
         activer(abonnement, LocalDateTime.now(), TypeEvenementAbonnement.RETOUR_GRATUIT, acteur);
         suspendreMembresEnTrop(abonnement);

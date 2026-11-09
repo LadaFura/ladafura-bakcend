@@ -35,6 +35,18 @@ public interface IPharmacopeeContexteService {
     String DEPENSES_GERER = "DEPENSES_GERER";
     String COMPTABILITE_CONSULTER = "COMPTABILITE_CONSULTER";
     String AUDIT_CONSULTER = "AUDIT_CONSULTER";
+    String PRODUITS_CONSULTER = "PRODUITS_CONSULTER";
+    String PRODUITS_GERER = "PRODUITS_GERER";
+    String STOCK_CONSULTER = "STOCK_CONSULTER";
+    String STOCK_AJUSTER = "STOCK_AJUSTER";
+    String COMMANDES_CONSULTER = "COMMANDES_CONSULTER";
+    String COMMANDES_TRAITER = "COMMANDES_TRAITER";
+    String PAIEMENTS_CONSULTER = "PAIEMENTS_CONSULTER";
+    String AVIS_CONSULTER = "AVIS_CONSULTER";
+    String AVIS_REPONDRE = "AVIS_REPONDRE";
+    String RETRAIT_GERER = "RETRAIT_GERER";
+    String STATISTIQUES_CONSULTER = "STATISTIQUES_CONSULTER";
+    String PROFIL_PHARMACOPEE_GERER = "PROFIL_PHARMACOPEE_GERER";
 
     /** Membre courant, sa pharmacopée et ses permissions effectives. */
     record ContexteMembre(MembrePharmacopee membre, Pharmacopee pharmacopee, Set<String> permissions) {
@@ -62,6 +74,14 @@ public interface IPharmacopeeContexteService {
      * @throws com.pharmacopee.ladafura.exceptions.ForbiddenException sinon
      */
     void verifierEcritureAutorisee(Long pharmacopeeId);
+
+    /**
+     * Permission et pharmacopée VALIDEE, sans contrôle d'abonnement : consultations et traitement
+     * des commandes en cours, qui doivent pouvoir se terminer même en lecture seule.
+     *
+     * @throws com.pharmacopee.ladafura.exceptions.ForbiddenException si l'un des contrôles échoue
+     */
+    ContexteMembre verifierPharmacopeeValidee(String codePermission);
 
     /**
      * Contrôles d'une opération commerciale : permission, pharmacopée VALIDEE, abonnement ACTIF.

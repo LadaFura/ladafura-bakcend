@@ -23,7 +23,22 @@ public interface MembrePharmacopeeRepository extends JpaRepository<MembrePharmac
 
     Optional<MembrePharmacopee> findByUtilisateurIdAndPharmacopeeId(Long utilisateurId, Long pharmacopeeId);
 
+    @EntityGraph(attributePaths = "pharmacopee")
     Optional<MembrePharmacopee> findByUtilisateurIdAndPharmacopeeIdAndStatut(Long utilisateurId, Long pharmacopeeId, StatutMembre statut);
+
+    /** Une adhésion en cours donne accès à l'espace pharmacopée, quel que soit le rôle plateforme du compte. */
+    boolean existsByUtilisateurIdAndStatutIn(Long utilisateurId, java.util.Collection<StatutMembre> statuts);
+
+    boolean existsByUtilisateur_FirebaseUidAndStatutIn(String firebaseUid, java.util.Collection<StatutMembre> statuts);
+
+    boolean existsByUtilisateur_EmailAndStatutIn(String email, java.util.Collection<StatutMembre> statuts);
+
+    /** Consommation du quota MAX_PHARMACOPEES_PAR_GERANT. */
+    long countByUtilisateurIdAndEstProprietaireTrueAndStatut(Long utilisateurId, StatutMembre statut);
+
+    /** Membres présentés par l'ancien endpoint /collaborateurs (retiré au lot 7). */
+    @EntityGraph(attributePaths = "utilisateur")
+    Page<MembrePharmacopee> findByPharmacopeeIdAndEstProprietaireFalseAndStatutNot(Long pharmacopeeId, StatutMembre statut, Pageable pageable);
 
     boolean existsByUtilisateurIdAndPharmacopeeId(Long utilisateurId, Long pharmacopeeId);
 

@@ -91,8 +91,8 @@ public class AdminPharmacopeeController {
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Supprimer une pharmacopée", description = "Supprime définitivement une structure de pharmacopée du système national.")
-    @ApiResponse(responseCode = "204", description = "Pharmacopée supprimée")
+    @ApiResponse(responseCode = "409", description = "Suppression refusée : suspendre ou rejeter la pharmacopée")
+    @Operation(summary = "Supprimer une pharmacopée", description = "Toujours refusé : l'abonnement, les caisses et l'audit sont conservés. Suspendre ou rejeter la pharmacopée.")
     @ApiResponse(responseCode = "404", description = "Pharmacopée introuvable")
     public ResponseEntity<Void> deletePharmacopee(@PathVariable Long id) {
         pharmacopeeService.deletePharmacopee(id);

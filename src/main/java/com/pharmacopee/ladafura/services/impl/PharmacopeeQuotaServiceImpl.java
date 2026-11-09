@@ -28,11 +28,15 @@ import lombok.extern.slf4j.Slf4j;
 @Transactional(readOnly = true)
 public class PharmacopeeQuotaServiceImpl implements IPharmacopeeQuotaService {
 
+    private static final String PARAMETRE_MAX_PHARMACOPEES = "MAX_PHARMACOPEES_PAR_GERANT";
+    private static final int MAX_PHARMACOPEES_PAR_DEFAUT = 2;
+
     private final AbonnementRepository abonnementRepository;
     private final LimiteAbonnementRepository limiteAbonnementRepository;
     private final MembrePharmacopeeRepository membrePharmacopeeRepository;
     private final DisponibiliteProduitRepository disponibiliteProduitRepository;
     private final VenteRepository venteRepository;
+    private final com.pharmacopee.ladafura.repository.ParametrePlateformeRepository parametreRepository;
 
     @Override
     public void verifierQuota(Long pharmacopeeId, String codeLimite) {
@@ -49,6 +53,18 @@ public class PharmacopeeQuotaServiceImpl implements IPharmacopeeQuotaService {
             throw new QuotaExceededException("Vous avez atteint la limite de votre abonnement ("
                     + limite.getValeurMaximale() + "). Veuillez souscrire à une offre supérieure.");
         }
+    }
+
+    @Override
+    public int maxPharmacopeesParGerant() {
+        return parametreRepository.findByCode(PARAMETRE_MAX_PHARMACOPEES)
+                .map(p -> Integer.parseInt(p.getValeur().trim()))
+                .orElse(MAX_PHARMACOPEES_PAR_DEFAUT);
+    }
+
+    @Override
+    public long pharmacopeesPossedees(Long utilisateurId) {
+        return membrePharmacopeeRepository.countByUtilisateurIdAndEstProprietaireTrueAndStatut(utilisateurId, StatutMembre.ACTIF);
     }
 
     @Override

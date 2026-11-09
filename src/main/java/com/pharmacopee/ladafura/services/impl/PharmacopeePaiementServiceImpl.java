@@ -19,10 +19,11 @@ import com.pharmacopee.ladafura.enums.MethodePaiement;
 import com.pharmacopee.ladafura.enums.StatutCommande;
 import com.pharmacopee.ladafura.enums.StatutPaiement;
 import com.pharmacopee.ladafura.exceptions.BadRequestException;
+import com.pharmacopee.ladafura.exceptions.ConflictException;
 import com.pharmacopee.ladafura.exceptions.ResourceNotFoundException;
 import com.pharmacopee.ladafura.repository.CommandeRepository;
 import com.pharmacopee.ladafura.repository.PaiementRepository;
-import com.pharmacopee.ladafura.services.interfaces.IPharmacopeeAuthService;
+import com.pharmacopee.ladafura.services.interfaces.IPharmacopeeContexteService;
 import com.pharmacopee.ladafura.services.interfaces.IPharmacopeePaiementService;
 
 import lombok.RequiredArgsConstructor;
@@ -34,7 +35,8 @@ import lombok.extern.slf4j.Slf4j;
 @Transactional
 public class PharmacopeePaiementServiceImpl implements IPharmacopeePaiementService {
 
-    private final IPharmacopeeAuthService pharmacopeeAuthService;
+    private final IPharmacopeeContexteService contexteService;
+    private final com.pharmacopee.ladafura.services.interfaces.ICommandeStockCaisseService commandeStockCaisseService;
     private final PaiementRepository paiementRepository;
     private final CommandeRepository commandeRepository;
     private final com.pharmacopee.ladafura.services.interfaces.IPharmacopeeNotificationService pharmacopeeNotificationService;
@@ -43,8 +45,7 @@ public class PharmacopeePaiementServiceImpl implements IPharmacopeePaiementServi
     @Override
     @Transactional(readOnly = true)
     public Page<PharmacopeePaiementResponse> getPaiements(StatutPaiement statut, MethodePaiement methode, Pageable pageable) {
-        pharmacopeeAuthService.verifyPharmacopeeValidated();
-        Pharmacopee pharmacopee = pharmacopeeAuthService.getCurrentPharmacopee();
+        Pharmacopee pharmacopee = contexteService.verifierPharmacopeeValidee(IPharmacopeeContexteService.PAIEMENTS_CONSULTER).pharmacopee();
         Long pId = pharmacopee.getId();
         log.info("Consultation paginée des règlements pour la pharmacopée ID {} (statut={}, methode={})", pId, statut, methode);
 
@@ -63,8 +64,7 @@ public class PharmacopeePaiementServiceImpl implements IPharmacopeePaiementServi
     @Override
     @Transactional(readOnly = true)
     public PharmacopeePaiementSummaryResponse getSummary() {
-        pharmacopeeAuthService.verifyPharmacopeeValidated();
-        Pharmacopee pharmacopee = pharmacopeeAuthService.getCurrentPharmacopee();
+        Pharmacopee pharmacopee = contexteService.verifierPharmacopeeValidee(IPharmacopeeContexteService.PAIEMENTS_CONSULTER).pharmacopee();
         Long pId = pharmacopee.getId();
         log.info("Calcul de la synthèse financière pour la pharmacopée ID {}", pId);
 
@@ -96,8 +96,7 @@ public class PharmacopeePaiementServiceImpl implements IPharmacopeePaiementServi
     @Override
     @Transactional(readOnly = true)
     public PharmacopeePaiementResponse getPaiementDetail(Long id) {
-        pharmacopeeAuthService.verifyPharmacopeeValidated();
-        Pharmacopee pharmacopee = pharmacopeeAuthService.getCurrentPharmacopee();
+        Pharmacopee pharmacopee = contexteService.verifierPharmacopeeValidee(IPharmacopeeContexteService.PAIEMENTS_CONSULTER).pharmacopee();
 
         Paiement paiement = paiementRepository.findByIdAndCommandePharmacopeeId(id, pharmacopee.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Règlement financier introuvable avec l'ID " + id
@@ -109,8 +108,7 @@ public class PharmacopeePaiementServiceImpl implements IPharmacopeePaiementServi
     @Override
     @Transactional(readOnly = true)
     public PharmacopeePaiementResponse getPaiementByCommande(Long commandeId) {
-        pharmacopeeAuthService.verifyPharmacopeeValidated();
-        Pharmacopee pharmacopee = pharmacopeeAuthService.getCurrentPharmacopee();
+        Pharmacopee pharmacopee = contexteService.verifierPharmacopeeValidee(IPharmacopeeContexteService.PAIEMENTS_CONSULTER).pharmacopee();
 
         Paiement paiement = paiementRepository.findByCommandeIdAndCommandePharmacopeeId(commandeId, pharmacopee.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Aucun règlement financier trouvé pour la commande ID " + commandeId
@@ -121,8 +119,8 @@ public class PharmacopeePaiementServiceImpl implements IPharmacopeePaiementServi
 
     @Override
     public PharmacopeePaiementResponse simulerPaiement(SimulerPaiementRequest request) {
-        pharmacopeeAuthService.verifyPharmacopeeValidated();
-        Pharmacopee pharmacopee = pharmacopeeAuthService.getCurrentPharmacopee();
+        IPharmacopeeContexteService.ContexteMembre contexte = contexteService.verifierPharmacopeeValidee(IPharmacopeeContexteService.PAIEMENTS_ENCAISSER);
+        Pharmacopee pharmacopee = contexte.pharmacopee();
 
         log.info("Simulation de paiement pour la commande ID {} (méthode={}, succès={})",
                 request.getCommandeId(), request.getMethode(), request.getSimulerSucces());
@@ -136,6 +134,7 @@ public class PharmacopeePaiementServiceImpl implements IPharmacopeePaiementServi
                         .commande(commande)
                         .montant(commande.getMontantTotal())
                         .build());
+        refuserSiDejaRegle(paiement, commande);
 
         paiement.setMethode(request.getMethode());
         paiement.setMontant(commande.getMontantTotal());
@@ -158,6 +157,10 @@ public class PharmacopeePaiementServiceImpl implements IPharmacopeePaiementServi
 
         Paiement savedPaiement = paiementRepository.save(paiement);
 
+        if (succes) {
+            commandeStockCaisseService.encaisser(savedPaiement, null, contexte.membre());
+        }
+
         // Si le paiement réussit et que la commande était en attente, confirmation automatique
         if (succes && commande.getStatut() == StatutCommande.EN_ATTENTE) {
             commande.setStatut(StatutCommande.CONFIRMEE);
@@ -175,8 +178,8 @@ public class PharmacopeePaiementServiceImpl implements IPharmacopeePaiementServi
 
     @Override
     public PharmacopeePaiementResponse encaisserCash(Long paiementId, EncaisserCashRequest request) {
-        pharmacopeeAuthService.verifyPharmacopeeValidated();
-        Pharmacopee pharmacopee = pharmacopeeAuthService.getCurrentPharmacopee();
+        IPharmacopeeContexteService.ContexteMembre contexte = contexteService.verifierPharmacopeeValidee(IPharmacopeeContexteService.PAIEMENTS_ENCAISSER);
+        Pharmacopee pharmacopee = contexte.pharmacopee();
 
         Paiement paiement = paiementRepository.findByIdAndCommandePharmacopeeId(paiementId, pharmacopee.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Règlement financier introuvable avec l'ID " + paiementId
@@ -185,6 +188,7 @@ public class PharmacopeePaiementServiceImpl implements IPharmacopeePaiementServi
         if (paiement.getMethode() != MethodePaiement.CASH) {
             throw new BadRequestException("Seuls les règlements de type CASH (espèces) peuvent faire l'objet d'un encaissement guichet.");
         }
+        refuserSiDejaRegle(paiement, paiement.getCommande());
 
         paiement.setStatut(StatutPaiement.REUSSI);
         paiement.setDatePaiement(LocalDateTime.now());
@@ -193,6 +197,7 @@ public class PharmacopeePaiementServiceImpl implements IPharmacopeePaiementServi
         }
 
         Paiement saved = paiementRepository.save(paiement);
+        commandeStockCaisseService.encaisser(saved, request != null ? request.getCaisseId() : null, contexte.membre());
 
         // Si la commande associée était encore EN_ATTENTE, on la confirme
         Commande commande = paiement.getCommande();
@@ -208,6 +213,15 @@ public class PharmacopeePaiementServiceImpl implements IPharmacopeePaiementServi
         }
 
         return mapToResponse(saved);
+    }
+
+    private static void refuserSiDejaRegle(Paiement paiement, Commande commande) {
+        if (paiement.getStatut() == StatutPaiement.REUSSI) {
+            throw new ConflictException("Ce paiement a déjà été encaissé.");
+        }
+        if (commande != null && commande.getStatut() == StatutCommande.ANNULEE) {
+            throw new ConflictException("Impossible d'encaisser le paiement d'une commande annulée.");
+        }
     }
 
     private void notifierPaiementConfirme(Pharmacopee pharmacopee, Commande commande, Paiement paiement) {

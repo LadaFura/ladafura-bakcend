@@ -77,4 +77,16 @@ public class PharmacopeeAuthResponse {
 
     @Schema(description = "Titre officiel du praticien dans l'établissement", example = "Praticien Principal")
     private String titrePraticien;
+
+    @Schema(description = "Identifiant de l'adhésion du membre à la pharmacopée active", example = "12")
+    private Long membreId;
+
+    @Schema(description = "Codes des rôles du membre dans la pharmacopée active", example = "[\"GERANT\"]")
+    private java.util.List<String> roles;
+
+    @Schema(description = "Permissions effectives du membre dans la pharmacopée active", example = "[\"VENTES_CREER\"]")
+    private java.util.Set<String> permissions;
+
+    @Schema(description = "Statut de l'abonnement en vigueur de la pharmacopée active", example = "ACTIF")
+    private String statutAbonnement;
 }

@@ -22,6 +22,19 @@ public interface LotRepository extends JpaRepository<Lot, Long> {
 
     Optional<Lot> findByIdAndPharmacopeeId(Long id, Long pharmacopeeId);
 
+    /** Ordre de consommation d'une baisse d'inventaire : périmés d'abord, puis par péremption, sans date en dernier. */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+           select l from Lot l
+           where l.disponibiliteProduit.id = :disponibiliteId
+             and l.quantiteRestante > 0
+           order by case when l.datePeremption is null then 2 when l.datePeremption < :date then 0 else 1 end,
+                    l.datePeremption asc, l.id asc
+           """)
+    List<Lot> findLotsPourAjustementForUpdate(@Param("disponibiliteId") Long disponibiliteId, @Param("date") LocalDate date);
+
+    boolean existsByDisponibiliteProduitId(Long disponibiliteProduitId);
+
     /** Lots vendables à la date donnée : les plus proches de la péremption d'abord, sans date en dernier. */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""

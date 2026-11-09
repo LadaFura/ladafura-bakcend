@@ -1,5 +1,9 @@
 package com.pharmacopee.ladafura.population;
 
+import com.pharmacopee.ladafura.Models.Abonnement;
+import com.pharmacopee.ladafura.enums.StatutAbonnement;
+import com.pharmacopee.ladafura.repository.AbonnementRepository;
+import com.pharmacopee.ladafura.services.interfaces.ICommandeStockCaisseService;
 import java.util.ArrayList;
 import java.util.Optional;
 
@@ -93,8 +97,16 @@ class PopulationSecurityAndRulesValidationTest {
     private DisponibiliteProduit disponibilite;
     private ModeRetrait modeRetrait;
 
+    @Mock
+    private ICommandeStockCaisseService commandeStockCaisseService;
+
+    @Mock
+    private AbonnementRepository abonnementRepository;
+
     @BeforeEach
     void setUp() {
+        org.mockito.Mockito.lenient().when(abonnementRepository.findEnVigueur(org.mockito.ArgumentMatchers.anyLong()))
+                .thenReturn(java.util.Optional.of(Abonnement.builder().statut(StatutAbonnement.ACTIF).build()));
         citoyenA = new Utilisateur();
         citoyenA.setId(10L);
         citoyenA.setEmail("citoyenA@ladafura.ml");
@@ -141,11 +153,11 @@ class PopulationSecurityAndRulesValidationTest {
                 authService, panierRepository, lignePanierRepository, produitRepository, panierMapper);
 
         commandeService = new PopulationCommandeServiceImpl(
-                authService, commandeRepository, panierRepository, lignePanierRepository,
+                authService, commandeStockCaisseService, abonnementRepository, commandeRepository, panierRepository, lignePanierRepository,
                 pharmacopeeRepository, modeRetraitRepository, dispoRepo, paiementRepository, commandeMapper);
 
         paiementService = new PopulationPaiementServiceImpl(
-                authService, paiementRepository, commandeRepository, paiementMapper);
+                authService, commandeStockCaisseService, paiementRepository, commandeRepository, paiementMapper);
 
         avisService = new PopulationAvisServiceImpl(
                 authService, avisRepository, pharmacopeeRepository, commandeRepository, avisMapper);
@@ -285,16 +297,13 @@ class PopulationSecurityAndRulesValidationTest {
                 .build();
         commande.getLignes().add(lc);
 
-        disponibilite.setQuantiteStock(5); // stock initial
-
         when(commandeRepository.findByIdAndUtilisateurId(555L, 10L)).thenReturn(Optional.of(commande));
-        when(dispoRepo.findByPharmacopeeIdAndProduitId(1L, 100L)).thenReturn(Optional.of(disponibilite));
+        when(commandeRepository.save(any(Commande.class))).thenReturn(commande);
 
         commandeService.annulerCommande(555L);
 
         assertThat(commande.getStatut()).isEqualTo(StatutCommande.ANNULEE);
-        assertThat(disponibilite.getQuantiteStock()).isEqualTo(8); // 5 + 3 = 8
-        verify(dispoRepo).save(disponibilite);
+        verify(commandeStockCaisseService).reintegrerStock(commande, null);
     }
 
     @Test

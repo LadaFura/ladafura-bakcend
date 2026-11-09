@@ -41,6 +41,7 @@ public class PopulationPaiementServiceImpl implements IPopulationPaiementService
     private static final SecureRandom RANDOM = new SecureRandom();
 
     private final IPopulationAuthService populationAuthService;
+    private final com.pharmacopee.ladafura.services.interfaces.ICommandeStockCaisseService commandeStockCaisseService;
     private final PaiementRepository paiementRepository;
     private final CommandeRepository commandeRepository;
     private final PopulationPaiementMapper mapper;
@@ -49,10 +50,11 @@ public class PopulationPaiementServiceImpl implements IPopulationPaiementService
 
     public PopulationPaiementServiceImpl(
             IPopulationAuthService populationAuthService,
+            com.pharmacopee.ladafura.services.interfaces.ICommandeStockCaisseService commandeStockCaisseService,
             PaiementRepository paiementRepository,
             CommandeRepository commandeRepository,
             PopulationPaiementMapper mapper) {
-        this(populationAuthService, paiementRepository, commandeRepository, mapper, null, null);
+        this(populationAuthService, commandeStockCaisseService, paiementRepository, commandeRepository, mapper, null, null);
     }
 
     @Override
@@ -130,6 +132,7 @@ public class PopulationPaiementServiceImpl implements IPopulationPaiementService
                 savedPaiement.getId(), savedPaiement.getStatut(), commande.getId());
 
         if (savedPaiement.getStatut() == StatutPaiement.REUSSI) {
+            commandeStockCaisseService.encaisser(savedPaiement, null, null);
             String refCmdId = String.valueOf(commande.getId());
             if (commande.getPharmacopee() != null && pharmacopeeNotificationService != null) {
                 pharmacopeeNotificationService.notifier(

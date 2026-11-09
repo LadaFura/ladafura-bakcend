@@ -51,6 +51,14 @@ public interface IPharmacopeeMouvementStockService {
                                 OrigineMouvement origine, String motif, MembrePharmacopee auteur);
 
     /**
+     * Amène le stock à la quantité constatée. Une baisse consomme le stock sans lot, puis les lots périmés,
+     * puis les autres par péremption, ce qui préserve Σ lots ≤ stock. Aucun mouvement si la quantité est inchangée.
+     *
+     * @throws com.pharmacopee.ladafura.exceptions.BadRequestException si la quantité est négative
+     */
+    List<MouvementStock> ajuster(Long pharmacopeeId, Long disponibiliteId, int nouvelleQuantite, String motif, MembrePharmacopee auteur);
+
+    /**
      * Crée les mouvements inverses, vers les mêmes lots.
      *
      * @throws com.pharmacopee.ladafura.exceptions.ConflictException si le stock ou le lot a déjà été consommé

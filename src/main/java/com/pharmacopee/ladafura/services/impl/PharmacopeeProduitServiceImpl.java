@@ -20,7 +20,8 @@ import com.pharmacopee.ladafura.exceptions.ConflictException;
 import com.pharmacopee.ladafura.exceptions.ResourceNotFoundException;
 import com.pharmacopee.ladafura.repository.DisponibiliteProduitRepository;
 import com.pharmacopee.ladafura.repository.ProduitRepository;
-import com.pharmacopee.ladafura.services.interfaces.IPharmacopeeAuthService;
+import com.pharmacopee.ladafura.services.interfaces.IPharmacopeeContexteService;
+import com.pharmacopee.ladafura.services.interfaces.IPharmacopeeQuotaService;
 import com.pharmacopee.ladafura.services.interfaces.IPharmacopeeProduitService;
 
 import com.pharmacopee.ladafura.Models.CategorieProduit;
@@ -45,7 +46,12 @@ import lombok.extern.slf4j.Slf4j;
 @Transactional
 public class PharmacopeeProduitServiceImpl implements IPharmacopeeProduitService {
 
-    private final IPharmacopeeAuthService pharmacopeeAuthService;
+    private final IPharmacopeeContexteService contexteService;
+    private final IPharmacopeeQuotaService quotaService;
+    private final com.pharmacopee.ladafura.services.interfaces.IPharmacopeeStockService stockService;
+    private final com.pharmacopee.ladafura.repository.MouvementStockRepository mouvementStockRepository;
+    private final com.pharmacopee.ladafura.repository.LotRepository lotRepository;
+    private final com.pharmacopee.ladafura.repository.LigneVenteRepository ligneVenteRepository;
     private final DisponibiliteProduitRepository disponibiliteProduitRepository;
     private final ProduitRepository produitRepository;
     private final CategorieProduitRepository categorieProduitRepository;
@@ -53,13 +59,23 @@ public class PharmacopeeProduitServiceImpl implements IPharmacopeeProduitService
     private final MaladieRepository maladieRepository;
 
     public PharmacopeeProduitServiceImpl(
-            IPharmacopeeAuthService pharmacopeeAuthService,
+            IPharmacopeeContexteService contexteService,
+            IPharmacopeeQuotaService quotaService,
+            com.pharmacopee.ladafura.services.interfaces.IPharmacopeeStockService stockService,
+            com.pharmacopee.ladafura.repository.MouvementStockRepository mouvementStockRepository,
+            com.pharmacopee.ladafura.repository.LotRepository lotRepository,
+            com.pharmacopee.ladafura.repository.LigneVenteRepository ligneVenteRepository,
             DisponibiliteProduitRepository disponibiliteProduitRepository,
             ProduitRepository produitRepository,
             CategorieProduitRepository categorieProduitRepository,
             PlanteRepository planteRepository,
             MaladieRepository maladieRepository) {
-        this.pharmacopeeAuthService = pharmacopeeAuthService;
+        this.contexteService = contexteService;
+        this.quotaService = quotaService;
+        this.stockService = stockService;
+        this.mouvementStockRepository = mouvementStockRepository;
+        this.lotRepository = lotRepository;
+        this.ligneVenteRepository = ligneVenteRepository;
         this.disponibiliteProduitRepository = disponibiliteProduitRepository;
         this.produitRepository = produitRepository;
         this.categorieProduitRepository = categorieProduitRepository;
@@ -70,7 +86,7 @@ public class PharmacopeeProduitServiceImpl implements IPharmacopeeProduitService
     @Override
     @Transactional(readOnly = true)
     public Page<PharmacopeeProduitResponse> getMesProduits(String keyword, Long categorieId, Boolean disponible, Pageable pageable) {
-        Pharmacopee pharmacopee = pharmacopeeAuthService.getCurrentPharmacopee();
+        Pharmacopee pharmacopee = contexteService.verifierPermission(IPharmacopeeContexteService.PRODUITS_CONSULTER).pharmacopee();
         log.info("Consultation du catalogue pour la pharmacopée ID {} (disponible={})", pharmacopee.getId(), disponible);
 
         Page<DisponibiliteProduit> page;
@@ -86,7 +102,7 @@ public class PharmacopeeProduitServiceImpl implements IPharmacopeeProduitService
     @Override
     @Transactional(readOnly = true)
     public PharmacopeeProduitResponse getMonProduit(Long produitId) {
-        Pharmacopee pharmacopee = pharmacopeeAuthService.getCurrentPharmacopee();
+        Pharmacopee pharmacopee = contexteService.verifierPermission(IPharmacopeeContexteService.PRODUITS_CONSULTER).pharmacopee();
 
         DisponibiliteProduit dispo = disponibiliteProduitRepository
                 .findByPharmacopeeIdAndProduitId(pharmacopee.getId(), produitId)
@@ -98,7 +114,7 @@ public class PharmacopeeProduitServiceImpl implements IPharmacopeeProduitService
     @Override
     @Transactional(readOnly = true)
     public Page<CatalogueProduitItemResponse> getCatalogueGlobal(String keyword, Long categorieId, Pageable pageable) {
-        Pharmacopee pharmacopee = pharmacopeeAuthService.getCurrentPharmacopee();
+        Pharmacopee pharmacopee = contexteService.verifierPermission(IPharmacopeeContexteService.PRODUITS_CONSULTER).pharmacopee();
         log.info("Consultation du catalogue national validé par la pharmacopée ID {}", pharmacopee.getId());
 
         Page<Produit> page;
@@ -130,9 +146,8 @@ public class PharmacopeeProduitServiceImpl implements IPharmacopeeProduitService
     @Override
     public PharmacopeeProduitResponse associerProduit(AssocierProduitRequest request) {
         // 1. Contrôle strict : la pharmacopée doit être VALIDEE par l'administration
-        pharmacopeeAuthService.verifyPharmacopeeValidated();
-
-        Pharmacopee pharmacopee = pharmacopeeAuthService.getCurrentPharmacopee();
+        IPharmacopeeContexteService.ContexteMembre contexte = contexteService.verifierOperationCommerciale(IPharmacopeeContexteService.PRODUITS_GERER);
+        Pharmacopee pharmacopee = contexte.pharmacopee();
 
         // 2. Vérification de l'existence du produit dans le catalogue national
         Produit produit = produitRepository.findById(request.getProduitId())
@@ -147,16 +162,20 @@ public class PharmacopeeProduitServiceImpl implements IPharmacopeeProduitService
         if (disponibiliteProduitRepository.existsByPharmacopeeIdAndProduitId(pharmacopee.getId(), produit.getId())) {
             throw new ConflictException("Le produit '" + produit.getNom() + "' est déjà associé à votre pharmacopée.");
         }
+        quotaService.verifierQuota(pharmacopee.getId(), IPharmacopeeQuotaService.MAX_PRODUITS);
 
         DisponibiliteProduit dispo = DisponibiliteProduit.builder()
                 .pharmacopee(pharmacopee)
                 .produit(produit)
-                .quantiteStock(request.getQuantiteStock() != null ? request.getQuantiteStock() : 0)
+                .quantiteStock(0)
                 .disponible(request.getDisponible() != null ? request.getDisponible() : true)
                 .dateMiseAJour(LocalDateTime.now())
                 .build();
 
-        DisponibiliteProduit saved = disponibiliteProduitRepository.save(dispo);
+        DisponibiliteProduit saved = disponibiliteProduitRepository.saveAndFlush(dispo);
+        if (request.getQuantiteStock() != null && request.getQuantiteStock() > 0) {
+            stockService.ajusterQuantite(contexte, saved, request.getQuantiteStock(), "Stock initial");
+        }
         log.info("Produit ID {} ('{}') associé avec succès à la pharmacopée ID {}",
                 produit.getId(), produit.getNom(), pharmacopee.getId());
 
@@ -165,15 +184,16 @@ public class PharmacopeeProduitServiceImpl implements IPharmacopeeProduitService
 
     @Override
     public PharmacopeeProduitResponse updateDisponibilite(Long produitId, UpdateProduitDisponibiliteRequest request) {
-        pharmacopeeAuthService.verifyPharmacopeeValidated();
-        Pharmacopee pharmacopee = pharmacopeeAuthService.getCurrentPharmacopee();
+        IPharmacopeeContexteService.ContexteMembre contexte = contexteService.verifierOperationCommerciale(IPharmacopeeContexteService.PRODUITS_GERER);
+        Pharmacopee pharmacopee = contexte.pharmacopee();
 
         DisponibiliteProduit dispo = disponibiliteProduitRepository
                 .findByPharmacopeeIdAndProduitId(pharmacopee.getId(), produitId)
                 .orElseThrow(() -> new ResourceNotFoundException("DisponibiliteProduit", "produitId", produitId));
 
         if (request.getQuantiteStock() != null) {
-            dispo.setQuantiteStock(request.getQuantiteStock());
+            contexteService.verifierPermission(IPharmacopeeContexteService.STOCK_AJUSTER);
+            stockService.ajusterQuantite(contexte, dispo, request.getQuantiteStock(), request.getMotif());
         }
         if (request.getDisponible() != null) {
             dispo.setDisponible(request.getDisponible());
@@ -189,12 +209,17 @@ public class PharmacopeeProduitServiceImpl implements IPharmacopeeProduitService
 
     @Override
     public void retirerProduit(Long produitId) {
-        pharmacopeeAuthService.verifyPharmacopeeValidated();
-        Pharmacopee pharmacopee = pharmacopeeAuthService.getCurrentPharmacopee();
+        Pharmacopee pharmacopee = contexteService.verifierOperationCommerciale(IPharmacopeeContexteService.PRODUITS_GERER).pharmacopee();
 
         DisponibiliteProduit dispo = disponibiliteProduitRepository
                 .findByPharmacopeeIdAndProduitId(pharmacopee.getId(), produitId)
                 .orElseThrow(() -> new ResourceNotFoundException("DisponibiliteProduit", "produitId", produitId));
+
+        if (mouvementStockRepository.existsByDisponibiliteProduitId(dispo.getId())
+                || lotRepository.existsByDisponibiliteProduitId(dispo.getId())
+                || ligneVenteRepository.existsByDisponibiliteProduitId(dispo.getId())) {
+            throw new ConflictException("Ce produit a un historique de stock ou de vente : rendez-le indisponible au lieu de le retirer.");
+        }
 
         disponibiliteProduitRepository.delete(dispo);
         log.info("Produit ID {} retiré des disponibilités de la pharmacopée ID {}", produitId, pharmacopee.getId());
@@ -202,8 +227,7 @@ public class PharmacopeeProduitServiceImpl implements IPharmacopeeProduitService
 
     @Override
     public PharmacopeeProduitResponse proposerProduit(ProposerProduitRequest request) {
-        pharmacopeeAuthService.verifyPharmacopeeValidated();
-        Pharmacopee pharmacopee = pharmacopeeAuthService.getCurrentPharmacopee();
+        Pharmacopee pharmacopee = contexteService.verifierOperationCommerciale(IPharmacopeeContexteService.PRODUITS_GERER).pharmacopee();
 
         CategorieProduit categorie = null;
         if (request.getCategorieId() != null) {

@@ -52,6 +52,9 @@ class PopulationPaiementServiceImplTest {
     @Mock
     private CommandeRepository commandeRepository;
 
+    @Mock
+    private com.pharmacopee.ladafura.services.interfaces.ICommandeStockCaisseService commandeStockCaisseService;
+
     @Spy
     private PopulationPaiementMapper mapper = new PopulationPaiementMapper();
 

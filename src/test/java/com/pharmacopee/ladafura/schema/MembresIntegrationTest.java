@@ -77,6 +77,16 @@ class MembresIntegrationTest {
     @Autowired private RolePharmacopeeRepository roleRepository;
     @Autowired private AttributionRolePharmacopeeRepository attributionRepository;
     @MockitoBean private IPharmacopeeAuthService pharmacopeeAuthService;
+    @Autowired private com.pharmacopee.ladafura.repository.MembrePharmacopeeRepository adhesionsDeTest;
+
+    /** Le service d'authentification est simulé : l'adhésion courante suit l'utilisateur simulé. */
+    @org.junit.jupiter.api.BeforeEach
+    void brancherMembreCourant() {
+        when(pharmacopeeAuthService.getMembreCourant()).thenAnswer(appel -> adhesionsDeTest
+                .findByUtilisateurIdAndStatut(pharmacopeeAuthService.getCurrentUtilisateur().getId(), com.pharmacopee.ladafura.enums.StatutMembre.ACTIF)
+                .get(0));
+    }
+
     @MockitoBean private IFirebaseAuthService firebaseAuthService;
 
     @Test

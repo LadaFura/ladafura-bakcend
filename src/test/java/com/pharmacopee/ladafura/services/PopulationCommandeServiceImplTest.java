@@ -1,5 +1,9 @@
 package com.pharmacopee.ladafura.services;
 
+import com.pharmacopee.ladafura.Models.Abonnement;
+import com.pharmacopee.ladafura.enums.StatutAbonnement;
+import com.pharmacopee.ladafura.repository.AbonnementRepository;
+import com.pharmacopee.ladafura.services.interfaces.ICommandeStockCaisseService;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -98,8 +102,16 @@ class PopulationCommandeServiceImplTest {
     private Panier panier;
     private DisponibiliteProduit disponibilite;
 
+    @Mock
+    private ICommandeStockCaisseService commandeStockCaisseService;
+
+    @Mock
+    private AbonnementRepository abonnementRepository;
+
     @BeforeEach
     void setUp() {
+        org.mockito.Mockito.lenient().when(abonnementRepository.findEnVigueur(org.mockito.ArgumentMatchers.anyLong()))
+                .thenReturn(java.util.Optional.of(Abonnement.builder().statut(StatutAbonnement.ACTIF).build()));
         currentUser = new Utilisateur();
         currentUser.setId(10L);
         currentUser.setEmail("client@ladafura.ml");
@@ -247,10 +259,10 @@ class PopulationCommandeServiceImplTest {
         assertThat(response.getMontantLivraison()).isEqualTo(1500.0);
         assertThat(response.getMontantTotal()).isEqualTo(6500.0);
         assertThat(response.getStatutPaiement()).isEqualTo("REUSSI");
-        assertThat(disponibilite.getQuantiteStock()).isEqualTo(48); // 50 - 2
         assertThat(panier.getLignes()).isEmpty();
 
-        verify(disponibiliteProduitRepository).save(disponibilite);
+        verify(commandeStockCaisseService).sortirStock(any(Commande.class));
+        verify(commandeStockCaisseService).encaisser(any(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.isNull());
         verify(paiementRepository).save(any());
         verify(lignePanierRepository).deleteByPanierId(20L);
         verify(panierRepository).save(panier);
@@ -405,17 +417,14 @@ class PopulationCommandeServiceImplTest {
 
         when(populationAuthService.getCurrentPopulationUser()).thenReturn(currentUser);
         when(commandeRepository.findByIdAndUtilisateurId(1L, 10L)).thenReturn(Optional.of(c));
-        when(disponibiliteProduitRepository.findByPharmacopeeIdAndProduitId(1L, 5L))
-                .thenReturn(Optional.of(disponibilite));
         when(commandeRepository.save(any(Commande.class))).thenReturn(c);
 
-        disponibilite.setQuantiteStock(48);
         PopulationCommandeDetailResponse response = commandeService.annulerCommande(1L);
 
         assertThat(response).isNotNull();
         assertThat(c.getStatut()).isEqualTo(StatutCommande.ANNULEE);
-        assertThat(disponibilite.getQuantiteStock()).isEqualTo(50); // réintégré +2
-        verify(disponibiliteProduitRepository).save(disponibilite);
+        verify(commandeStockCaisseService).reintegrerStock(c, null);
+        verify(commandeStockCaisseService).annulerEncaissement(c, null);
         verify(commandeRepository).save(c);
     }
 

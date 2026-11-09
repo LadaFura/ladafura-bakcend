@@ -35,6 +35,7 @@ import com.pharmacopee.ladafura.enums.StatutPaiement;
 import com.pharmacopee.ladafura.enums.StatutPharmacopee;
 import com.pharmacopee.ladafura.enums.TypeModeRetrait;
 import com.pharmacopee.ladafura.exceptions.BadRequestException;
+import com.pharmacopee.ladafura.exceptions.ConflictException;
 import com.pharmacopee.ladafura.exceptions.ResourceNotFoundException;
 import com.pharmacopee.ladafura.mappers.PopulationCommandeMapper;
 import com.pharmacopee.ladafura.repository.CommandeRepository;
@@ -60,6 +61,8 @@ public class PopulationCommandeServiceImpl implements IPopulationCommandeService
     private static final SecureRandom RANDOM = new SecureRandom();
 
     private final IPopulationAuthService populationAuthService;
+    private final com.pharmacopee.ladafura.services.interfaces.ICommandeStockCaisseService commandeStockCaisseService;
+    private final com.pharmacopee.ladafura.repository.AbonnementRepository abonnementRepository;
     private final CommandeRepository commandeRepository;
     private final PanierRepository panierRepository;
     private final LignePanierRepository lignePanierRepository;
@@ -73,6 +76,8 @@ public class PopulationCommandeServiceImpl implements IPopulationCommandeService
 
     public PopulationCommandeServiceImpl(
             IPopulationAuthService populationAuthService,
+            com.pharmacopee.ladafura.services.interfaces.ICommandeStockCaisseService commandeStockCaisseService,
+            com.pharmacopee.ladafura.repository.AbonnementRepository abonnementRepository,
             CommandeRepository commandeRepository,
             PanierRepository panierRepository,
             LignePanierRepository lignePanierRepository,
@@ -81,7 +86,7 @@ public class PopulationCommandeServiceImpl implements IPopulationCommandeService
             DisponibiliteProduitRepository disponibiliteProduitRepository,
             PaiementRepository paiementRepository,
             PopulationCommandeMapper mapper) {
-        this(populationAuthService, commandeRepository, panierRepository, lignePanierRepository,
+        this(populationAuthService, commandeStockCaisseService, abonnementRepository, commandeRepository, panierRepository, lignePanierRepository,
                 pharmacopeeRepository, modeRetraitRepository, disponibiliteProduitRepository,
                 paiementRepository, mapper, null, null);
     }
@@ -253,24 +258,16 @@ public class PopulationCommandeServiceImpl implements IPopulationCommandeService
             commande.setStatut(StatutCommande.CONFIRMEE);
         }
 
-        // 3. PAIEMENT VALIDÉ -> Décrémentation définitive des stocks
-        for (LignePanier ligne : panier.getLignes()) {
-            Produit produit = ligne.getProduit();
-            DisponibiliteProduit disp = checkProductAvailabilityAndStock(pharmacopee.getId(), produit, ligne.getQuantite());
-            if (disp.getQuantiteStock() != null) {
-                int nouveauStock = disp.getQuantiteStock() - ligne.getQuantite();
-                disp.setQuantiteStock(nouveauStock);
-                if (nouveauStock <= 0) {
-                    disp.setDisponible(false);
-                }
-                disponibiliteProduitRepository.save(disp);
-            }
-        }
-
         // 4. Persistance atomique de la Commande et du Paiement
         commande.setPaiement(paiement);
         Commande savedCommande = commandeRepository.save(commande);
         paiementRepository.save(paiement);
+
+        // Paiement validé : sortie définitive du stock et entrée en trésorerie
+        commandeStockCaisseService.sortirStock(savedCommande);
+        if (paiement.getStatut() == StatutPaiement.REUSSI) {
+            commandeStockCaisseService.encaisser(paiement, null, null);
+        }
 
         log.info("Commande #{} créée et confirmée avec succès (Paiement: {} - {}) pour un montant de {} FCFA",
                 savedCommande.getNumero(), paiement.getMethode(), paiement.getStatut(), savedCommande.getMontantTotal());
@@ -374,24 +371,14 @@ public class PopulationCommandeServiceImpl implements IPopulationCommandeService
                     + commande.getStatut() + ").");
         }
 
-        // Réintégration des stocks en pharmacopée
-        if (commande.getLignes() != null && commande.getPharmacopee() != null) {
-            Long pharmacopeeId = commande.getPharmacopee().getId();
-            for (LigneCommande lc : commande.getLignes()) {
-                if (lc.getProduit() != null) {
-                    disponibiliteProduitRepository.findByPharmacopeeIdAndProduitId(pharmacopeeId, lc.getProduit().getId())
-                            .ifPresent(disp -> {
-                                if (disp.getQuantiteStock() != null) {
-                                    disp.setQuantiteStock(disp.getQuantiteStock() + lc.getQuantite());
-                                    disp.setDisponible(true);
-                                    disponibiliteProduitRepository.save(disp);
-                                    log.info("Stock réintégré pour le produit ID: {} (+{}) dans la pharmacopée ID: {}",
-                                            lc.getProduit().getId(), lc.getQuantite(), pharmacopeeId);
-                                }
-                            });
-                }
-            }
+        // Le client ne peut pas récupérer seul des espèces déjà remises à la pharmacopée.
+        if (commande.getPaiement() != null && commande.getPaiement().getMethode() == MethodePaiement.CASH
+                && commande.getPaiement().getStatut() == StatutPaiement.REUSSI) {
+            throw new ConflictException("Le paiement en espèces de cette commande a déjà été encaissé : veuillez contacter la pharmacopée.");
         }
+
+        commandeStockCaisseService.reintegrerStock(commande, null);
+        commandeStockCaisseService.annulerEncaissement(commande, null);
 
         commande.setStatut(StatutCommande.ANNULEE);
         commande.setDateMiseAJour(LocalDateTime.now());
@@ -433,6 +420,12 @@ public class PopulationCommandeServiceImpl implements IPopulationCommandeService
 
         if (ph.getStatut() != StatutPharmacopee.VALIDEE) {
             throw new BadRequestException("Cette pharmacopée n'est pas agréée pour accepter des commandes.");
+        }
+        boolean accepteCommandes = abonnementRepository.findEnVigueur(pharmacopeeId)
+                .map(com.pharmacopee.ladafura.Models.Abonnement::autoriseEcriture)
+                .orElse(false);
+        if (!accepteCommandes) {
+            throw new ConflictException("Cette pharmacopée n'accepte pas de nouvelles commandes pour le moment.");
         }
         return ph;
     }

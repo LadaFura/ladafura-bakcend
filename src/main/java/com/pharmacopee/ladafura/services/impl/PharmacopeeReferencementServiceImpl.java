@@ -30,23 +30,20 @@ public class PharmacopeeReferencementServiceImpl implements IPharmacopeeReferenc
     private final IPharmacopeeAuthService pharmacopeeAuthService;
     private final PharmacopeeRepository pharmacopeeRepository;
     private final PraticienRepository praticienRepository;
+    private final com.pharmacopee.ladafura.services.interfaces.IPharmacopeeQuotaService quotaService;
+    private final com.pharmacopee.ladafura.services.interfaces.IPharmacopeeInitialisationService initialisationService;
     private final com.pharmacopee.ladafura.services.interfaces.IAdminNotificationService adminNotificationService;
 
     @Override
     public StatutReferencementResponse soumettreDemandeReferencement(DemandeReferencementRequest request) {
         Utilisateur user = pharmacopeeAuthService.getCurrentUtilisateur();
-        List<Pharmacopee> existantes = pharmacopeeAuthService.getMyPharmacopees();
-
         Optional<Praticien> praticienOpt = praticienRepository.findById(user.getId());
-        String plan = praticienOpt.map(Praticien::getPlanAbonnement).orElse("GRATUIT");
-        int quotaMax = praticienOpt.map(p -> (p.getQuotaMaxStructures() != null && p.getQuotaMaxStructures() > 0) ? p.getQuotaMaxStructures() : 2).orElse(2);
+        int quotaMax = quotaService.maxPharmacopeesParGerant();
+        long possedees = quotaService.pharmacopeesPossedees(user.getId());
 
-        if (existantes.size() >= quotaMax) {
-            log.warn("Quota de structures atteint pour l'utilisateur ID {}. Actuelles: {}, Quota: {}, Plan: {}",
-                    user.getId(), existantes.size(), quotaMax, plan);
-            throw new QuotaExceededException("Vous avez atteint la limite de " + quotaMax
-                    + " structure(s) pour votre formule actuelle (" + plan
-                    + "). Veuillez souscrire à un abonnement supérieur pour ajouter d'autres structures.");
+        if (possedees >= quotaMax) {
+            log.warn("Quota de structures atteint pour l'utilisateur ID {}. Actuelles: {}, Quota: {}", user.getId(), possedees, quotaMax);
+            throw new QuotaExceededException("Vous avez atteint la limite de " + quotaMax + " structure(s) par gérant.");
         }
 
         Pharmacopee pharmacopee = Pharmacopee.builder()
@@ -57,13 +54,14 @@ public class PharmacopeeReferencementServiceImpl implements IPharmacopeeReferenc
                 .utilisateur(user)
                 .build();
 
-        Pharmacopee saved = pharmacopeeRepository.save(pharmacopee);
+        Pharmacopee saved = pharmacopeeRepository.saveAndFlush(pharmacopee);
 
         if (praticienOpt.isPresent()) {
             Praticien praticien = praticienOpt.get();
             praticien.getPharmacopees().add(saved);
             praticienRepository.save(praticien);
         }
+        initialisationService.initialiser(saved, user);
 
         if (adminNotificationService != null) {
             adminNotificationService.notifierDemandeReferencementPharmacopee(saved);
@@ -91,14 +89,7 @@ public class PharmacopeeReferencementServiceImpl implements IPharmacopeeReferenc
                     .build();
         }
 
-        Pharmacopee active;
-        try {
-            active = pharmacopeeAuthService.getCurrentPharmacopee();
-        } catch (Exception e) {
-            active = existantes.get(existantes.size() - 1);
-        }
-
-        return buildResponse(active);
+        return buildResponse(pharmacopeeAuthService.getCurrentPharmacopee());
     }
 
     private StatutReferencementResponse buildResponse(Pharmacopee p) {

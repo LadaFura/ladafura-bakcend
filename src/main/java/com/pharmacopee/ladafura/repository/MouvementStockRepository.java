@@ -25,5 +25,7 @@ public interface MouvementStockRepository extends JpaRepository<MouvementStock, 
 
     List<MouvementStock> findByLigneVenteId(Long ligneVenteId);
 
+    boolean existsByDisponibiliteProduitId(Long disponibiliteProduitId);
+
     List<MouvementStock> findByLigneCommandeId(Long ligneCommandeId);
 }

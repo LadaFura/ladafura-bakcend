@@ -8,18 +8,17 @@ public interface IPharmacopeeAuthService {
 
     /**
      * Récupère l'utilisateur actuellement authentifié via Spring Security (Firebase Token).
-     * Vérifie que le compte est actif et possède le rôle PHARMACOPEE.
+     * Vérifie que le compte est actif et possède le rôle PHARMACOPEE ou une adhésion en cours.
      */
     Utilisateur getCurrentUtilisateur();
 
     /**
-     * Récupère l'entité Pharmacopee associée à l'utilisateur actuellement connecté.
-     * Lève une ResourceNotFoundException si l'utilisateur n'a pas encore de pharmacopée associée.
+     * Récupère la pharmacopée de l'adhésion courante, voir {@link #getMembreCourant()}.
      */
     Pharmacopee getCurrentPharmacopee();
 
     /**
-     * Récupère la liste de toutes les structures associées à l'utilisateur / praticien connecté.
+     * Récupère les pharmacopées dont l'utilisateur connecté est membre actif.
      */
     java.util.List<Pharmacopee> getMyPharmacopees();
 
@@ -39,7 +38,16 @@ public interface IPharmacopeeAuthService {
      * Lève une ForbiddenException si la pharmacopée est EN_ATTENTE, SUSPENDU ou REJETE.
      */
     void verifyPharmacopeeValidated();
-    void verifyPraticienPrincipal();
+
+    /**
+     * Adhésion active de l'utilisateur connecté dans la pharmacopée courante. {@code X-Pharmacopee-Id} n'est
+     * qu'un choix parmi ses adhésions ; sans en-tête, la première pharmacopée VALIDEE est retenue, sinon la première.
+     *
+     * @throws com.pharmacopee.ladafura.exceptions.ForbiddenException si l'utilisateur n'est pas membre actif
+     *         de la pharmacopée demandée ou d'aucune pharmacopée
+     * @throws com.pharmacopee.ladafura.exceptions.BadRequestException si l'en-tête n'est pas numérique
+     */
+    com.pharmacopee.ladafura.Models.MembrePharmacopee getMembreCourant();
 
     /**
      * Inscrit un praticien principal et crée sa pharmacopée avec le statut EN_ATTENTE.

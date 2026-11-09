@@ -37,6 +37,9 @@ public interface IAbonnementCycleService {
      */
     void activerApresPaiement(Abonnement abonnement, Utilisateur acteur);
 
+    /** Attribue l'offre gratuite à une pharmacopée qui vient d'être créée. */
+    Abonnement attribuerGratuit(Pharmacopee pharmacopee, Utilisateur acteur);
+
     /** Remplace un abonnement terminé par l'offre gratuite et suspend les membres au-delà du quota. */
     Abonnement retournerAuGratuit(Pharmacopee pharmacopee, Abonnement precedent, Utilisateur acteur);
 
