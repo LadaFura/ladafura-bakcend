@@ -74,6 +74,13 @@ public class PaiementAbonnement {
     @Column(length = 100)
     private String referenceTransaction;
 
+    /** Personne à joindre pour un paiement en espèces. */
+    @Column(length = 150)
+    private String contactNom;
+
+    @Column(length = 30)
+    private String contactTelephone;
+
     @Column(columnDefinition = "TEXT")
     private String observation;
 

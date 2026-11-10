@@ -56,6 +56,8 @@ class AdminAbonnementServiceImplTest {
     @Mock private IJournalAuditService journalAuditService;
     @Mock private IPharmacopeeAuthService pharmacopeeAuthService;
 
+    @Mock private com.pharmacopee.ladafura.services.interfaces.IAbonnementNotificationService abonnementNotificationService;
+
     @InjectMocks private AdminAbonnementServiceImpl service;
 
     private final Pharmacopee pharmacopee = Pharmacopee.builder().id(5L).nom("Officine").build();

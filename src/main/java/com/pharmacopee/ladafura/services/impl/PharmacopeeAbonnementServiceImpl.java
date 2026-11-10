@@ -1,5 +1,7 @@
 package com.pharmacopee.ladafura.services.impl;
 
+import com.pharmacopee.ladafura.enums.ModePaiementAbonnement;
+import org.springframework.util.StringUtils;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -59,6 +61,7 @@ public class PharmacopeeAbonnementServiceImpl implements IPharmacopeeAbonnementS
     private final IPharmacopeeQuotaService quotaService;
     private final IAbonnementCycleService cycleService;
     private final IJournalAuditService journalAuditService;
+    private final com.pharmacopee.ladafura.services.interfaces.IAbonnementNotificationService abonnementNotificationService;
     private final AbonnementRepository abonnementRepository;
     private final OffreAbonnementRepository offreRepository;
     private final ConfigurationLimiteOffreRepository configurationRepository;
@@ -141,6 +144,10 @@ public class PharmacopeeAbonnementServiceImpl implements IPharmacopeeAbonnementS
         if (paiementRepository.existsByAbonnementIdAndStatut(abonnement.getId(), StatutPaiement.EN_ATTENTE)) {
             throw new ConflictException("Un paiement déclaré est déjà en cours de vérification.");
         }
+        boolean especes = request.getModePaiement() == ModePaiementAbonnement.ESPECES;
+        if (especes) {
+            exigerContact(request);
+        }
         PaiementAbonnement paiement = paiementRepository.save(PaiementAbonnement.builder()
                 .abonnement(abonnement)
                 .reference("PAB-" + UUID.randomUUID().toString().substring(0, 13).toUpperCase())
@@ -149,12 +156,21 @@ public class PharmacopeeAbonnementServiceImpl implements IPharmacopeeAbonnementS
                 .modePaiement(request.getModePaiement())
                 .statut(StatutPaiement.EN_ATTENTE)
                 .datePaiement(request.getDatePaiement() != null ? request.getDatePaiement() : LocalDateTime.now())
-                .referenceTransaction(request.getReferenceTransaction())
+                .referenceTransaction(especes ? null : request.getReferenceTransaction())
+                .contactNom(especes ? request.getContactNom().trim() : null)
+                .contactTelephone(especes ? request.getContactTelephone().trim() : null)
                 .observation(request.getObservation())
                 .declarePar(contexte.membre())
                 .build());
         cycleService.historiser(abonnement, TypeEvenementAbonnement.PAIEMENT_DECLARE, null, paiement.getReference(), null, contexte.membre().getUtilisateur());
+        abonnementNotificationService.paiementDeclare(paiement);
         return AbonnementMapper.paiement(paiement);
+    }
+
+    private static void exigerContact(DeclarerPaiementRequest request) {
+        if (!StringUtils.hasText(request.getContactNom()) || !StringUtils.hasText(request.getContactTelephone())) {
+            throw new BadRequestException("Pour un paiement en espèces, indiquez le nom et le téléphone de la personne à joindre.");
+        }
     }
 
     @Override
@@ -185,6 +201,7 @@ public class PharmacopeeAbonnementServiceImpl implements IPharmacopeeAbonnementS
                 .email(request.getEmail())
                 .descriptionBesoin(request.getDescriptionBesoin())
                 .build());
+        abonnementNotificationService.demandeContrat(demande);
         return AbonnementMapper.demande(demande);
     }
 

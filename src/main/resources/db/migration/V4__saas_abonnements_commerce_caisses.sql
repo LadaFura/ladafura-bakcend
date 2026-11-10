@@ -237,6 +237,8 @@ CREATE TABLE IF NOT EXISTS paiements_abonnement (
   valide_par_id bigint,
   reference varchar(50) not null,
   reference_transaction varchar(100),
+  contact_nom varchar(150),
+  contact_telephone varchar(30),
   motif_rejet varchar(500),
   observation TEXT,
   mode_paiement enum ('AUTRE','ESPECES','ORANGE_MONEY','VIREMENT','WAVE') not null,

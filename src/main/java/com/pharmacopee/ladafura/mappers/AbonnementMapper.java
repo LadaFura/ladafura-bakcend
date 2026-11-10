@@ -81,6 +81,8 @@ public final class AbonnementMapper {
                 .statut(p.getStatut())
                 .datePaiement(p.getDatePaiement())
                 .referenceTransaction(p.getReferenceTransaction())
+                .contactNom(p.getContactNom())
+                .contactTelephone(p.getContactTelephone())
                 .observation(p.getObservation())
                 .dateValidation(p.getDateValidation())
                 .motifRejet(p.getMotifRejet())

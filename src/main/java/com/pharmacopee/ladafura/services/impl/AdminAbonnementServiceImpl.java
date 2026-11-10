@@ -58,6 +58,7 @@ public class AdminAbonnementServiceImpl implements IAdminAbonnementService {
     private final ParametrePlateformeRepository parametreRepository;
     private final IAbonnementCycleService cycleService;
     private final IJournalAuditService journalAuditService;
+    private final com.pharmacopee.ladafura.services.interfaces.IAbonnementNotificationService abonnementNotificationService;
     private final IPharmacopeeAuthService pharmacopeeAuthService;
 
     @Override
@@ -152,6 +153,7 @@ public class AdminAbonnementServiceImpl implements IAdminAbonnementService {
         cycleService.historiser(abonnement, TypeEvenementAbonnement.PAIEMENT_CONFIRME, null, paiement.getReference(), null, administrateur);
         FactureAbonnement facture = emettreFacture(abonnement, paiement, administrateur);
         tracerPaiement(paiement, administrateur, TypeActionAudit.PAIEMENT_ABONNEMENT_CONFIRME, "Paiement confirmé");
+        abonnementNotificationService.paiementConfirme(paiement);
         return AbonnementMapper.facture(facture);
     }
 
@@ -165,6 +167,7 @@ public class AdminAbonnementServiceImpl implements IAdminAbonnementService {
         paiement.setValidePar(administrateur);
         cycleService.historiser(paiement.getAbonnement(), TypeEvenementAbonnement.PAIEMENT_REJETE, null, paiement.getReference(), motif, administrateur);
         tracerPaiement(paiement, administrateur, TypeActionAudit.PAIEMENT_ABONNEMENT_REJETE, motif);
+        abonnementNotificationService.paiementRejete(paiement, motif);
         return AbonnementMapper.paiement(paiement);
     }
 

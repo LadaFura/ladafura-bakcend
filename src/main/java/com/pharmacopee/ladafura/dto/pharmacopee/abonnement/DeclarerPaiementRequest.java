@@ -30,5 +30,14 @@ public class DeclarerPaiementRequest {
     @Schema(description = "Référence de la transaction", example = "OM240612.1530.A12345")
     private String referenceTransaction;
     private LocalDateTime datePaiement;
+
+    @Size(max = 150, message = "Le nom du contact ne doit pas dépasser 150 caractères")
+    @Schema(description = "Personne à joindre, obligatoire pour un paiement en espèces", example = "Aminata Diarra")
+    private String contactNom;
+
+    @Size(max = 30, message = "Le téléphone ne doit pas dépasser 30 caractères")
+    @Schema(description = "Téléphone à joindre, obligatoire pour un paiement en espèces", example = "+223 70 11 22 33")
+    private String contactTelephone;
+
     private String observation;
 }

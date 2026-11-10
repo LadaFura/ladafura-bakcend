@@ -29,6 +29,8 @@ public class PaiementAbonnementResponse {
     private StatutPaiement statut;
     private LocalDateTime datePaiement;
     private String referenceTransaction;
+    private String contactNom;
+    private String contactTelephone;
     private String observation;
     private LocalDateTime dateValidation;
     private String motifRejet;

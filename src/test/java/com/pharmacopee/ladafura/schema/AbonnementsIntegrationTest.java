@@ -88,6 +88,7 @@ class AbonnementsIntegrationTest {
     @Autowired private AbonnementRepository abonnementRepository;
     @Autowired private RolePharmacopeeRepository roleRepository;
     @MockitoBean private IPharmacopeeAuthService pharmacopeeAuthService;
+    @MockitoBean private com.pharmacopee.ladafura.services.interfaces.IAbonnementNotificationService abonnementNotificationService;
     @Autowired private com.pharmacopee.ladafura.repository.MembrePharmacopeeRepository adhesionsDeTest;
 
     /** Le service d'authentification est simulé : l'adhésion courante suit l'utilisateur simulé. */

@@ -70,6 +70,8 @@ class PharmacopeeAbonnementServiceImplTest {
     @Mock private FactureAbonnementRepository factureRepository;
     @Mock private DemandeContratRepository demandeRepository;
 
+    @Mock private com.pharmacopee.ladafura.services.interfaces.IAbonnementNotificationService abonnementNotificationService;
+
     @InjectMocks private PharmacopeeAbonnementServiceImpl service;
 
     private final Pharmacopee pharmacopee = Pharmacopee.builder().id(PHARMACOPEE_ID).nom("Officine").build();
@@ -93,6 +95,32 @@ class PharmacopeeAbonnementServiceImplTest {
 
     private static DeclarerPaiementRequest paiement(String montant) {
         return DeclarerPaiementRequest.builder().montant(new BigDecimal(montant)).modePaiement(ModePaiementAbonnement.ORANGE_MONEY).referenceTransaction("OM1").build();
+    }
+
+    private static DeclarerPaiementRequest paiementEspeces(String contactNom, String contactTelephone) {
+        return DeclarerPaiementRequest.builder().montant(new BigDecimal("10000")).modePaiement(ModePaiementAbonnement.ESPECES)
+                .referenceTransaction("IGNOREE").contactNom(contactNom).contactTelephone(contactTelephone).build();
+    }
+
+    @Test
+    @DisplayName("espèces : le contact est enregistré, la référence ignorée et LADAFURA prévenue")
+    void especesAvecContact() {
+        abonnement(StatutAbonnement.EN_ATTENTE_PAIEMENT);
+
+        PaiementAbonnementResponse reponse = service.declarerPaiement(50L, paiementEspeces("Awa Traoré", "+223 70 11 22 33"));
+
+        org.assertj.core.api.Assertions.assertThat(reponse.getContactTelephone()).isEqualTo("+223 70 11 22 33");
+        org.assertj.core.api.Assertions.assertThat(reponse.getReferenceTransaction()).isNull();
+        org.mockito.Mockito.verify(abonnementNotificationService).paiementDeclare(any(PaiementAbonnement.class));
+    }
+
+    @Test
+    @DisplayName("espèces : le contact est obligatoire")
+    void especesSansContact() {
+        abonnement(StatutAbonnement.EN_ATTENTE_PAIEMENT);
+
+        assertThatThrownBy(() -> service.declarerPaiement(50L, paiementEspeces("Awa Traoré", " ")))
+                .isInstanceOf(BadRequestException.class);
     }
 
     @Test
