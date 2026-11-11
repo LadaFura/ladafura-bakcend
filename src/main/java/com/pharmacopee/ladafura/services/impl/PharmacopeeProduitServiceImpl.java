@@ -87,16 +87,13 @@ public class PharmacopeeProduitServiceImpl implements IPharmacopeeProduitService
     @Transactional(readOnly = true)
     public Page<PharmacopeeProduitResponse> getMesProduits(String keyword, Long categorieId, Boolean disponible, Pageable pageable) {
         Pharmacopee pharmacopee = contexteService.verifierPermission(IPharmacopeeContexteService.PRODUITS_CONSULTER).pharmacopee();
-        log.info("Consultation du catalogue pour la pharmacopée ID {} (disponible={})", pharmacopee.getId(), disponible);
+        log.info("Consultation du catalogue pour la pharmacopée ID {} (disponible={}, categorieId={})", pharmacopee.getId(), disponible, categorieId);
 
-        Page<DisponibiliteProduit> page;
-        if (disponible != null) {
-            page = disponibiliteProduitRepository.findByPharmacopeeIdAndDisponible(pharmacopee.getId(), disponible, pageable);
-        } else {
-            page = disponibiliteProduitRepository.findByPharmacopeeId(pharmacopee.getId(), pageable);
-        }
-
-        return page.map(this::mapToResponse);
+        // Un mot-clé vide ne filtre pas (comptoir et liste des produits l'envoient tel quel).
+        String terme = (keyword == null || keyword.isBlank()) ? null : keyword.trim();
+        return disponibiliteProduitRepository
+                .rechercherParPharmacopee(pharmacopee.getId(), terme, categorieId, disponible, pageable)
+                .map(this::mapToResponse);
     }
 
     @Override
