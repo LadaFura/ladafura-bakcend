@@ -167,3 +167,9 @@ firebase-service-account*.json
 *.env
 *.pem
 secrets/
+# Instructions et outils des assistants IA (Claude, skills, règles) : locaux, jamais versionnés
+CLAUDE.md
+.claude/
+.agents/
+AGENTS.md
+skills-lock.json
