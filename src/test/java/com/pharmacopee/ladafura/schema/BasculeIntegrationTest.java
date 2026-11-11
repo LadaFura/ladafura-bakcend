@@ -35,6 +35,7 @@ import com.pharmacopee.ladafura.Models.LigneCommande;
 import com.pharmacopee.ladafura.Models.LignePanier;
 import com.pharmacopee.ladafura.Models.MembrePharmacopee;
 import com.pharmacopee.ladafura.Models.ModeRetrait;
+import com.pharmacopee.ladafura.Models.Paiement;
 import com.pharmacopee.ladafura.Models.Panier;
 import com.pharmacopee.ladafura.Models.Pharmacopee;
 import com.pharmacopee.ladafura.Models.Produit;
@@ -93,7 +94,8 @@ import com.pharmacopee.ladafura.services.interfaces.IPopulationNotificationServi
 @Import({PharmacopeeAuthServiceImpl.class, PharmacopeeContexteServiceImpl.class, PharmacopeeQuotaServiceImpl.class,
         JournalAuditServiceImpl.class, AbonnementCycleServiceImpl.class, PharmacopeeInitialisationServiceImpl.class,
         PharmacopeeMouvementStockServiceImpl.class, PharmacopeeOperationCaisseServiceImpl.class, CommandeStockCaisseServiceImpl.class,
-        PopulationCommandeServiceImpl.class, PopulationCommandeMapper.class, PharmacopeeInvitationServiceImpl.class})
+        PopulationCommandeServiceImpl.class,
+        com.pharmacopee.ladafura.services.impl.PaiementDeclareServiceImpl.class, PopulationCommandeMapper.class, PharmacopeeInvitationServiceImpl.class})
 class BasculeIntegrationTest {
 
     private static final String EMAIL_GERANT = "gerant-bascule@test.ml";
@@ -122,6 +124,7 @@ class BasculeIntegrationTest {
     @Autowired private CaisseRepository caisseRepository;
     @Autowired private MouvementStockRepository mouvementStockRepository;
     @Autowired private OperationCaisseRepository operationCaisseRepository;
+    @Autowired private com.pharmacopee.ladafura.services.interfaces.ICommandeStockCaisseService commandeStockCaisseService;
     @MockitoBean private IFirebaseAuthService firebaseAuthService;
     @MockitoBean private IPopulationAuthService populationAuthService;
     @MockitoBean private IPharmacopeeNotificationService pharmacopeeNotificationService;
@@ -213,16 +216,25 @@ class BasculeIntegrationTest {
         em.flush();
         when(populationAuthService.getCurrentPopulationUser()).thenReturn(client);
 
+        Long compteId = caisseRepository.findFirstByPharmacopeeIdAndTypeAndActifTrue(pharmacopeeId, TypeCaisse.MOBILE_MONEY).orElseThrow().getId();
         PopulationCommandeDetailResponse commande = commandeService.passerCommande(PopulationCreateCommandeRequest.builder()
                 .pharmacopeeId(pharmacopeeId).modeRetraitId(mode.getId()).adresseLivraison("Sévaré, Mopti")
-                .methode(MethodePaiement.MOBILE_MONEY).telephoneMobileMoney("+223 70 11 22 33").build());
+                .methode(MethodePaiement.MOBILE_MONEY).telephoneMobileMoney("+223 70 11 22 33")
+                .compteMobileMoneyId(compteId).referenceTransaction("OM-BASCULE-1").build());
         em.flush();
 
-        Long compteId = caisseRepository.findFirstByPharmacopeeIdAndTypeAndActifTrue(pharmacopeeId, TypeCaisse.MOBILE_MONEY).orElseThrow().getId();
         assertThat(fiche.getQuantiteStock()).isEqualTo(8);
         LigneCommande ligneCommande = em.find(Commande.class, commande.getId()).getLignes().get(0);
         assertThat(mouvementStockRepository.findByLigneCommandeId(ligneCommande.getId())).singleElement()
                 .satisfies(m -> assertThat(m.getType()).isEqualTo(TypeMouvementStock.SORTIE_COMMANDE));
+        // La déclaration du client ne fait entrer aucun argent en trésorerie.
+        Paiement paiement = em.find(Commande.class, commande.getId()).getPaiement();
+        assertThat(paiement.getStatut()).isEqualTo(StatutPaiement.EN_ATTENTE);
+        assertThat(operationCaisseRepository.soldeTheorique(compteId)).isEqualByComparingTo("0");
+
+        paiement.setStatut(StatutPaiement.REUSSI);
+        commandeStockCaisseService.encaisser(paiement, compteId, null);
+        em.flush();
         assertThat(operationCaisseRepository.soldeTheorique(compteId)).isEqualByComparingTo("4500");
 
         commandeService.annulerCommande(commande.getId());

@@ -15,6 +15,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
@@ -47,6 +48,18 @@ public class Paiement {
     private StatutPaiement statut;
 
     private String reference;
+
+    /** Compte Mobile Money choisi par le client : celui que la pharmacopée crédite à la confirmation. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "caisse_id")
+    @JsonIgnore
+    private Caisse caisse;
+
+    @Column(name = "telephone_emetteur", length = 30)
+    private String telephoneEmetteur;
+
+    @Column(name = "motif_rejet", length = 500)
+    private String motifRejet;
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "commande_id", nullable = false, unique = true)

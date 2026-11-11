@@ -176,9 +176,9 @@ class SchemaMigrationIntegrationTest {
         List<ConfigurationLimiteOffre> quotas = em.getEntityManager()
                 .createQuery("select c from ConfigurationLimiteOffre c join fetch c.limite", ConfigurationLimiteOffre.class)
                 .getResultList();
-        assertThat(quotas).hasSize(3).allMatch(c -> c.getOffre().getId().equals(gratuite.getId()));
+        assertThat(quotas).hasSize(4).allMatch(c -> c.getOffre().getId().equals(gratuite.getId()));
         assertThat(quotas).extracting(c -> c.getLimite().getCodeLimite() + "=" + c.getValeurMaximale())
-                .containsExactlyInAnyOrder("MAX_UTILISATEURS_ACTIFS=1", "MAX_PRODUITS=20", "MAX_VENTES_MENSUELLES=50");
+                .containsExactlyInAnyOrder("MAX_UTILISATEURS_ACTIFS=1", "MAX_PRODUITS=20", "MAX_VENTES_MENSUELLES=50", "MAX_PHARMACOPEES=2");
     }
 
     @Test

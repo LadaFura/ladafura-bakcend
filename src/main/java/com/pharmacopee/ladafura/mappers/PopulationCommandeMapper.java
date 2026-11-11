@@ -155,6 +155,7 @@ public class PopulationCommandeMapper {
                 .annulable(isAnnulable(c.getStatut()))
                 .lignes(lignesDto)
                 .statutPaiement(statutPaiement)
+                .motifRejetPaiement(p != null ? p.getMotifRejet() : null)
                 .paiementId(paiementId)
                 .referencePaiement(referencePaiement)
                 .methodePaiement(methodePaiement)

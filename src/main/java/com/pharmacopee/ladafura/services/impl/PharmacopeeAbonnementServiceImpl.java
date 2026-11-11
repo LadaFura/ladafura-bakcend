@@ -82,10 +82,14 @@ public class PharmacopeeAbonnementServiceImpl implements IPharmacopeeAbonnementS
     }
 
     private LimiteConsommationResponse consommation(LimiteAbonnement limite, Long pharmacopeeId) {
+        IPharmacopeeQuotaService.Plafond plafond = quotaService.plafondApplicable(pharmacopeeId, limite.getCodeLimite())
+                .orElse(new IPharmacopeeQuotaService.Plafond(limite.getValeurMaximale(),
+                        Boolean.TRUE.equals(limite.getIllimite()), limite.getAbonnement().getId()));
         return LimiteConsommationResponse.builder()
                 .codeLimite(limite.getCodeLimite())
-                .valeurMaximale(limite.getValeurMaximale())
-                .illimite(limite.getIllimite())
+                .valeurMaximale(plafond.valeurMaximale())
+                .illimite(plafond.illimite())
+                .heriteeDuGerant(!plafond.abonnementId().equals(limite.getAbonnement().getId()))
                 .consommation(quotaService.consommationActuelle(pharmacopeeId, limite.getCodeLimite()))
                 .build();
     }

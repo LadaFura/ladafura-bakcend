@@ -108,6 +108,9 @@ class PopulationCommandeServiceImplTest {
     @Mock
     private AbonnementRepository abonnementRepository;
 
+    @Mock
+    private com.pharmacopee.ladafura.services.interfaces.IPaiementDeclareService paiementDeclareService;
+
     @BeforeEach
     void setUp() {
         org.mockito.Mockito.lenient().when(abonnementRepository.findEnVigueur(org.mockito.ArgumentMatchers.anyLong()))
@@ -224,7 +227,7 @@ class PopulationCommandeServiceImplTest {
     }
 
     @Test
-    @DisplayName("passerCommande - Confirmation avec Livraison et Paiement validé : commande créée, stock décrémenté et panier vidé")
+    @DisplayName("passerCommande - Mobile Money déclaré avec Livraison : commande en attente, stock décrémenté et panier vidé")
     void passerCommande_Livraison_Success() {
         PopulationCreateCommandeRequest request = PopulationCreateCommandeRequest.builder()
                 .pharmacopeeId(1L)
@@ -234,7 +237,8 @@ class PopulationCommandeServiceImplTest {
                 .methode(MethodePaiement.MOBILE_MONEY)
                 .operateur("ORANGE_MONEY")
                 .telephoneMobileMoney("+22370112233")
-                .simulerSucces(true)
+                .compteMobileMoneyId(12L)
+                .referenceTransaction("OM-998811")
                 .build();
 
         when(populationAuthService.getCurrentPopulationUser()).thenReturn(currentUser);
@@ -254,22 +258,22 @@ class PopulationCommandeServiceImplTest {
 
         assertThat(response).isNotNull();
         assertThat(response.getId()).isEqualTo(1001L);
-        assertThat(response.getStatut()).isEqualTo(StatutCommande.CONFIRMEE);
+        assertThat(response.getStatut()).isEqualTo(StatutCommande.EN_ATTENTE);
         assertThat(response.getTotalProduit()).isEqualTo(5000.0);
         assertThat(response.getMontantLivraison()).isEqualTo(1500.0);
         assertThat(response.getMontantTotal()).isEqualTo(6500.0);
-        assertThat(response.getStatutPaiement()).isEqualTo("REUSSI");
+        assertThat(response.getStatutPaiement()).isEqualTo("EN_ATTENTE");
         assertThat(panier.getLignes()).isEmpty();
 
         verify(commandeStockCaisseService).sortirStock(any(Commande.class));
-        verify(commandeStockCaisseService).encaisser(any(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.isNull());
+        verify(commandeStockCaisseService, org.mockito.Mockito.never()).encaisser(any(), any(), any());
         verify(paiementRepository).save(any());
         verify(lignePanierRepository).deleteByPanierId(20L);
         verify(panierRepository).save(panier);
     }
 
     @Test
-    @DisplayName("passerCommande - Échec du paiement Mobile Money : aucune commande enregistrée, panier et stocks intacts")
+    @DisplayName("passerCommande - Déclaration Mobile Money refusée : aucune commande enregistrée, panier et stocks intacts")
     void passerCommande_PaymentFailure_NoOrderCreated() {
         PopulationCreateCommandeRequest request = PopulationCreateCommandeRequest.builder()
                 .pharmacopeeId(1L)
@@ -278,8 +282,9 @@ class PopulationCommandeServiceImplTest {
                 .methode(MethodePaiement.MOBILE_MONEY)
                 .operateur("ORANGE_MONEY")
                 .telephoneMobileMoney("+22370112233")
-                .simulerSucces(false) // Échec de paiement
                 .build();
+        org.mockito.Mockito.doThrow(new BadRequestException("Le numéro de transaction reçu par SMS est obligatoire."))
+                .when(paiementDeclareService).declarerMobileMoney(any(), any(), any(), any(), any());
 
         when(populationAuthService.getCurrentPopulationUser()).thenReturn(currentUser);
         when(panierRepository.findByUtilisateurId(10L)).thenReturn(Optional.of(panier));
@@ -291,7 +296,7 @@ class PopulationCommandeServiceImplTest {
 
         assertThatThrownBy(() -> commandeService.passerCommande(request))
                 .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("Le règlement via Mobile Money a échoué");
+                .hasMessageContaining("numéro de transaction");
 
         // Vérification stricte : aucun stock modifié, aucune commande sauvée, panier non vidé
         assertThat(disponibilite.getQuantiteStock()).isEqualTo(50);

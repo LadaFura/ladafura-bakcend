@@ -28,6 +28,7 @@ import com.pharmacopee.ladafura.dto.pharmacopee.retrait.ModeRetraitResponse;
 import com.pharmacopee.ladafura.enums.StatutCommande;
 import com.pharmacopee.ladafura.enums.TypeModeRetrait;
 import com.pharmacopee.ladafura.exceptions.BadRequestException;
+import com.pharmacopee.ladafura.exceptions.ConflictException;
 import com.pharmacopee.ladafura.exceptions.ResourceNotFoundException;
 import com.pharmacopee.ladafura.repository.CommandeRepository;
 import com.pharmacopee.ladafura.services.interfaces.IPharmacopeeAuthService;
@@ -123,6 +124,10 @@ public class PharmacopeeCommandeServiceImpl implements IPharmacopeeCommandeServi
                     + statutActuel + " à " + cible + ". Statuts autorisés : " + autorises);
         }
 
+        if (cible == StatutCommande.CONFIRMEE && paiementMobileMoneyNonVerifie(commande)) {
+            throw new ConflictException("Confirmez d'abord la réception du paiement Mobile Money de cette commande.");
+        }
+
         if (cible == StatutCommande.ANNULEE) {
             var auteur = contexteService.getContexte().membre();
             commandeStockCaisseService.reintegrerStock(commande, auteur);
@@ -137,6 +142,12 @@ public class PharmacopeeCommandeServiceImpl implements IPharmacopeeCommandeServi
         notifierEvolutionStatutCommande(saved, cible, request.getMotif());
 
         return mapToDetailResponse(saved);
+    }
+
+    private static boolean paiementMobileMoneyNonVerifie(Commande commande) {
+        return commande.getPaiement() != null
+                && commande.getPaiement().getMethode() == com.pharmacopee.ladafura.enums.MethodePaiement.MOBILE_MONEY
+                && commande.getPaiement().getStatut() != com.pharmacopee.ladafura.enums.StatutPaiement.REUSSI;
     }
 
     private void notifierEvolutionStatutCommande(Commande cmd, StatutCommande nouveauStatut, String motif) {

@@ -123,7 +123,7 @@ public class CommandeStockCaisseServiceImpl implements ICommandeStockCaisseServi
     private Long resoudreCaisse(Long pharmacopeeId, MethodePaiement methode, Long caisseId) {
         return switch (methode) {
             case CASH -> caisseId != null ? caisseId : uniqueCaisseOuverte(pharmacopeeId);
-            case MOBILE_MONEY -> compteActif(pharmacopeeId, TypeCaisse.MOBILE_MONEY);
+            case MOBILE_MONEY -> caisseId != null ? caisseId : compteActif(pharmacopeeId, TypeCaisse.MOBILE_MONEY);
             case CARTE_BANCAIRE -> compteActif(pharmacopeeId, TypeCaisse.BANQUE);
         };
     }

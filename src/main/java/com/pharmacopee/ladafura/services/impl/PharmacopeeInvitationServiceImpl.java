@@ -13,6 +13,7 @@ import com.pharmacopee.ladafura.enums.OrigineAction;
 import com.pharmacopee.ladafura.enums.StatutMembre;
 import com.pharmacopee.ladafura.enums.TypeActionAudit;
 import com.pharmacopee.ladafura.exceptions.ConflictException;
+import com.pharmacopee.ladafura.exceptions.QuotaExceededException;
 import com.pharmacopee.ladafura.exceptions.ResourceNotFoundException;
 import com.pharmacopee.ladafura.repository.MembrePharmacopeeRepository;
 import com.pharmacopee.ladafura.services.interfaces.IJournalAuditService;
@@ -64,7 +65,13 @@ public class PharmacopeeInvitationServiceImpl implements IPharmacopeeInvitationS
         }
         Long pharmacopeeId = invitation.getPharmacopee().getId();
         contexteService.verifierEcritureAutorisee(pharmacopeeId);
-        quotaService.verifierQuota(pharmacopeeId, IPharmacopeeQuotaService.MAX_UTILISATEURS_ACTIFS);
+        try {
+            quotaService.verifierQuota(pharmacopeeId, IPharmacopeeQuotaService.MAX_UTILISATEURS_ACTIFS);
+        } catch (QuotaExceededException e) {
+            // L'invité ne gère pas l'abonnement : seul le gérant de cette pharmacopée peut lever la limite.
+            throw new QuotaExceededException("« " + invitation.getPharmacopee().getNom()
+                    + " » a atteint le nombre d'utilisateurs permis par sa formule. Demandez à son gérant de choisir une formule supérieure, puis acceptez de nouveau l'invitation.");
+        }
         invitation.setStatut(StatutMembre.ACTIF);
         invitation.setDateAdhesion(LocalDateTime.now());
         tracer(invitation, utilisateur, TypeActionAudit.MEMBRE_ACTIVE, "Invitation acceptée");

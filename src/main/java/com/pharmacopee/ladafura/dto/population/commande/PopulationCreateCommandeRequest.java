@@ -4,6 +4,7 @@ import com.pharmacopee.ladafura.enums.MethodePaiement;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -38,12 +39,13 @@ public class PopulationCreateCommandeRequest {
     private String operateur;
 
     @Schema(description = "Numéro Mobile Money du payeur", example = "+22370112233")
+    @Size(max = 30, message = "Le numéro de téléphone est trop long")
     private String telephoneMobileMoney;
 
-    @Schema(description = "Référence externe de la transaction (si disponible)", example = "TX-998822")
-    private String referenceTransaction;
+    @Schema(description = "Compte Mobile Money de la pharmacopée sur lequel le client a payé", example = "12")
+    private Long compteMobileMoneyId;
 
-    @Builder.Default
-    @Schema(description = "Indicateur de simulation de paiement réussi (true par défaut)", example = "true")
-    private Boolean simulerSucces = true;
+    @Size(max = 100, message = "Le numéro de transaction est trop long")
+    @Schema(description = "Numéro de transaction reçu par SMS, obligatoire pour le Mobile Money", example = "TX-998822")
+    private String referenceTransaction;
 }

@@ -139,6 +139,9 @@ class PopulationEndToEndFlowIntegrationTest {
     private ICommandeStockCaisseService commandeStockCaisseService;
 
     @Mock
+    private com.pharmacopee.ladafura.services.interfaces.IPaiementDeclareService paiementDeclareService;
+
+    @Mock
     private AbonnementRepository abonnementRepository;
 
     @BeforeEach
@@ -197,10 +200,10 @@ class PopulationEndToEndFlowIntegrationTest {
 
         commandeService = new PopulationCommandeServiceImpl(
                 authService, commandeStockCaisseService, abonnementRepository, commandeRepository, panierRepository, lignePanierRepository,
-                pharmacopeeRepository, modeRetraitRepository, dispoRepo, paiementRepository, commandeMapper);
+                pharmacopeeRepository, modeRetraitRepository, dispoRepo, paiementRepository, commandeMapper, paiementDeclareService);
 
         paiementService = new PopulationPaiementServiceImpl(
-                authService, commandeStockCaisseService, paiementRepository, commandeRepository, paiementMapper);
+                authService, paiementRepository, commandeRepository, paiementMapper, paiementDeclareService, null);
 
         avisService = new PopulationAvisServiceImpl(
                 authService, avisRepository, pharmacopeeRepository, commandeRepository, avisMapper);
@@ -276,15 +279,14 @@ class PopulationEndToEndFlowIntegrationTest {
                 .methode(MethodePaiement.MOBILE_MONEY)
                 .operateur("ORANGE_MONEY")
                 .telephoneMobileMoney("+22370112233")
-                .simulerSucces(true)
                 .build();
 
         PopulationCommandeDetailResponse cmdResp = commandeService.passerCommande(cmdReq);
         assertThat(cmdResp).isNotNull();
         assertThat(cmdResp.getMontantTotal()).isEqualTo(7500.0);
-        assertThat(cmdResp.getStatut()).isEqualTo(StatutCommande.CONFIRMEE);
+        assertThat(cmdResp.getStatut()).isEqualTo(StatutCommande.EN_ATTENTE);
 
-        // --- 3. PAIEMENT DE LA COMMANDE (Mobile Money) ---
+        // --- 3. DÉCLARATION DU PAIEMENT (Mobile Money) ---
         when(commandeRepository.findByIdAndUtilisateurId(600L, 100L)).thenReturn(Optional.of(nouvelleCommande));
 
         Paiement paiementEffectue = Paiement.builder()
@@ -293,7 +295,7 @@ class PopulationEndToEndFlowIntegrationTest {
                 .reference("PAY-OM-994827")
                 .montant(7500.0)
                 .methode(MethodePaiement.MOBILE_MONEY)
-                .statut(StatutPaiement.REUSSI)
+                .statut(StatutPaiement.EN_ATTENTE)
                 .datePaiement(LocalDateTime.now())
                 .build();
 
@@ -303,14 +305,15 @@ class PopulationEndToEndFlowIntegrationTest {
                 .commandeId(600L)
                 .methode(MethodePaiement.MOBILE_MONEY)
                 .telephoneMobileMoney("+223 70 12 34 56")
-                .simulerSucces(true)
+                .compteMobileMoneyId(12L)
+                .referenceTransaction("OM-994827")
                 .build();
 
         PopulationPaiementResponse payResp = paiementService.payerCommande(payReq);
         assertThat(payResp).isNotNull();
-        assertThat(payResp.getStatut()).isEqualTo(StatutPaiement.REUSSI);
+        assertThat(payResp.getStatut()).isEqualTo(StatutPaiement.EN_ATTENTE);
         assertThat(payResp.getMontant()).isEqualTo(7500.0);
-        assertThat(nouvelleCommande.getStatut()).isEqualTo(StatutCommande.CONFIRMEE);
+        assertThat(nouvelleCommande.getStatut()).isEqualTo(StatutCommande.EN_ATTENTE);
 
         // --- 4. TRANSITION VERS COMMANDE LIVRÉE ---
         nouvelleCommande.setStatut(StatutCommande.LIVREE);

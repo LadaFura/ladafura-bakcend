@@ -175,9 +175,14 @@ class PharmacopeeAuthServiceImplTest {
         requete.addHeader("X-Pharmacopee-Id", "99");
         MembrePharmacopee membre = membre(10L, 7L, StatutPharmacopee.VALIDEE);
         when(membreRepository.findByUtilisateurIdAndStatut(UTILISATEUR_ID, StatutMembre.ACTIF)).thenReturn(List.of(membre));
-        when(quotaService.maxPharmacopeesParGerant()).thenReturn(2);
+        when(quotaService.maxPharmacopeesParGerant(UTILISATEUR_ID)).thenReturn(2);
         when(quotaService.pharmacopeesPossedees(UTILISATEUR_ID)).thenReturn(1L);
-        when(attributionRepository.findByMembrePharmacopeeId(10L)).thenReturn(List.of());
+        com.pharmacopee.ladafura.Models.RolePharmacopee role = new com.pharmacopee.ladafura.Models.RolePharmacopee();
+        role.setCode("GERANT");
+        role.setLibelle("Gérant");
+        com.pharmacopee.ladafura.Models.AttributionRolePharmacopee attribution = new com.pharmacopee.ladafura.Models.AttributionRolePharmacopee();
+        attribution.setRolePharmacopee(role);
+        when(attributionRepository.findByMembrePharmacopeeId(10L)).thenReturn(List.of(attribution));
         when(rolePermissionRepository.findCodesPermissionsEffectives(UTILISATEUR_ID, 7L)).thenReturn(Set.of("VENTES_CREER"));
         when(abonnementRepository.findEnVigueur(7L)).thenReturn(Optional.of(
                 Abonnement.builder().statut(StatutAbonnement.ACTIF).codeOffreSouscrite("GRATUITE").build()));
@@ -186,6 +191,8 @@ class PharmacopeeAuthServiceImplTest {
 
         assertThat(me.getPharmacopeeId()).isEqualTo(7L);
         assertThat(me.getMembreId()).isEqualTo(10L);
+        assertThat(me.getRoles()).containsExactly("GERANT");
+        assertThat(me.getRoleLibelle()).isEqualTo("Gérant");
         assertThat(me.getPermissions()).containsExactly("VENTES_CREER");
         assertThat(me.getStatutAbonnement()).isEqualTo("ACTIF");
         assertThat(me.getPlanAbonnement()).isEqualTo("GRATUIT");

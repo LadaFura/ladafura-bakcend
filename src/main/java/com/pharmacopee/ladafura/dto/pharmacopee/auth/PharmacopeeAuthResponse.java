@@ -66,6 +66,9 @@ public class PharmacopeeAuthResponse {
     @Schema(description = "Nombre maximal de structures autorisées par l'abonnement", example = "1")
     private Integer quotaMaxStructures;
 
+    @Schema(description = "Vrai si la formule ne limite pas le nombre de structures", example = "false")
+    private boolean quotaStructuresIllimite;
+
     @Schema(description = "Nombre de structures actuellement créées", example = "1")
     private Integer structuresActuelles;
 
@@ -75,14 +78,14 @@ public class PharmacopeeAuthResponse {
     @Schema(description = "Indique si l'utilisateur est le praticien principal (habilité à basculer entre ses structures)", example = "true")
     private boolean estPraticienPrincipal;
 
-    @Schema(description = "Titre officiel du praticien dans l'établissement", example = "Praticien Principal")
-    private String titrePraticien;
-
     @Schema(description = "Identifiant de l'adhésion du membre à la pharmacopée active", example = "12")
     private Long membreId;
 
     @Schema(description = "Codes des rôles du membre dans la pharmacopée active", example = "[\"GERANT\"]")
     private java.util.List<String> roles;
+
+    @Schema(description = "Rôle du membre dans la pharmacopée active, tel qu'il s'affiche", example = "Gérant")
+    private String roleLibelle;
 
     @Schema(description = "Permissions effectives du membre dans la pharmacopée active", example = "[\"VENTES_CREER\"]")
     private java.util.Set<String> permissions;

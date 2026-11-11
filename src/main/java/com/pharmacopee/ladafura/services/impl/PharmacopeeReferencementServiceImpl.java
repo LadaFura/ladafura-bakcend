@@ -38,12 +38,12 @@ public class PharmacopeeReferencementServiceImpl implements IPharmacopeeReferenc
     public StatutReferencementResponse soumettreDemandeReferencement(DemandeReferencementRequest request) {
         Utilisateur user = pharmacopeeAuthService.getCurrentUtilisateur();
         Optional<Praticien> praticienOpt = praticienRepository.findById(user.getId());
-        int quotaMax = quotaService.maxPharmacopeesParGerant();
+        int quotaMax = quotaService.maxPharmacopeesParGerant(user.getId());
         long possedees = quotaService.pharmacopeesPossedees(user.getId());
 
         if (possedees >= quotaMax) {
             log.warn("Quota de structures atteint pour l'utilisateur ID {}. Actuelles: {}, Quota: {}", user.getId(), possedees, quotaMax);
-            throw new QuotaExceededException("Vous avez atteint la limite de " + quotaMax + " structure(s) par gérant.");
+            throw new QuotaExceededException("Votre formule permet " + quotaMax + " pharmacopée(s). Souscrivez une formule supérieure pour en ajouter.");
         }
 
         Pharmacopee pharmacopee = Pharmacopee.builder()

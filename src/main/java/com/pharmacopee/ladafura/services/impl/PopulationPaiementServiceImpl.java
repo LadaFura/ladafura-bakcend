@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.pharmacopee.ladafura.Models.Commande;
 import com.pharmacopee.ladafura.Models.Paiement;
 import com.pharmacopee.ladafura.Models.Utilisateur;
+import com.pharmacopee.ladafura.dto.population.paiement.PopulationCompteMobileMoneyResponse;
 import com.pharmacopee.ladafura.dto.population.paiement.PopulationMethodePaiementInfoDto;
 import com.pharmacopee.ladafura.dto.population.paiement.PopulationPaiementResponse;
 import com.pharmacopee.ladafura.dto.population.paiement.PopulationProcessPaiementRequest;
@@ -22,6 +23,7 @@ import com.pharmacopee.ladafura.enums.MethodePaiement;
 import com.pharmacopee.ladafura.enums.StatutCommande;
 import com.pharmacopee.ladafura.enums.StatutPaiement;
 import com.pharmacopee.ladafura.exceptions.BadRequestException;
+import com.pharmacopee.ladafura.exceptions.ConflictException;
 import com.pharmacopee.ladafura.exceptions.ResourceNotFoundException;
 import com.pharmacopee.ladafura.mappers.PopulationPaiementMapper;
 import com.pharmacopee.ladafura.repository.CommandeRepository;
@@ -41,20 +43,16 @@ public class PopulationPaiementServiceImpl implements IPopulationPaiementService
     private static final SecureRandom RANDOM = new SecureRandom();
 
     private final IPopulationAuthService populationAuthService;
-    private final com.pharmacopee.ladafura.services.interfaces.ICommandeStockCaisseService commandeStockCaisseService;
     private final PaiementRepository paiementRepository;
     private final CommandeRepository commandeRepository;
     private final PopulationPaiementMapper mapper;
+    private final com.pharmacopee.ladafura.services.interfaces.IPaiementDeclareService paiementDeclareService;
     private final com.pharmacopee.ladafura.services.interfaces.IPharmacopeeNotificationService pharmacopeeNotificationService;
-    private final com.pharmacopee.ladafura.services.interfaces.IPopulationNotificationService populationNotificationService;
 
-    public PopulationPaiementServiceImpl(
-            IPopulationAuthService populationAuthService,
-            com.pharmacopee.ladafura.services.interfaces.ICommandeStockCaisseService commandeStockCaisseService,
-            PaiementRepository paiementRepository,
-            CommandeRepository commandeRepository,
-            PopulationPaiementMapper mapper) {
-        this(populationAuthService, commandeStockCaisseService, paiementRepository, commandeRepository, mapper, null, null);
+    @Override
+    @Transactional(readOnly = true)
+    public List<PopulationCompteMobileMoneyResponse> getComptesMobileMoney(Long pharmacopeeId) {
+        return paiementDeclareService.getComptesMobileMoney(pharmacopeeId);
     }
 
     @Override
@@ -66,6 +64,7 @@ public class PopulationPaiementServiceImpl implements IPopulationPaiementService
 
     @Override
     public PopulationPaiementResponse payerCommande(PopulationProcessPaiementRequest request) {
+        paiementDeclareService.exigerMethodeDisponible(request.getMethode());
         Utilisateur user = populationAuthService.getCurrentPopulationUser();
         log.info("Initiation de paiement pour la commande ID: {} par l'utilisateur ID: {} (méthode: {})",
                 request.getCommandeId(), user.getId(), request.getMethode());
@@ -91,17 +90,10 @@ public class PopulationPaiementServiceImpl implements IPopulationPaiementService
         paiement.setMontant(commande.getMontantTotal());
         paiement.setDatePaiement(LocalDateTime.now());
 
-        // Référence de paiement
-        if (request.getReferenceTransaction() != null && !request.getReferenceTransaction().isBlank()) {
-            paiement.setReference(request.getReferenceTransaction().trim());
-        } else {
-            paiement.setReference(generateReference(request.getMethode(), request.getOperateur()));
-        }
-
-        boolean simulerReussite = Boolean.TRUE.equals(request.getSimulerSucces());
         String message;
 
         if (request.getMethode() == MethodePaiement.CASH) {
+            paiement.setReference(generateReference(request.getMethode(), request.getOperateur()));
             paiement.setStatut(StatutPaiement.EN_ATTENTE);
             if (commande.getStatut() == StatutCommande.EN_ATTENTE) {
                 commande.setStatut(StatutCommande.CONFIRMEE);
@@ -110,53 +102,32 @@ public class PopulationPaiementServiceImpl implements IPopulationPaiementService
             }
             message = "Option de paiement en espèces sélectionnée. Vous réglerez la somme de "
                     + commande.getMontantTotal() + " FCFA lors de la livraison ou au comptoir de la pharmacopée.";
-        } else if (simulerReussite) {
-            paiement.setStatut(StatutPaiement.REUSSI);
-            if (commande.getStatut() == StatutCommande.EN_ATTENTE) {
-                commande.setStatut(StatutCommande.CONFIRMEE);
-                commande.setDateMiseAJour(LocalDateTime.now());
-                commandeRepository.save(commande);
-                log.info("Commande #{} automatiquement confirmée suite au succès du paiement", commande.getNumero());
-            }
-            String libelle = mapper.formatLibelleMethode(request.getMethode(), request.getOperateur());
-            message = "Paiement de " + commande.getMontantTotal() + " FCFA validé avec succès par "
-                    + libelle + ". Votre commande est confirmée.";
         } else {
-            paiement.setStatut(StatutPaiement.ECHOUE);
-            String libelle = mapper.formatLibelleMethode(request.getMethode(), request.getOperateur());
-            message = "La transaction via " + libelle + " n'a pas pu aboutir. Veuillez vérifier vos fonds ou utiliser un autre mode de paiement.";
+            // Une commande déjà confirmée ne doit pas redevenir dépendante d'une vérification.
+            if (commande.getStatut() != StatutCommande.EN_ATTENTE) {
+                throw new ConflictException("Cette commande n'attend plus de paiement Mobile Money.");
+            }
+            paiementDeclareService.declarerMobileMoney(paiement, commande.getPharmacopee().getId(),
+                    request.getCompteMobileMoneyId(), request.getReferenceTransaction(), request.getTelephoneMobileMoney());
+            message = "Votre paiement de " + commande.getMontantTotal().intValue()
+                    + " FCFA est déclaré. La pharmacopée va vérifier sa réception avant de confirmer votre commande.";
         }
 
         Paiement savedPaiement = paiementRepository.save(paiement);
         log.info("Paiement ID: {} enregistré avec statut: {} pour la commande ID: {}",
                 savedPaiement.getId(), savedPaiement.getStatut(), commande.getId());
 
-        if (savedPaiement.getStatut() == StatutPaiement.REUSSI) {
-            commandeStockCaisseService.encaisser(savedPaiement, null, null);
-            String refCmdId = String.valueOf(commande.getId());
-            if (commande.getPharmacopee() != null && pharmacopeeNotificationService != null) {
-                pharmacopeeNotificationService.notifier(
-                        commande.getPharmacopee(),
-                        com.pharmacopee.ladafura.enums.TypeNotification.COMMANDE_STATUT,
-                        com.pharmacopee.ladafura.enums.NiveauNotification.SUCCES,
-                        "Paiement confirmé - Commande " + commande.getNumero(),
-                        "Le règlement de " + commande.getMontantTotal().intValue() + " FCFA pour la commande "
-                                + commande.getNumero() + " a été confirmé (" + savedPaiement.getReference() + ").",
-                        refCmdId,
-                        "/pharmacopee/commandes/" + commande.getId()
-                );
-            }
-            if (populationNotificationService != null) {
-                populationNotificationService.envoyerNotification(
-                        user,
-                        "Paiement confirmé pour la commande " + commande.getNumero(),
-                        message,
-                        com.pharmacopee.ladafura.enums.TypeNotification.COMMANDE_STATUT,
-                        com.pharmacopee.ladafura.enums.NiveauNotification.SUCCES,
-                        refCmdId,
-                        "/citizen/commandes/" + commande.getId()
-                );
-            }
+        if (savedPaiement.getMethode() == MethodePaiement.MOBILE_MONEY && pharmacopeeNotificationService != null) {
+            pharmacopeeNotificationService.notifier(
+                    commande.getPharmacopee(),
+                    com.pharmacopee.ladafura.enums.TypeNotification.COMMANDE_STATUT,
+                    com.pharmacopee.ladafura.enums.NiveauNotification.INFO,
+                    "Paiement à vérifier - Commande " + commande.getNumero(),
+                    "Un paiement Mobile Money de " + commande.getMontantTotal().intValue() + " FCFA est déclaré pour la commande "
+                            + commande.getNumero() + " (transaction " + savedPaiement.getReference() + ").",
+                    String.valueOf(commande.getId()),
+                    "/pharmacopee/paiements"
+            );
         }
 
         return mapper.toResponse(savedPaiement, commande, message);
@@ -174,11 +145,16 @@ public class PopulationPaiementServiceImpl implements IPopulationPaiementService
         Paiement paiement = paiementRepository.findByCommandeId(commande.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Aucun règlement enregistré pour la commande ID " + commandeId));
 
-        String message = (paiement.getStatut() == StatutPaiement.REUSSI)
-                ? "Paiement validé avec succès."
-                : (paiement.getStatut() == StatutPaiement.EN_ATTENTE)
-                ? "Règlement en attente de perception."
-                : "Transaction non finalisée.";
+        String message = switch (paiement.getStatut()) {
+            case REUSSI -> "Paiement validé avec succès.";
+            case EN_ATTENTE -> paiement.getMethode() == MethodePaiement.MOBILE_MONEY
+                    ? "Paiement en attente de vérification par la pharmacopée."
+                    : "Règlement en attente de perception.";
+            case ECHOUE -> paiement.getMotifRejet() != null
+                    ? "Paiement rejeté par la pharmacopée : " + paiement.getMotifRejet()
+                    : "Transaction non finalisée.";
+            case ANNULE -> "Transaction annulée.";
+        };
 
         return mapper.toResponse(paiement, commande, message);
     }

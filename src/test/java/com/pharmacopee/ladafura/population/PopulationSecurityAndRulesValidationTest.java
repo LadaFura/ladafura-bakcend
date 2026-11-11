@@ -101,6 +101,9 @@ class PopulationSecurityAndRulesValidationTest {
     private ICommandeStockCaisseService commandeStockCaisseService;
 
     @Mock
+    private com.pharmacopee.ladafura.services.interfaces.IPaiementDeclareService paiementDeclareService;
+
+    @Mock
     private AbonnementRepository abonnementRepository;
 
     @BeforeEach
@@ -154,10 +157,10 @@ class PopulationSecurityAndRulesValidationTest {
 
         commandeService = new PopulationCommandeServiceImpl(
                 authService, commandeStockCaisseService, abonnementRepository, commandeRepository, panierRepository, lignePanierRepository,
-                pharmacopeeRepository, modeRetraitRepository, dispoRepo, paiementRepository, commandeMapper);
+                pharmacopeeRepository, modeRetraitRepository, dispoRepo, paiementRepository, commandeMapper, paiementDeclareService);
 
         paiementService = new PopulationPaiementServiceImpl(
-                authService, commandeStockCaisseService, paiementRepository, commandeRepository, paiementMapper);
+                authService, paiementRepository, commandeRepository, paiementMapper, paiementDeclareService, null);
 
         avisService = new PopulationAvisServiceImpl(
                 authService, avisRepository, pharmacopeeRepository, commandeRepository, avisMapper);

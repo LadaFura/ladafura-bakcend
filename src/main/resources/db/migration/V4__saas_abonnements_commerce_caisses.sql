@@ -4,7 +4,8 @@
 -- Objet     : créer les 27 tables des entités SaaS et compléter deux tables existantes.
 --             Modèle : docs/architecture/plantuml/*.puml.
 -- Tables modifiées : disponibilites_produits (contrainte UNIQUE),
---                    membres_pharmacopee (3 colonnes, unicité du propriétaire).
+--                    membres_pharmacopee (3 colonnes, unicité du propriétaire),
+--                    paiements (3 colonnes facultatives pour le Mobile Money déclaré).
 -- Données   : seules les pharmacopées à plusieurs propriétaires sont modifiées
 --             (les propriétaires en trop deviennent de simples membres ; aucune suppression).
 -- DDL généré par Hibernate 7 à partir des entités, FK et index regroupés par table.
@@ -620,3 +621,13 @@ CREATE TABLE IF NOT EXISTS journal_audit (
   CONSTRAINT FKnj1dxhkxq9uiasiurtdfxpwfo FOREIGN KEY (pharmacopee_id) REFERENCES pharmacopees (id),
   CONSTRAINT FKkcddxplh974rqqu8hjq5xhpoa FOREIGN KEY (utilisateur_id) REFERENCES utilisateurs (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------------------------------
+-- Paiements Mobile Money déclarés par le client puis vérifiés par la pharmacopée
+-- -----------------------------------------------------------------------------
+ALTER TABLE paiements
+  ADD COLUMN caisse_id BIGINT NULL,
+  ADD COLUMN telephone_emetteur VARCHAR(30) COLLATE utf8mb4_unicode_ci NULL,
+  ADD COLUMN motif_rejet VARCHAR(500) COLLATE utf8mb4_unicode_ci NULL,
+  ADD KEY idx_paiements_caisse_reference (caisse_id, reference),
+  ADD CONSTRAINT fk_paiements_caisse FOREIGN KEY (caisse_id) REFERENCES caisses (id);

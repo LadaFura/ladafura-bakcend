@@ -17,4 +17,7 @@ public class LimiteConsommationResponse {
     private Boolean illimite;
     @Schema(description = "Consommation actuelle ; absente hors de l'abonnement en vigueur")
     private Long consommation;
+
+    @io.swagger.v3.oas.annotations.media.Schema(description = "Vrai si le plafond vient de la formule d'une autre pharmacopée du gérant", example = "false")
+    private Boolean heriteeDuGerant;
 }

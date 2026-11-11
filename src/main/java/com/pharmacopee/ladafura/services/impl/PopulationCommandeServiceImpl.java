@@ -71,6 +71,7 @@ public class PopulationCommandeServiceImpl implements IPopulationCommandeService
     private final DisponibiliteProduitRepository disponibiliteProduitRepository;
     private final PaiementRepository paiementRepository;
     private final PopulationCommandeMapper mapper;
+    private final com.pharmacopee.ladafura.services.interfaces.IPaiementDeclareService paiementDeclareService;
     private final com.pharmacopee.ladafura.services.interfaces.IPharmacopeeNotificationService pharmacopeeNotificationService;
     private final com.pharmacopee.ladafura.services.interfaces.IPopulationNotificationService populationNotificationService;
 
@@ -85,10 +86,11 @@ public class PopulationCommandeServiceImpl implements IPopulationCommandeService
             ModeRetraitRepository modeRetraitRepository,
             DisponibiliteProduitRepository disponibiliteProduitRepository,
             PaiementRepository paiementRepository,
-            PopulationCommandeMapper mapper) {
+            PopulationCommandeMapper mapper,
+            com.pharmacopee.ladafura.services.interfaces.IPaiementDeclareService paiementDeclareService) {
         this(populationAuthService, commandeStockCaisseService, abonnementRepository, commandeRepository, panierRepository, lignePanierRepository,
                 pharmacopeeRepository, modeRetraitRepository, disponibiliteProduitRepository,
-                paiementRepository, mapper, null, null);
+                paiementRepository, mapper, paiementDeclareService, null, null);
     }
 
     @Override
@@ -161,6 +163,7 @@ public class PopulationCommandeServiceImpl implements IPopulationCommandeService
         if (request.getMethode() == null) {
             throw new BadRequestException("Le moyen de paiement est obligatoire pour valider la commande.");
         }
+        paiementDeclareService.exigerMethodeDisponible(request.getMethode());
 
         Panier panier = panierRepository.findByUtilisateurId(user.getId())
                 .orElseThrow(() -> new BadRequestException("Votre panier est vide. Veuillez y ajouter des articles."));
@@ -220,11 +223,9 @@ public class PopulationCommandeServiceImpl implements IPopulationCommandeService
         commande.setMontantLivraison(fraisLivraison);
         commande.setMontantTotal(Math.round((totalProduits + fraisLivraison) * 100.0) / 100.0);
 
-        // 2. VALIDATION STRICTE DU PAIEMENT / RÈGLEMENT
-        // Règle métier : Tant que le paiement n'est pas validé, la commande NE DOIT PAS être créée en base,
-        // les stocks NE DOIVENT PAS être décrémentés et le panier NE DOIT PAS être vidé.
-        boolean simulerReussite = request.getSimulerSucces() == null || Boolean.TRUE.equals(request.getSimulerSucces());
-
+        // 2. RÈGLEMENT
+        // Sans API d'opérateur, un Mobile Money n'est jamais considéré comme payé ici : la commande reste
+        // en attente et le stock réservé, jusqu'à ce que la pharmacopée confirme la réception sur son compte.
         Paiement paiement = Paiement.builder()
                 .commande(commande)
                 .montant(commande.getMontantTotal())
@@ -232,28 +233,11 @@ public class PopulationCommandeServiceImpl implements IPopulationCommandeService
                 .datePaiement(LocalDateTime.now())
                 .build();
 
-        if (request.getReferenceTransaction() != null && !request.getReferenceTransaction().isBlank()) {
-            paiement.setReference(request.getReferenceTransaction().trim());
+        if (request.getMethode() == MethodePaiement.MOBILE_MONEY) {
+            paiementDeclareService.declarerMobileMoney(paiement, pharmacopee.getId(), request.getCompteMobileMoneyId(),
+                    request.getReferenceTransaction(), request.getTelephoneMobileMoney());
         } else {
             paiement.setReference(generatePaymentReference(request.getMethode(), request.getOperateur()));
-        }
-
-        if (request.getMethode() == MethodePaiement.MOBILE_MONEY) {
-            if (request.getTelephoneMobileMoney() == null || request.getTelephoneMobileMoney().trim().isEmpty()) {
-                throw new BadRequestException("Le numéro de téléphone Mobile Money est obligatoire pour effectuer le règlement.");
-            }
-            if (!simulerReussite) {
-                throw new BadRequestException("Le règlement via Mobile Money a échoué. Aucun montant n'a été prélevé et la commande n'a pas été enregistrée.");
-            }
-            paiement.setStatut(StatutPaiement.REUSSI);
-            commande.setStatut(StatutCommande.CONFIRMEE);
-        } else if (request.getMethode() == MethodePaiement.CARTE_BANCAIRE) {
-            if (!simulerReussite) {
-                throw new BadRequestException("La transaction par carte bancaire a été rejetée. Votre commande n'a pas été enregistrée.");
-            }
-            paiement.setStatut(StatutPaiement.REUSSI);
-            commande.setStatut(StatutCommande.CONFIRMEE);
-        } else if (request.getMethode() == MethodePaiement.CASH) {
             paiement.setStatut(StatutPaiement.EN_ATTENTE);
             commande.setStatut(StatutCommande.CONFIRMEE);
         }
@@ -263,28 +247,25 @@ public class PopulationCommandeServiceImpl implements IPopulationCommandeService
         Commande savedCommande = commandeRepository.save(commande);
         paiementRepository.save(paiement);
 
-        // Paiement validé : sortie définitive du stock et entrée en trésorerie
+        // Le stock est réservé dès l'enregistrement ; il est réintégré si la commande est annulée.
         commandeStockCaisseService.sortirStock(savedCommande);
-        if (paiement.getStatut() == StatutPaiement.REUSSI) {
-            commandeStockCaisseService.encaisser(paiement, null, null);
-        }
 
-        log.info("Commande #{} créée et confirmée avec succès (Paiement: {} - {}) pour un montant de {} FCFA",
+        log.info("Commande #{} enregistrée (Paiement: {} - {}) pour un montant de {} FCFA",
                 savedCommande.getNumero(), paiement.getMethode(), paiement.getStatut(), savedCommande.getMontantTotal());
 
-        // 5. Vidage intégral du panier après paiement validé
+        // 5. Vidage intégral du panier
         panier.getLignes().clear();
         lignePanierRepository.deleteByPanierId(panier.getId());
         panier.setDateModification(LocalDateTime.now());
         panierRepository.save(panier);
-        log.info("Panier ID: {} vidé suite à la confirmation du paiement et de la commande ID: {}",
+        log.info("Panier ID: {} vidé suite à l'enregistrement de la commande ID: {}",
                 panier.getId(), savedCommande.getId());
 
         // 6. Déclenchement automatique des notifications (Gestionnaire de Pharmacopée & Client)
         String clientNom = ((user.getPrenom() != null ? user.getPrenom() + " " : "") + (user.getNom() != null ? user.getNom() : "")).trim();
         String refCmdId = String.valueOf(savedCommande.getId());
-        String infoPaiement = (paiement.getStatut() == StatutPaiement.REUSSI)
-                ? "Paiement réglé (" + paiement.getMethode() + ")."
+        String infoPaiement = (paiement.getMethode() == MethodePaiement.MOBILE_MONEY)
+                ? "Paiement Mobile Money à vérifier (transaction " + paiement.getReference() + ")."
                 : "Paiement en espèces à la réception.";
 
         if (pharmacopeeNotificationService != null) {

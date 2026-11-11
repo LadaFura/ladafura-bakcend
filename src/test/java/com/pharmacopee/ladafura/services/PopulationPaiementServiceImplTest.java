@@ -53,7 +53,7 @@ class PopulationPaiementServiceImplTest {
     private CommandeRepository commandeRepository;
 
     @Mock
-    private com.pharmacopee.ladafura.services.interfaces.ICommandeStockCaisseService commandeStockCaisseService;
+    private com.pharmacopee.ladafura.services.interfaces.IPaiementDeclareService paiementDeclareService;
 
     @Spy
     private PopulationPaiementMapper mapper = new PopulationPaiementMapper();
@@ -83,6 +83,7 @@ class PopulationPaiementServiceImplTest {
                 .montantLivraison(1500.0)
                 .montantTotal(6500.0)
                 .utilisateur(currentUser)
+                .pharmacopee(new com.pharmacopee.ladafura.Models.Pharmacopee())
                 .build();
     }
 
@@ -99,14 +100,15 @@ class PopulationPaiementServiceImplTest {
     }
 
     @Test
-    @DisplayName("payerCommande - Succès Mobile Money : Paiement REUSSI et Commande CONFIRMEE")
+    @DisplayName("payerCommande - Déclaration Mobile Money : paiement EN_ATTENTE et commande inchangée")
     void payerCommande_MobileMoney_Success() {
         PopulationProcessPaiementRequest request = PopulationProcessPaiementRequest.builder()
                 .commandeId(1L)
                 .methode(MethodePaiement.MOBILE_MONEY)
                 .operateur("ORANGE_MONEY")
                 .telephoneMobileMoney("+223 70 11 22 33")
-                .simulerSucces(true)
+                .compteMobileMoneyId(12L)
+                .referenceTransaction("OM-998811")
                 .build();
 
         when(populationAuthService.getCurrentPopulationUser()).thenReturn(currentUser);
@@ -121,11 +123,13 @@ class PopulationPaiementServiceImplTest {
         PopulationPaiementResponse response = paiementService.payerCommande(request);
 
         assertThat(response).isNotNull();
-        assertThat(response.getStatut()).isEqualTo(StatutPaiement.REUSSI);
-        assertThat(response.getSucces()).isTrue();
+        assertThat(response.getStatut()).isEqualTo(StatutPaiement.EN_ATTENTE);
+        assertThat(response.getSucces()).isFalse();
         assertThat(response.getMontant()).isEqualTo(6500.0);
-        assertThat(commande.getStatut()).isEqualTo(StatutCommande.CONFIRMEE);
-        verify(commandeRepository).save(commande);
+        assertThat(commande.getStatut()).isEqualTo(StatutCommande.EN_ATTENTE);
+        verify(paiementDeclareService).declarerMobileMoney(any(Paiement.class), org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.eq(12L), org.mockito.ArgumentMatchers.eq("OM-998811"),
+                org.mockito.ArgumentMatchers.eq("+223 70 11 22 33"));
     }
 
     @Test
@@ -154,26 +158,22 @@ class PopulationPaiementServiceImplTest {
     }
 
     @Test
-    @DisplayName("payerCommande - Échec simulé : Paiement ECHOUE et Commande inchangée")
-    void payerCommande_SimulatedFailure() {
+    @DisplayName("payerCommande - Mobile Money sur une commande déjà confirmée -> ConflictException")
+    void payerCommande_MobileMoney_CommandeDejaConfirmee() {
         PopulationProcessPaiementRequest request = PopulationProcessPaiementRequest.builder()
                 .commandeId(1L)
                 .methode(MethodePaiement.MOBILE_MONEY)
                 .operateur("WAVE")
-                .simulerSucces(false)
                 .build();
+        commande.setStatut(StatutCommande.CONFIRMEE);
 
         when(populationAuthService.getCurrentPopulationUser()).thenReturn(currentUser);
         when(commandeRepository.findByIdAndUtilisateurId(1L, 10L)).thenReturn(Optional.of(commande));
         when(paiementRepository.findByCommandeId(1L)).thenReturn(Optional.empty());
-        when(paiementRepository.save(any(Paiement.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        PopulationPaiementResponse response = paiementService.payerCommande(request);
-
-        assertThat(response).isNotNull();
-        assertThat(response.getStatut()).isEqualTo(StatutPaiement.ECHOUE);
-        assertThat(response.getSucces()).isFalse();
-        assertThat(commande.getStatut()).isEqualTo(StatutCommande.EN_ATTENTE);
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> paiementService.payerCommande(request))
+                .isInstanceOf(com.pharmacopee.ladafura.exceptions.ConflictException.class);
+        assertThat(commande.getStatut()).isEqualTo(StatutCommande.CONFIRMEE);
     }
 
     @Test

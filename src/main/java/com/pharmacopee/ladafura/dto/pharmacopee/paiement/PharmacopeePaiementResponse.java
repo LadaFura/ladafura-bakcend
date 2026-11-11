@@ -50,4 +50,13 @@ public class PharmacopeePaiementResponse {
 
     @Schema(description = "Téléphone de l'acheteur", example = "+223 76 12 34 56")
     private String clientTelephone;
+
+    @Schema(description = "Compte Mobile Money sur lequel le client déclare avoir payé", example = "Orange Money")
+    private String compteNom;
+
+    @Schema(description = "Numéro depuis lequel le client déclare avoir payé", example = "+223 70 11 22 33")
+    private String telephoneEmetteur;
+
+    @Schema(description = "Motif du rejet par la pharmacopée", example = "Aucun paiement reçu avec ce numéro")
+    private String motifRejet;
 }

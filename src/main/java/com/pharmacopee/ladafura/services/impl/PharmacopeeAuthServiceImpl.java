@@ -164,7 +164,7 @@ public class PharmacopeeAuthServiceImpl implements IPharmacopeeAuthService {
         List<MembrePharmacopee> adhesions = adhesionsActives(user);
         Optional<MembrePharmacopee> membreActif = membreAffiche(adhesions);
 
-        int quotaMax = quotaService.maxPharmacopeesParGerant();
+        int quotaMax = quotaService.maxPharmacopeesParGerant(user.getId());
         long possedees = quotaService.pharmacopeesPossedees(user.getId());
         // Un compte sans pharmacopée crée la sienne : il en sera le gérant.
         boolean estPrincipal = membreActif.map(m -> Boolean.TRUE.equals(m.getEstProprietaire())).orElse(true);
@@ -181,10 +181,10 @@ public class PharmacopeeAuthServiceImpl implements IPharmacopeeAuthService {
                 .structures(adhesions.stream().map(m -> versResume(m.getPharmacopee())).toList())
                 .planAbonnement(PLAN_GRATUIT)
                 .quotaMaxStructures(quotaMax)
+                .quotaStructuresIllimite(quotaMax == IPharmacopeeQuotaService.PHARMACOPEES_ILLIMITEES)
                 .structuresActuelles((int) possedees)
                 .peutCreerStructure(estPrincipal && possedees < quotaMax)
                 .estPraticienPrincipal(estPrincipal)
-                .titrePraticien(estPrincipal ? "Praticien Principal" : "Praticien Collaborateur")
                 .validee(false);
 
         membreActif.ifPresent(membre -> completerAvecPharmacopeeActive(builder, membre));
@@ -210,15 +210,17 @@ public class PharmacopeeAuthServiceImpl implements IPharmacopeeAuthService {
     private void completerAvecPharmacopeeActive(PharmacopeeAuthResponse.PharmacopeeAuthResponseBuilder builder, MembrePharmacopee membre) {
         Pharmacopee pharmacopee = membre.getPharmacopee();
         Optional<Abonnement> abonnement = abonnementRepository.findEnVigueur(pharmacopee.getId());
+        var rolesDuMembre = attributionRepository.findByMembrePharmacopeeId(membre.getId()).stream()
+                .map(a -> a.getRolePharmacopee())
+                .toList();
         builder.pharmacopeeId(pharmacopee.getId())
                 .nomPharmacopee(pharmacopee.getNom())
                 .telephonePharmacopee(pharmacopee.getTelephone())
                 .statutReferencement(pharmacopee.getStatut())
                 .validee(pharmacopee.getStatut() == StatutPharmacopee.VALIDEE)
                 .membreId(membre.getId())
-                .roles(attributionRepository.findByMembrePharmacopeeId(membre.getId()).stream()
-                        .map(a -> a.getRolePharmacopee().getCode())
-                        .toList())
+                .roles(rolesDuMembre.stream().map(r -> r.getCode()).toList())
+                .roleLibelle(String.join(", ", rolesDuMembre.stream().map(r -> r.getLibelle()).toList()))
                 .permissions(rolePermissionRepository.findCodesPermissionsEffectives(membre.getUtilisateur().getId(), pharmacopee.getId()))
                 .statutAbonnement(abonnement.map(a -> a.getStatut().name()).orElse(null))
                 .planAbonnement(abonnement.map(a -> libellePlan(a.getCodeOffreSouscrite())).orElse(PLAN_GRATUIT));

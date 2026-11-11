@@ -159,6 +159,7 @@ WHERE r.code = 'GESTIONNAIRE_ACHATS' AND r.pharmacopee_id IS NULL
 INSERT IGNORE INTO limites_offre (code_limite, nom, description, periodicite, mode_calcul) VALUES
 ('MAX_UTILISATEURS_ACTIFS', 'Utilisateurs actifs',  'Nombre de membres actifs, gérant compris',            'AUCUNE',    'COMPTAGE'),
 ('MAX_PRODUITS',            'Produits référencés',  'Nombre de produits référencés par la pharmacopée',    'AUCUNE',    'COMPTAGE'),
+('MAX_PHARMACOPEES',        'Pharmacopées',         'Nombre de pharmacopées qu''un même gérant peut détenir', 'AUCUNE',   'COMPTAGE'),
 ('MAX_VENTES_MENSUELLES',   'Ventes mensuelles',    'Nombre de ventes validées par mois calendaire',       'MENSUELLE', 'COMPTAGE');
 
 INSERT IGNORE INTO offres_abonnement (code, nom, description, type_offre, duree_mois, prix, devise, jours_grace, actif, date_creation) VALUES
@@ -173,6 +174,7 @@ SELECT o.id, l.id, v.valeur, 0
 FROM (
     SELECT 'MAX_UTILISATEURS_ACTIFS' AS code_limite, 1 AS valeur
     UNION ALL SELECT 'MAX_PRODUITS', 20
+    UNION ALL SELECT 'MAX_PHARMACOPEES', 2
     UNION ALL SELECT 'MAX_VENTES_MENSUELLES', 50
 ) v
 JOIN limites_offre l ON l.code_limite = v.code_limite
