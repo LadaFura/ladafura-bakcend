@@ -7,15 +7,29 @@ services:
     dockerfilePath: Dockerfile
     healthCheckPath: /actuator/health
     envVars:
+      # Base MySQL Aiven `ladafura` (Render ne propose pas de MySQL managé).
+      # DB_HOST / DB_PORT : à reprendre de la console Aiven si le service MySQL est recréé.
       - key: DB_HOST
         value: mysql-ladafura-ladafura-projet.k.aivencloud.com
       - key: DB_PORT
         value: "20171"
       - key: DB_NAME
-        value: defaultdb
+        value: ladafura
       - key: DB_USERNAME
         value: avnadmin
       - key: DB_PASSWORD
         sync: false
+      # Premier déploiement : le pilote crée la base `ladafura` si elle n'existe pas.
+      - key: DB_CREATE_IF_MISSING
+        value: "true"
+      # Flyway crée et fait évoluer le schéma (V1 à V5).
+      - key: FLYWAY_ENABLED
+        value: "true"
+      # Échéances d'abonnements : exige V4 et V5, appliquées par Flyway au démarrage.
+      - key: SAAS_TACHES_ENABLED
+        value: "true"
+      # Anti-veille : l'application appelle RENDER_EXTERNAL_URL toutes les 10 minutes.
+      - key: MAINTIEN_EVEIL_ENABLED
+        value: "true"
       - key: FIREBASE_SERVICE_ACCOUNT_JSON
         sync: false
