@@ -10,9 +10,9 @@ services:
       # Base MySQL Aiven `ladafura` (Render ne propose pas de MySQL managé).
       # DB_HOST / DB_PORT : à reprendre de la console Aiven si le service MySQL est recréé.
       - key: DB_HOST
-        value: mysql-ladafura-ladafura-projet.k.aivencloud.com
+        value: mysql-1c8d47a6-coulibalyibrahimasoly-b93a.a.aivencloud.com
       - key: DB_PORT
-        value: "20171"
+        value: "14523"
       - key: DB_NAME
         value: ladafura
       - key: DB_USERNAME
