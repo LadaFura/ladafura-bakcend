@@ -64,6 +64,10 @@ public class SecurityConfig {
                                 "/swagger-ui.html"
                         ).permitAll()
 
+                        // 1 bis. Sonde de santé en lecture seule : contrôle de santé Render et anti-veille.
+                        // N'expose que le statut global (management.endpoint.health.show-details=never).
+                        .requestMatchers(HttpMethod.GET, "/actuator/health", "/actuator/health/**").permitAll()
+
                         // 2. Endpoints publics généraux, consultation et fichiers statiques (images)
                         .requestMatchers(
                                 "/api/v1/public/**",

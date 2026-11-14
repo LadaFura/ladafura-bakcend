@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.pharmacopee.ladafura.dto.population.paiement.PopulationCompteMobileMoneyResponse;
 import com.pharmacopee.ladafura.dto.population.paiement.PopulationMethodePaiementInfoDto;
 import com.pharmacopee.ladafura.dto.population.paiement.PopulationPaiementResponse;
 import com.pharmacopee.ladafura.dto.population.paiement.PopulationProcessPaiementRequest;
@@ -49,14 +50,30 @@ public class PopulationPaiementController {
         return ResponseEntity.ok(populationPaiementService.getMethodesPaiement());
     }
 
+    @GetMapping("/comptes-mobile-money/{pharmacopeeId}")
+    @PreAuthorize("hasAuthority('ROLE_POPULATION')")
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(summary = "Consulter les comptes Mobile Money d'une pharmacopée",
+               description = "Fournit le nom et le numéro des comptes à payer. Une liste vide signifie que la pharmacopée ne propose pas ce moyen de paiement.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Comptes récupérés avec succès"),
+        @ApiResponse(responseCode = "401", description = "Non authentifié"),
+        @ApiResponse(responseCode = "403", description = "Accès refusé")
+    })
+    public ResponseEntity<List<PopulationCompteMobileMoneyResponse>> getComptesMobileMoney(@PathVariable Long pharmacopeeId) {
+        log.info("Requête GET /api/v1/population/paiements/comptes-mobile-money/{} reçue", pharmacopeeId);
+        return ResponseEntity.ok(populationPaiementService.getComptesMobileMoney(pharmacopeeId));
+    }
+
     @PostMapping
     @PreAuthorize("hasAuthority('ROLE_POPULATION')")
     @SecurityRequirement(name = "bearerAuth")
-    @Operation(summary = "Effectuer ou initier le règlement d'une commande",
-               description = "Permet de payer une commande par Mobile Money (Orange Money, Moov Money, Wave), par Carte Bancaire ou de valider le règlement en Espèces (Cash à la livraison / retrait).")
+    @Operation(summary = "Déclarer le règlement d'une commande",
+               description = "Mobile Money : déclare le numéro de transaction, le paiement reste en attente jusqu'à la confirmation de la pharmacopée. Espèces : règlement à la réception. La carte bancaire n'est pas disponible.")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Paiement traité avec succès"),
-        @ApiResponse(responseCode = "400", description = "Commande déjà payée, annulée ou données invalides"),
+        @ApiResponse(responseCode = "400", description = "Commande déjà payée, annulée, compte non valable ou carte bancaire"),
+        @ApiResponse(responseCode = "409", description = "Numéro de transaction déjà déclaré, ou commande n'attendant plus de paiement"),
         @ApiResponse(responseCode = "401", description = "Non authentifié"),
         @ApiResponse(responseCode = "403", description = "Accès refusé"),
         @ApiResponse(responseCode = "404", description = "Commande introuvable")

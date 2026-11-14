@@ -1,5 +1,6 @@
 package com.pharmacopee.ladafura.handlerException;
 
+import com.pharmacopee.ladafura.exceptions.QuotaExceededException;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -122,6 +123,22 @@ public class GlobalExceptionHandler {
                 .build();
 
         return new ResponseEntity<>(errorResponse, HttpStatus.FORBIDDEN);
+    }
+
+    /** Limite d'abonnement atteinte : le portail propose alors les formules disponibles. */
+    @ExceptionHandler(QuotaExceededException.class)
+    public ResponseEntity<ErrorResponse> handleQuotaExceededException(QuotaExceededException ex, HttpServletRequest request) {
+        log.warn("Quota atteint sur [{}] : {}", request.getRequestURI(), ex.getMessage());
+
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.TOO_MANY_REQUESTS.value())
+                .error(HttpStatus.TOO_MANY_REQUESTS.getReasonPhrase())
+                .message(ex.getMessage())
+                .path(request.getRequestURI())
+                .build();
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.TOO_MANY_REQUESTS);
     }
 
     @ExceptionHandler(AccessDeniedException.class)

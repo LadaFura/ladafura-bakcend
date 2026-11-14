@@ -20,6 +20,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.FirebaseToken;
+import com.pharmacopee.ladafura.enums.StatutMembre;
+import com.pharmacopee.ladafura.repository.MembrePharmacopeeRepository;
 import com.pharmacopee.ladafura.repository.UtilisateurRepository;
 import com.pharmacopee.ladafura.services.interfaces.IFirebaseAuthService;
 
@@ -36,7 +38,12 @@ import lombok.extern.slf4j.Slf4j;
 public class FirebaseAuthenticationFilter extends OncePerRequestFilter {
 
     private final IFirebaseAuthService firebaseAuthService;
+    private static final String PREFIXE_ESPACE_PHARMACOPEE = "/api/v1/pharmacopee/";
+    private static final String ROLE_PHARMACOPEE = "ROLE_PHARMACOPEE";
+    private static final List<StatutMembre> STATUTS_ADHESION_EN_COURS = List.of(StatutMembre.ACTIF, StatutMembre.INVITE);
+
     private final ObjectProvider<UtilisateurRepository> utilisateurRepositoryProvider;
+    private final ObjectProvider<MembrePharmacopeeRepository> membreRepositoryProvider;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
@@ -100,6 +107,7 @@ public class FirebaseAuthenticationFilter extends OncePerRequestFilter {
 
             // Extraction des rôles depuis les Custom Claims de Firebase ou la base MySQL
             List<GrantedAuthority> authorities = extractAuthorities(decodedToken);
+            ajouterAccesParAdhesion(authorities, decodedToken, request);
 
             // Création de l'objet d'authentification pour le contexte Spring Security
             UsernamePasswordAuthenticationToken authentication =
@@ -144,6 +152,33 @@ public class FirebaseAuthenticationFilter extends OncePerRequestFilter {
             errorDetails.put("path", request.getRequestURI());
 
             objectMapper.writeValue(response.getOutputStream(), errorDetails);
+        }
+    }
+
+    /**
+     * Un compte citoyen invité dans une pharmacopée doit pouvoir accepter l'invitation puis travailler,
+     * sans perdre son rôle plateforme. L'adhésion est lue en base ; le détail des droits reste vérifié par les services.
+     */
+    private void ajouterAccesParAdhesion(List<GrantedAuthority> authorities, FirebaseToken decodedToken, HttpServletRequest request) {
+        boolean dejaAutorise = authorities.stream().anyMatch(a -> ROLE_PHARMACOPEE.equals(a.getAuthority()));
+        if (dejaAutorise || !request.getRequestURI().startsWith(PREFIXE_ESPACE_PHARMACOPEE) || !aUneAdhesionEnCours(decodedToken)) {
+            return;
+        }
+        authorities.add(new SimpleGrantedAuthority(ROLE_PHARMACOPEE));
+    }
+
+    private boolean aUneAdhesionEnCours(FirebaseToken decodedToken) {
+        MembrePharmacopeeRepository repository = membreRepositoryProvider.getIfAvailable();
+        if (repository == null) {
+            return false;
+        }
+        try {
+            return repository.existsByUtilisateur_FirebaseUidAndStatutIn(decodedToken.getUid(), STATUTS_ADHESION_EN_COURS)
+                    || (decodedToken.getEmail() != null
+                        && repository.existsByUtilisateur_EmailAndStatutIn(decodedToken.getEmail(), STATUTS_ADHESION_EN_COURS));
+        } catch (RuntimeException e) {
+            log.warn("Impossible de vérifier les adhésions du compte : {}", e.getMessage());
+            return false;
         }
     }
 

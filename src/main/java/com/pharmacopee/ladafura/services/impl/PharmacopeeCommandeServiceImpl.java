@@ -28,9 +28,11 @@ import com.pharmacopee.ladafura.dto.pharmacopee.retrait.ModeRetraitResponse;
 import com.pharmacopee.ladafura.enums.StatutCommande;
 import com.pharmacopee.ladafura.enums.TypeModeRetrait;
 import com.pharmacopee.ladafura.exceptions.BadRequestException;
+import com.pharmacopee.ladafura.exceptions.ConflictException;
 import com.pharmacopee.ladafura.exceptions.ResourceNotFoundException;
 import com.pharmacopee.ladafura.repository.CommandeRepository;
 import com.pharmacopee.ladafura.services.interfaces.IPharmacopeeAuthService;
+import com.pharmacopee.ladafura.services.interfaces.IPharmacopeeContexteService;
 import com.pharmacopee.ladafura.services.interfaces.IPharmacopeeCommandeService;
 
 import lombok.RequiredArgsConstructor;
@@ -43,6 +45,8 @@ import lombok.extern.slf4j.Slf4j;
 public class PharmacopeeCommandeServiceImpl implements IPharmacopeeCommandeService {
 
     private final IPharmacopeeAuthService pharmacopeeAuthService;
+    private final IPharmacopeeContexteService contexteService;
+    private final com.pharmacopee.ladafura.services.interfaces.ICommandeStockCaisseService commandeStockCaisseService;
     private final CommandeRepository commandeRepository;
     private final com.pharmacopee.ladafura.services.interfaces.IPharmacopeeNotificationService pharmacopeeNotificationService;
     private final com.pharmacopee.ladafura.services.interfaces.IPopulationNotificationService populationNotificationService;
@@ -50,8 +54,7 @@ public class PharmacopeeCommandeServiceImpl implements IPharmacopeeCommandeServi
     @Override
     @Transactional(readOnly = true)
     public Page<PharmacopeeCommandeItemResponse> getCommandes(StatutCommande statut, Pageable pageable) {
-        pharmacopeeAuthService.verifyPharmacopeeValidated();
-        Pharmacopee pharmacopee = pharmacopeeAuthService.getCurrentPharmacopee();
+        Pharmacopee pharmacopee = contexteService.verifierPharmacopeeValidee(IPharmacopeeContexteService.COMMANDES_CONSULTER).pharmacopee();
         log.info("Consultation paginée des commandes pour la pharmacopée ID {} (statut={})",
                 pharmacopee.getId(), statut);
 
@@ -68,8 +71,7 @@ public class PharmacopeeCommandeServiceImpl implements IPharmacopeeCommandeServi
     @Override
     @Transactional(readOnly = true)
     public PharmacopeeCommandeSummaryResponse getSummary() {
-        pharmacopeeAuthService.verifyPharmacopeeValidated();
-        Pharmacopee pharmacopee = pharmacopeeAuthService.getCurrentPharmacopee();
+        Pharmacopee pharmacopee = contexteService.verifierPharmacopeeValidee(IPharmacopeeContexteService.COMMANDES_CONSULTER).pharmacopee();
         Long pId = pharmacopee.getId();
         log.info("Calcul du résumé des commandes pour la pharmacopée ID {}", pId);
 
@@ -101,14 +103,14 @@ public class PharmacopeeCommandeServiceImpl implements IPharmacopeeCommandeServi
     @Override
     @Transactional(readOnly = true)
     public PharmacopeeCommandeDetailResponse getCommandeDetail(Long id) {
-        Commande commande = loadCommandeForCurrentPharmacopee(id);
+        Commande commande = loadCommandeForCurrentPharmacopee(id, IPharmacopeeContexteService.COMMANDES_CONSULTER);
         log.info("Consultation du détail de la commande #{} (ID {})", commande.getNumero(), id);
         return mapToDetailResponse(commande);
     }
 
     @Override
     public PharmacopeeCommandeDetailResponse updateStatut(Long id, UpdateStatutCommandeRequest request) {
-        Commande commande = loadCommandeForCurrentPharmacopee(id);
+        Commande commande = loadCommandeForCurrentPharmacopee(id, IPharmacopeeContexteService.COMMANDES_TRAITER);
         StatutCommande statutActuel = commande.getStatut();
         StatutCommande cible = request.getNouveauStatut();
 
@@ -122,6 +124,16 @@ public class PharmacopeeCommandeServiceImpl implements IPharmacopeeCommandeServi
                     + statutActuel + " à " + cible + ". Statuts autorisés : " + autorises);
         }
 
+        if (cible == StatutCommande.CONFIRMEE && paiementMobileMoneyNonVerifie(commande)) {
+            throw new ConflictException("Confirmez d'abord la réception du paiement Mobile Money de cette commande.");
+        }
+
+        if (cible == StatutCommande.ANNULEE) {
+            var auteur = contexteService.getContexte().membre();
+            commandeStockCaisseService.reintegrerStock(commande, auteur);
+            commandeStockCaisseService.annulerEncaissement(commande, auteur);
+        }
+
         commande.setStatut(cible);
         commande.setDateMiseAJour(LocalDateTime.now());
         Commande saved = commandeRepository.save(commande);
@@ -130,6 +142,12 @@ public class PharmacopeeCommandeServiceImpl implements IPharmacopeeCommandeServi
         notifierEvolutionStatutCommande(saved, cible, request.getMotif());
 
         return mapToDetailResponse(saved);
+    }
+
+    private static boolean paiementMobileMoneyNonVerifie(Commande commande) {
+        return commande.getPaiement() != null
+                && commande.getPaiement().getMethode() == com.pharmacopee.ladafura.enums.MethodePaiement.MOBILE_MONEY
+                && commande.getPaiement().getStatut() != com.pharmacopee.ladafura.enums.StatutPaiement.REUSSI;
     }
 
     private void notifierEvolutionStatutCommande(Commande cmd, StatutCommande nouveauStatut, String motif) {
@@ -224,7 +242,7 @@ public class PharmacopeeCommandeServiceImpl implements IPharmacopeeCommandeServi
 
     @Override
     public PharmacopeeCommandeDetailResponse acheminerCommande(Long id) {
-        Commande commande = loadCommandeForCurrentPharmacopee(id);
+        Commande commande = loadCommandeForCurrentPharmacopee(id, IPharmacopeeContexteService.COMMANDES_TRAITER);
         TypeModeRetrait typeRetrait = resolveTypeRetrait(commande);
 
         StatutCommande cible;
@@ -243,7 +261,7 @@ public class PharmacopeeCommandeServiceImpl implements IPharmacopeeCommandeServi
 
     @Override
     public PharmacopeeCommandeDetailResponse finaliserCommande(Long id) {
-        Commande commande = loadCommandeForCurrentPharmacopee(id);
+        Commande commande = loadCommandeForCurrentPharmacopee(id, IPharmacopeeContexteService.COMMANDES_TRAITER);
         StatutCommande statutActuel = commande.getStatut();
 
         StatutCommande cible;
@@ -273,9 +291,8 @@ public class PharmacopeeCommandeServiceImpl implements IPharmacopeeCommandeServi
      * Charge une commande en garantissant l'étanchéité stricte :
      * Une pharmacopée ne peut JAMAIS charger une commande appartenant à une autre pharmacopée.
      */
-    private Commande loadCommandeForCurrentPharmacopee(Long commandeId) {
-        pharmacopeeAuthService.verifyPharmacopeeValidated();
-        Pharmacopee pharmacopee = pharmacopeeAuthService.getCurrentPharmacopee();
+    private Commande loadCommandeForCurrentPharmacopee(Long commandeId, String permission) {
+        Pharmacopee pharmacopee = contexteService.verifierPharmacopeeValidee(permission).pharmacopee();
 
         return commandeRepository.findByIdAndPharmacopeeId(commandeId, pharmacopee.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Commande introuvable avec l'ID " + commandeId

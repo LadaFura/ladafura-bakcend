@@ -21,6 +21,9 @@ public interface UtilisateurRepository extends JpaRepository<Utilisateur, Long> 
 
     boolean existsByEmail(String email);
 
+    /** Le téléphone n'est pas unique : plusieurs comptes peuvent correspondre. */
+    List<Utilisateur> findByTelephone(String telephone);
+
     boolean existsByFirebaseUid(String firebaseUid);
 
     List<Utilisateur> findByRole(Role role);

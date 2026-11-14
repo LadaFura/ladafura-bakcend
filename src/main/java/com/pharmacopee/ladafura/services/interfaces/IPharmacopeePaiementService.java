@@ -6,7 +6,6 @@ import org.springframework.data.domain.Pageable;
 import com.pharmacopee.ladafura.dto.pharmacopee.paiement.EncaisserCashRequest;
 import com.pharmacopee.ladafura.dto.pharmacopee.paiement.PharmacopeePaiementResponse;
 import com.pharmacopee.ladafura.dto.pharmacopee.paiement.PharmacopeePaiementSummaryResponse;
-import com.pharmacopee.ladafura.dto.pharmacopee.paiement.SimulerPaiementRequest;
 import com.pharmacopee.ladafura.enums.MethodePaiement;
 import com.pharmacopee.ladafura.enums.StatutPaiement;
 
@@ -33,13 +32,17 @@ public interface IPharmacopeePaiementService {
     PharmacopeePaiementResponse getPaiementByCommande(Long commandeId);
 
     /**
-     * Simulation de paiement pour les tests (Mobile Money, Cash, Carte Bancaire).
-     * Enregistre ou met à jour la transaction et synchronise le statut de la commande.
-     */
-    PharmacopeePaiementResponse simulerPaiement(SimulerPaiementRequest request);
-
-    /**
      * Validation d'un encaissement en espèces (Cash) lors du retrait au guichet ou à la livraison.
      */
     PharmacopeePaiementResponse encaisserCash(Long paiementId, EncaisserCashRequest request);
+
+    /**
+     * Confirme qu'un paiement Mobile Money déclaré est bien arrivé sur le compte : entrée en trésorerie et commande confirmée.
+     */
+    PharmacopeePaiementResponse confirmerReception(Long paiementId);
+
+    /**
+     * Rejette un paiement Mobile Money déclaré. La commande reste en attente : le client peut corriger sa déclaration ou l'annuler.
+     */
+    PharmacopeePaiementResponse rejeterPaiement(Long paiementId, String motif);
 }

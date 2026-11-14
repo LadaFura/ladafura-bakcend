@@ -7,7 +7,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -16,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.pharmacopee.ladafura.dto.pharmacopee.paiement.EncaisserCashRequest;
 import com.pharmacopee.ladafura.dto.pharmacopee.paiement.PharmacopeePaiementResponse;
 import com.pharmacopee.ladafura.dto.pharmacopee.paiement.PharmacopeePaiementSummaryResponse;
-import com.pharmacopee.ladafura.dto.pharmacopee.paiement.SimulerPaiementRequest;
+import com.pharmacopee.ladafura.dto.pharmacopee.abonnement.MotifRequest;
 import com.pharmacopee.ladafura.enums.MethodePaiement;
 import com.pharmacopee.ladafura.enums.StatutPaiement;
 import com.pharmacopee.ladafura.services.interfaces.IPharmacopeePaiementService;
@@ -104,22 +103,6 @@ public class PharmacopeePaiementController {
         return ResponseEntity.ok(paiementService.getPaiementByCommande(commandeId));
     }
 
-    @Operation(summary = "Simuler un règlement financier (Mobile Money, Espèces, Carte)",
-               description = "Simule la passerelle de paiement (sans API externe réelle) avec choix de la méthode et du résultat (succès/échec). Confirme automatiquement la commande si le paiement réussit.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Paiement simulé avec succès"),
-            @ApiResponse(responseCode = "400", description = "Données invalides"),
-            @ApiResponse(responseCode = "401", description = "Non authentifié"),
-            @ApiResponse(responseCode = "403", description = "Accès refusé"),
-            @ApiResponse(responseCode = "404", description = "Commande non trouvée")
-    })
-    @PostMapping("/simuler")
-    public ResponseEntity<PharmacopeePaiementResponse> simulerPaiement(
-            @Valid @RequestBody SimulerPaiementRequest request) {
-        log.info("Requête POST /api/v1/pharmacopee/paiements/simuler reçue pour commande ID {}", request.getCommandeId());
-        return ResponseEntity.ok(paiementService.simulerPaiement(request));
-    }
-
     @Operation(summary = "Valider l'encaissement en espèces (Cash)",
                description = "Enregistre la réception physique des espèces par l'officine (au guichet ou remise par le livreur) et marque le règlement comme réussi.")
     @ApiResponses(value = {
@@ -136,5 +119,38 @@ public class PharmacopeePaiementController {
             @RequestBody(required = false) EncaisserCashRequest request) {
         log.info("Requête PATCH /api/v1/pharmacopee/paiements/{}/encaisser-cash reçue", id);
         return ResponseEntity.ok(paiementService.encaisserCash(id, request));
+    }
+
+    @Operation(summary = "Confirmer la réception d'un paiement Mobile Money",
+               description = "La pharmacopée a retrouvé le paiement sur son compte : il passe à REUSSI, entre en trésorerie et la commande est confirmée.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Réception confirmée"),
+            @ApiResponse(responseCode = "400", description = "Le paiement n'est pas de type Mobile Money"),
+            @ApiResponse(responseCode = "403", description = "Accès refusé"),
+            @ApiResponse(responseCode = "404", description = "Paiement non trouvé"),
+            @ApiResponse(responseCode = "409", description = "Paiement déjà traité ou commande annulée")
+    })
+    @PatchMapping("/{id}/confirmer-reception")
+    public ResponseEntity<PharmacopeePaiementResponse> confirmerReception(
+            @Parameter(description = "Identifiant du paiement", example = "1") @PathVariable Long id) {
+        log.info("Requête PATCH /api/v1/pharmacopee/paiements/{}/confirmer-reception reçue", id);
+        return ResponseEntity.ok(paiementService.confirmerReception(id));
+    }
+
+    @Operation(summary = "Rejeter un paiement Mobile Money déclaré",
+               description = "Le paiement n'a pas été retrouvé sur le compte : le client est prévenu et peut corriger sa déclaration ou annuler la commande.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Paiement rejeté"),
+            @ApiResponse(responseCode = "400", description = "Motif manquant, ou paiement d'un autre type"),
+            @ApiResponse(responseCode = "403", description = "Accès refusé"),
+            @ApiResponse(responseCode = "404", description = "Paiement non trouvé"),
+            @ApiResponse(responseCode = "409", description = "Paiement déjà traité")
+    })
+    @PatchMapping("/{id}/rejeter")
+    public ResponseEntity<PharmacopeePaiementResponse> rejeterPaiement(
+            @Parameter(description = "Identifiant du paiement", example = "1") @PathVariable Long id,
+            @Valid @RequestBody MotifRequest request) {
+        log.info("Requête PATCH /api/v1/pharmacopee/paiements/{}/rejeter reçue", id);
+        return ResponseEntity.ok(paiementService.rejeterPaiement(id, request.getMotif()));
     }
 }

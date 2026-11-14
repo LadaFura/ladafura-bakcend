@@ -35,6 +35,7 @@ import com.pharmacopee.ladafura.enums.StatutPaiement;
 import com.pharmacopee.ladafura.enums.StatutPharmacopee;
 import com.pharmacopee.ladafura.enums.TypeModeRetrait;
 import com.pharmacopee.ladafura.exceptions.BadRequestException;
+import com.pharmacopee.ladafura.exceptions.ConflictException;
 import com.pharmacopee.ladafura.exceptions.ResourceNotFoundException;
 import com.pharmacopee.ladafura.mappers.PopulationCommandeMapper;
 import com.pharmacopee.ladafura.repository.CommandeRepository;
@@ -60,6 +61,8 @@ public class PopulationCommandeServiceImpl implements IPopulationCommandeService
     private static final SecureRandom RANDOM = new SecureRandom();
 
     private final IPopulationAuthService populationAuthService;
+    private final com.pharmacopee.ladafura.services.interfaces.ICommandeStockCaisseService commandeStockCaisseService;
+    private final com.pharmacopee.ladafura.repository.AbonnementRepository abonnementRepository;
     private final CommandeRepository commandeRepository;
     private final PanierRepository panierRepository;
     private final LignePanierRepository lignePanierRepository;
@@ -68,11 +71,14 @@ public class PopulationCommandeServiceImpl implements IPopulationCommandeService
     private final DisponibiliteProduitRepository disponibiliteProduitRepository;
     private final PaiementRepository paiementRepository;
     private final PopulationCommandeMapper mapper;
+    private final com.pharmacopee.ladafura.services.interfaces.IPaiementDeclareService paiementDeclareService;
     private final com.pharmacopee.ladafura.services.interfaces.IPharmacopeeNotificationService pharmacopeeNotificationService;
     private final com.pharmacopee.ladafura.services.interfaces.IPopulationNotificationService populationNotificationService;
 
     public PopulationCommandeServiceImpl(
             IPopulationAuthService populationAuthService,
+            com.pharmacopee.ladafura.services.interfaces.ICommandeStockCaisseService commandeStockCaisseService,
+            com.pharmacopee.ladafura.repository.AbonnementRepository abonnementRepository,
             CommandeRepository commandeRepository,
             PanierRepository panierRepository,
             LignePanierRepository lignePanierRepository,
@@ -80,10 +86,11 @@ public class PopulationCommandeServiceImpl implements IPopulationCommandeService
             ModeRetraitRepository modeRetraitRepository,
             DisponibiliteProduitRepository disponibiliteProduitRepository,
             PaiementRepository paiementRepository,
-            PopulationCommandeMapper mapper) {
-        this(populationAuthService, commandeRepository, panierRepository, lignePanierRepository,
+            PopulationCommandeMapper mapper,
+            com.pharmacopee.ladafura.services.interfaces.IPaiementDeclareService paiementDeclareService) {
+        this(populationAuthService, commandeStockCaisseService, abonnementRepository, commandeRepository, panierRepository, lignePanierRepository,
                 pharmacopeeRepository, modeRetraitRepository, disponibiliteProduitRepository,
-                paiementRepository, mapper, null, null);
+                paiementRepository, mapper, paiementDeclareService, null, null);
     }
 
     @Override
@@ -156,6 +163,7 @@ public class PopulationCommandeServiceImpl implements IPopulationCommandeService
         if (request.getMethode() == null) {
             throw new BadRequestException("Le moyen de paiement est obligatoire pour valider la commande.");
         }
+        paiementDeclareService.exigerMethodeDisponible(request.getMethode());
 
         Panier panier = panierRepository.findByUtilisateurId(user.getId())
                 .orElseThrow(() -> new BadRequestException("Votre panier est vide. Veuillez y ajouter des articles."));
@@ -215,11 +223,9 @@ public class PopulationCommandeServiceImpl implements IPopulationCommandeService
         commande.setMontantLivraison(fraisLivraison);
         commande.setMontantTotal(Math.round((totalProduits + fraisLivraison) * 100.0) / 100.0);
 
-        // 2. VALIDATION STRICTE DU PAIEMENT / RÈGLEMENT
-        // Règle métier : Tant que le paiement n'est pas validé, la commande NE DOIT PAS être créée en base,
-        // les stocks NE DOIVENT PAS être décrémentés et le panier NE DOIT PAS être vidé.
-        boolean simulerReussite = request.getSimulerSucces() == null || Boolean.TRUE.equals(request.getSimulerSucces());
-
+        // 2. RÈGLEMENT
+        // Sans API d'opérateur, un Mobile Money n'est jamais considéré comme payé ici : la commande reste
+        // en attente et le stock réservé, jusqu'à ce que la pharmacopée confirme la réception sur son compte.
         Paiement paiement = Paiement.builder()
                 .commande(commande)
                 .montant(commande.getMontantTotal())
@@ -227,44 +233,13 @@ public class PopulationCommandeServiceImpl implements IPopulationCommandeService
                 .datePaiement(LocalDateTime.now())
                 .build();
 
-        if (request.getReferenceTransaction() != null && !request.getReferenceTransaction().isBlank()) {
-            paiement.setReference(request.getReferenceTransaction().trim());
+        if (request.getMethode() == MethodePaiement.MOBILE_MONEY) {
+            paiementDeclareService.declarerMobileMoney(paiement, pharmacopee.getId(), request.getCompteMobileMoneyId(),
+                    request.getReferenceTransaction(), request.getTelephoneMobileMoney());
         } else {
             paiement.setReference(generatePaymentReference(request.getMethode(), request.getOperateur()));
-        }
-
-        if (request.getMethode() == MethodePaiement.MOBILE_MONEY) {
-            if (request.getTelephoneMobileMoney() == null || request.getTelephoneMobileMoney().trim().isEmpty()) {
-                throw new BadRequestException("Le numéro de téléphone Mobile Money est obligatoire pour effectuer le règlement.");
-            }
-            if (!simulerReussite) {
-                throw new BadRequestException("Le règlement via Mobile Money a échoué. Aucun montant n'a été prélevé et la commande n'a pas été enregistrée.");
-            }
-            paiement.setStatut(StatutPaiement.REUSSI);
-            commande.setStatut(StatutCommande.CONFIRMEE);
-        } else if (request.getMethode() == MethodePaiement.CARTE_BANCAIRE) {
-            if (!simulerReussite) {
-                throw new BadRequestException("La transaction par carte bancaire a été rejetée. Votre commande n'a pas été enregistrée.");
-            }
-            paiement.setStatut(StatutPaiement.REUSSI);
-            commande.setStatut(StatutCommande.CONFIRMEE);
-        } else if (request.getMethode() == MethodePaiement.CASH) {
             paiement.setStatut(StatutPaiement.EN_ATTENTE);
             commande.setStatut(StatutCommande.CONFIRMEE);
-        }
-
-        // 3. PAIEMENT VALIDÉ -> Décrémentation définitive des stocks
-        for (LignePanier ligne : panier.getLignes()) {
-            Produit produit = ligne.getProduit();
-            DisponibiliteProduit disp = checkProductAvailabilityAndStock(pharmacopee.getId(), produit, ligne.getQuantite());
-            if (disp.getQuantiteStock() != null) {
-                int nouveauStock = disp.getQuantiteStock() - ligne.getQuantite();
-                disp.setQuantiteStock(nouveauStock);
-                if (nouveauStock <= 0) {
-                    disp.setDisponible(false);
-                }
-                disponibiliteProduitRepository.save(disp);
-            }
         }
 
         // 4. Persistance atomique de la Commande et du Paiement
@@ -272,22 +247,25 @@ public class PopulationCommandeServiceImpl implements IPopulationCommandeService
         Commande savedCommande = commandeRepository.save(commande);
         paiementRepository.save(paiement);
 
-        log.info("Commande #{} créée et confirmée avec succès (Paiement: {} - {}) pour un montant de {} FCFA",
+        // Le stock est réservé dès l'enregistrement ; il est réintégré si la commande est annulée.
+        commandeStockCaisseService.sortirStock(savedCommande);
+
+        log.info("Commande #{} enregistrée (Paiement: {} - {}) pour un montant de {} FCFA",
                 savedCommande.getNumero(), paiement.getMethode(), paiement.getStatut(), savedCommande.getMontantTotal());
 
-        // 5. Vidage intégral du panier après paiement validé
+        // 5. Vidage intégral du panier
         panier.getLignes().clear();
         lignePanierRepository.deleteByPanierId(panier.getId());
         panier.setDateModification(LocalDateTime.now());
         panierRepository.save(panier);
-        log.info("Panier ID: {} vidé suite à la confirmation du paiement et de la commande ID: {}",
+        log.info("Panier ID: {} vidé suite à l'enregistrement de la commande ID: {}",
                 panier.getId(), savedCommande.getId());
 
         // 6. Déclenchement automatique des notifications (Gestionnaire de Pharmacopée & Client)
         String clientNom = ((user.getPrenom() != null ? user.getPrenom() + " " : "") + (user.getNom() != null ? user.getNom() : "")).trim();
         String refCmdId = String.valueOf(savedCommande.getId());
-        String infoPaiement = (paiement.getStatut() == StatutPaiement.REUSSI)
-                ? "Paiement réglé (" + paiement.getMethode() + ")."
+        String infoPaiement = (paiement.getMethode() == MethodePaiement.MOBILE_MONEY)
+                ? "Paiement Mobile Money à vérifier (transaction " + paiement.getReference() + ")."
                 : "Paiement en espèces à la réception.";
 
         if (pharmacopeeNotificationService != null) {
@@ -374,24 +352,14 @@ public class PopulationCommandeServiceImpl implements IPopulationCommandeService
                     + commande.getStatut() + ").");
         }
 
-        // Réintégration des stocks en pharmacopée
-        if (commande.getLignes() != null && commande.getPharmacopee() != null) {
-            Long pharmacopeeId = commande.getPharmacopee().getId();
-            for (LigneCommande lc : commande.getLignes()) {
-                if (lc.getProduit() != null) {
-                    disponibiliteProduitRepository.findByPharmacopeeIdAndProduitId(pharmacopeeId, lc.getProduit().getId())
-                            .ifPresent(disp -> {
-                                if (disp.getQuantiteStock() != null) {
-                                    disp.setQuantiteStock(disp.getQuantiteStock() + lc.getQuantite());
-                                    disp.setDisponible(true);
-                                    disponibiliteProduitRepository.save(disp);
-                                    log.info("Stock réintégré pour le produit ID: {} (+{}) dans la pharmacopée ID: {}",
-                                            lc.getProduit().getId(), lc.getQuantite(), pharmacopeeId);
-                                }
-                            });
-                }
-            }
+        // Le client ne peut pas récupérer seul des espèces déjà remises à la pharmacopée.
+        if (commande.getPaiement() != null && commande.getPaiement().getMethode() == MethodePaiement.CASH
+                && commande.getPaiement().getStatut() == StatutPaiement.REUSSI) {
+            throw new ConflictException("Le paiement en espèces de cette commande a déjà été encaissé : veuillez contacter la pharmacopée.");
         }
+
+        commandeStockCaisseService.reintegrerStock(commande, null);
+        commandeStockCaisseService.annulerEncaissement(commande, null);
 
         commande.setStatut(StatutCommande.ANNULEE);
         commande.setDateMiseAJour(LocalDateTime.now());
@@ -433,6 +401,12 @@ public class PopulationCommandeServiceImpl implements IPopulationCommandeService
 
         if (ph.getStatut() != StatutPharmacopee.VALIDEE) {
             throw new BadRequestException("Cette pharmacopée n'est pas agréée pour accepter des commandes.");
+        }
+        boolean accepteCommandes = abonnementRepository.findEnVigueur(pharmacopeeId)
+                .map(com.pharmacopee.ladafura.Models.Abonnement::autoriseEcriture)
+                .orElse(false);
+        if (!accepteCommandes) {
+            throw new ConflictException("Cette pharmacopée n'accepte pas de nouvelles commandes pour le moment.");
         }
         return ph;
     }

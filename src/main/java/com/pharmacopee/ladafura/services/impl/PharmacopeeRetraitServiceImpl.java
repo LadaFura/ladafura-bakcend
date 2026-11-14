@@ -12,6 +12,7 @@ import com.pharmacopee.ladafura.dto.pharmacopee.retrait.UpdateModeRetraitRequest
 import com.pharmacopee.ladafura.enums.TypeModeRetrait;
 import com.pharmacopee.ladafura.repository.ModeRetraitRepository;
 import com.pharmacopee.ladafura.services.interfaces.IPharmacopeeAuthService;
+import com.pharmacopee.ladafura.services.interfaces.IPharmacopeeContexteService;
 import com.pharmacopee.ladafura.services.interfaces.IPharmacopeeRetraitService;
 
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 public class PharmacopeeRetraitServiceImpl implements IPharmacopeeRetraitService {
 
     private final IPharmacopeeAuthService pharmacopeeAuthService;
+    private final IPharmacopeeContexteService contexteService;
     private final ModeRetraitRepository modeRetraitRepository;
 
     @Override
@@ -50,8 +52,7 @@ public class PharmacopeeRetraitServiceImpl implements IPharmacopeeRetraitService
 
     @Override
     public ModeRetraitResponse updateModeRetrait(TypeModeRetrait type, UpdateModeRetraitRequest request) {
-        pharmacopeeAuthService.verifyPharmacopeeValidated();
-        Pharmacopee pharmacopee = pharmacopeeAuthService.getCurrentPharmacopee();
+        Pharmacopee pharmacopee = contexteService.verifierOperationCommerciale(IPharmacopeeContexteService.RETRAIT_GERER).pharmacopee();
         log.info("Mise à jour du mode {} pour la pharmacopée ID {} : actif={}, frais={}",
                 type, pharmacopee.getId(), request.getActif(), request.getFrais());
 
@@ -68,8 +69,7 @@ public class PharmacopeeRetraitServiceImpl implements IPharmacopeeRetraitService
 
     @Override
     public ModeRetraitResponse toggleModeRetrait(TypeModeRetrait type) {
-        pharmacopeeAuthService.verifyPharmacopeeValidated();
-        Pharmacopee pharmacopee = pharmacopeeAuthService.getCurrentPharmacopee();
+        Pharmacopee pharmacopee = contexteService.verifierOperationCommerciale(IPharmacopeeContexteService.RETRAIT_GERER).pharmacopee();
         log.info("Basculement on/off du mode {} pour la pharmacopée ID {}", type, pharmacopee.getId());
 
         ModeRetrait mode = getOrInitModeRetrait(pharmacopee, type);
@@ -83,8 +83,7 @@ public class PharmacopeeRetraitServiceImpl implements IPharmacopeeRetraitService
 
     @Override
     public PharmacopeeModesRetraitSummaryResponse configureModesRetraitGlobal(ConfigureModesRetraitGlobalRequest request) {
-        pharmacopeeAuthService.verifyPharmacopeeValidated();
-        Pharmacopee pharmacopee = pharmacopeeAuthService.getCurrentPharmacopee();
+        Pharmacopee pharmacopee = contexteService.verifierOperationCommerciale(IPharmacopeeContexteService.RETRAIT_GERER).pharmacopee();
         log.info("Configuration globale des modes de retrait pour la pharmacopée ID {} : livraisonActif={}, livraisonFrais={}, pickupActif={}, pickupFrais={}",
                 pharmacopee.getId(), request.getLivraisonActif(), request.getLivraisonFrais(), request.getPickupActif(), request.getPickupFrais());
 

@@ -123,7 +123,8 @@ public class PharmacopeeProduitController {
                description = "Supprime la disponibilité du produit pour votre pharmacopée. Le produit reste disponible dans le catalogue général pour les autres officines.")
     @ApiResponses({
         @ApiResponse(responseCode = "204", description = "Produit retiré avec succès"),
-        @ApiResponse(responseCode = "404", description = "Produit non associé à votre pharmacopée")
+        @ApiResponse(responseCode = "404", description = "Produit non associé à votre pharmacopée"),
+        @ApiResponse(responseCode = "409", description = "Produit avec historique de stock ou de vente : à rendre indisponible")
     })
     public ResponseEntity<Void> retirerProduit(@PathVariable Long produitId) {
         log.info("Retrait du produit ID {} de la pharmacopée connectée", produitId);

@@ -15,4 +15,7 @@ public class EncaisserCashRequest {
 
     @Schema(description = "Note ou justificatif de remise des espèces (optionnel)", example = "Espèces encaissées au guichet lors du retrait de la commande")
     private String note;
+
+    @Schema(description = "Caisse physique d'encaissement ; facultative s'il n'y a qu'une caisse à session ouverte", example = "3")
+    private Long caisseId;
 }

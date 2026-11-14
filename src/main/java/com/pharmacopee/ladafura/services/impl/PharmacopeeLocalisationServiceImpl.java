@@ -11,6 +11,7 @@ import com.pharmacopee.ladafura.exceptions.ResourceNotFoundException;
 import com.pharmacopee.ladafura.repository.LocalisationRepository;
 import com.pharmacopee.ladafura.repository.PharmacopeeRepository;
 import com.pharmacopee.ladafura.services.interfaces.IPharmacopeeAuthService;
+import com.pharmacopee.ladafura.services.interfaces.IPharmacopeeContexteService;
 import com.pharmacopee.ladafura.services.interfaces.IPharmacopeeLocalisationService;
 
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 public class PharmacopeeLocalisationServiceImpl implements IPharmacopeeLocalisationService {
 
     private final IPharmacopeeAuthService pharmacopeeAuthService;
+    private final IPharmacopeeContexteService contexteService;
     private final PharmacopeeRepository pharmacopeeRepository;
     private final LocalisationRepository localisationRepository;
 
@@ -41,8 +43,7 @@ public class PharmacopeeLocalisationServiceImpl implements IPharmacopeeLocalisat
 
     @Override
     public PharmacopeeLocalisationResponse saveOrUpdateLocalisation(PharmacopeeLocalisationRequest request) {
-        pharmacopeeAuthService.verifyPharmacopeeValidated();
-        Pharmacopee pharmacopee = pharmacopeeAuthService.getCurrentPharmacopee();
+        Pharmacopee pharmacopee = contexteService.verifierOperationCommerciale(IPharmacopeeContexteService.PROFIL_PHARMACOPEE_GERER).pharmacopee();
         Localisation localisation = pharmacopee.getLocalisation();
 
         if (localisation != null) {

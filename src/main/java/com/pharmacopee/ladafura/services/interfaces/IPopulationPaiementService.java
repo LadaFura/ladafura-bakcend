@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import com.pharmacopee.ladafura.dto.population.paiement.PopulationCompteMobileMoneyResponse;
 import com.pharmacopee.ladafura.dto.population.paiement.PopulationMethodePaiementInfoDto;
 import com.pharmacopee.ladafura.dto.population.paiement.PopulationPaiementResponse;
 import com.pharmacopee.ladafura.dto.population.paiement.PopulationProcessPaiementRequest;
@@ -17,7 +18,13 @@ public interface IPopulationPaiementService {
     List<PopulationMethodePaiementInfoDto> getMethodesPaiement();
 
     /**
-     * Exécute ou initie le règlement d'une commande appartenant à l'utilisateur connecté.
+     * Comptes Mobile Money sur lesquels payer une pharmacopée ; une liste vide signifie que ce moyen n'est pas proposé.
+     */
+    List<PopulationCompteMobileMoneyResponse> getComptesMobileMoney(Long pharmacopeeId);
+
+    /**
+     * Déclare le règlement d'une commande de l'utilisateur connecté. Un Mobile Money reste en attente
+     * jusqu'à la confirmation de la pharmacopée.
      */
     PopulationPaiementResponse payerCommande(PopulationProcessPaiementRequest request);
 

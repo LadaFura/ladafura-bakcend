@@ -15,7 +15,7 @@ import com.pharmacopee.ladafura.dto.pharmacopee.avis.PharmacopeeAvisSummaryRespo
 import com.pharmacopee.ladafura.enums.StatutAvis;
 import com.pharmacopee.ladafura.exceptions.ResourceNotFoundException;
 import com.pharmacopee.ladafura.repository.AvisRepository;
-import com.pharmacopee.ladafura.services.interfaces.IPharmacopeeAuthService;
+import com.pharmacopee.ladafura.services.interfaces.IPharmacopeeContexteService;
 import com.pharmacopee.ladafura.services.interfaces.IPharmacopeeAvisService;
 
 import lombok.RequiredArgsConstructor;
@@ -27,14 +27,13 @@ import lombok.extern.slf4j.Slf4j;
 @Transactional
 public class PharmacopeeAvisServiceImpl implements IPharmacopeeAvisService {
 
-    private final IPharmacopeeAuthService pharmacopeeAuthService;
+    private final IPharmacopeeContexteService contexteService;
     private final AvisRepository avisRepository;
 
     @Override
     @Transactional(readOnly = true)
     public Page<PharmacopeeAvisItemResponse> getAvis(Pageable pageable) {
-        pharmacopeeAuthService.verifyPharmacopeeValidated();
-        Pharmacopee pharmacopee = pharmacopeeAuthService.getCurrentPharmacopee();
+        Pharmacopee pharmacopee = contexteService.verifierPharmacopeeValidee(IPharmacopeeContexteService.AVIS_CONSULTER).pharmacopee();
         Long pId = pharmacopee.getId();
         log.info("Consultation des avis publiés pour la pharmacopée ID {}", pId);
 
@@ -45,8 +44,7 @@ public class PharmacopeeAvisServiceImpl implements IPharmacopeeAvisService {
     @Override
     @Transactional(readOnly = true)
     public PharmacopeeAvisSummaryResponse getSummary() {
-        pharmacopeeAuthService.verifyPharmacopeeValidated();
-        Pharmacopee pharmacopee = pharmacopeeAuthService.getCurrentPharmacopee();
+        Pharmacopee pharmacopee = contexteService.verifierPharmacopeeValidee(IPharmacopeeContexteService.AVIS_CONSULTER).pharmacopee();
         Long pId = pharmacopee.getId();
         log.info("Calcul de la synthèse des avis pour la pharmacopée ID {}", pId);
 
@@ -74,8 +72,7 @@ public class PharmacopeeAvisServiceImpl implements IPharmacopeeAvisService {
     @Override
     @Transactional(readOnly = true)
     public PharmacopeeAvisItemResponse getAvisDetail(Long id) {
-        pharmacopeeAuthService.verifyPharmacopeeValidated();
-        Pharmacopee pharmacopee = pharmacopeeAuthService.getCurrentPharmacopee();
+        Pharmacopee pharmacopee = contexteService.verifierPharmacopeeValidee(IPharmacopeeContexteService.AVIS_CONSULTER).pharmacopee();
         Long pId = pharmacopee.getId();
 
         Avis avis = avisRepository.findByIdAndPharmacopeeIdAndStatut(id, pId, StatutAvis.PUBLIE)
@@ -88,8 +85,7 @@ public class PharmacopeeAvisServiceImpl implements IPharmacopeeAvisService {
     @Override
     @Transactional
     public PharmacopeeAvisItemResponse repondreAvis(Long avisId, String reponseText) {
-        pharmacopeeAuthService.verifyPharmacopeeValidated();
-        Pharmacopee pharmacopee = pharmacopeeAuthService.getCurrentPharmacopee();
+        Pharmacopee pharmacopee = contexteService.verifierOperationCommerciale(IPharmacopeeContexteService.AVIS_REPONDRE).pharmacopee();
         Long pId = pharmacopee.getId();
 
         Avis avis = avisRepository.findByIdAndPharmacopeeIdAndStatut(avisId, pId, StatutAvis.PUBLIE)

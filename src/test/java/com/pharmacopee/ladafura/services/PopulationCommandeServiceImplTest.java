@@ -1,5 +1,9 @@
 package com.pharmacopee.ladafura.services;
 
+import com.pharmacopee.ladafura.Models.Abonnement;
+import com.pharmacopee.ladafura.enums.StatutAbonnement;
+import com.pharmacopee.ladafura.repository.AbonnementRepository;
+import com.pharmacopee.ladafura.services.interfaces.ICommandeStockCaisseService;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -98,8 +102,19 @@ class PopulationCommandeServiceImplTest {
     private Panier panier;
     private DisponibiliteProduit disponibilite;
 
+    @Mock
+    private ICommandeStockCaisseService commandeStockCaisseService;
+
+    @Mock
+    private AbonnementRepository abonnementRepository;
+
+    @Mock
+    private com.pharmacopee.ladafura.services.interfaces.IPaiementDeclareService paiementDeclareService;
+
     @BeforeEach
     void setUp() {
+        org.mockito.Mockito.lenient().when(abonnementRepository.findEnVigueur(org.mockito.ArgumentMatchers.anyLong()))
+                .thenReturn(java.util.Optional.of(Abonnement.builder().statut(StatutAbonnement.ACTIF).build()));
         currentUser = new Utilisateur();
         currentUser.setId(10L);
         currentUser.setEmail("client@ladafura.ml");
@@ -212,7 +227,7 @@ class PopulationCommandeServiceImplTest {
     }
 
     @Test
-    @DisplayName("passerCommande - Confirmation avec Livraison et Paiement validé : commande créée, stock décrémenté et panier vidé")
+    @DisplayName("passerCommande - Mobile Money déclaré avec Livraison : commande en attente, stock décrémenté et panier vidé")
     void passerCommande_Livraison_Success() {
         PopulationCreateCommandeRequest request = PopulationCreateCommandeRequest.builder()
                 .pharmacopeeId(1L)
@@ -222,7 +237,8 @@ class PopulationCommandeServiceImplTest {
                 .methode(MethodePaiement.MOBILE_MONEY)
                 .operateur("ORANGE_MONEY")
                 .telephoneMobileMoney("+22370112233")
-                .simulerSucces(true)
+                .compteMobileMoneyId(12L)
+                .referenceTransaction("OM-998811")
                 .build();
 
         when(populationAuthService.getCurrentPopulationUser()).thenReturn(currentUser);
@@ -242,22 +258,22 @@ class PopulationCommandeServiceImplTest {
 
         assertThat(response).isNotNull();
         assertThat(response.getId()).isEqualTo(1001L);
-        assertThat(response.getStatut()).isEqualTo(StatutCommande.CONFIRMEE);
+        assertThat(response.getStatut()).isEqualTo(StatutCommande.EN_ATTENTE);
         assertThat(response.getTotalProduit()).isEqualTo(5000.0);
         assertThat(response.getMontantLivraison()).isEqualTo(1500.0);
         assertThat(response.getMontantTotal()).isEqualTo(6500.0);
-        assertThat(response.getStatutPaiement()).isEqualTo("REUSSI");
-        assertThat(disponibilite.getQuantiteStock()).isEqualTo(48); // 50 - 2
+        assertThat(response.getStatutPaiement()).isEqualTo("EN_ATTENTE");
         assertThat(panier.getLignes()).isEmpty();
 
-        verify(disponibiliteProduitRepository).save(disponibilite);
+        verify(commandeStockCaisseService).sortirStock(any(Commande.class));
+        verify(commandeStockCaisseService, org.mockito.Mockito.never()).encaisser(any(), any(), any());
         verify(paiementRepository).save(any());
         verify(lignePanierRepository).deleteByPanierId(20L);
         verify(panierRepository).save(panier);
     }
 
     @Test
-    @DisplayName("passerCommande - Échec du paiement Mobile Money : aucune commande enregistrée, panier et stocks intacts")
+    @DisplayName("passerCommande - Déclaration Mobile Money refusée : aucune commande enregistrée, panier et stocks intacts")
     void passerCommande_PaymentFailure_NoOrderCreated() {
         PopulationCreateCommandeRequest request = PopulationCreateCommandeRequest.builder()
                 .pharmacopeeId(1L)
@@ -266,8 +282,9 @@ class PopulationCommandeServiceImplTest {
                 .methode(MethodePaiement.MOBILE_MONEY)
                 .operateur("ORANGE_MONEY")
                 .telephoneMobileMoney("+22370112233")
-                .simulerSucces(false) // Échec de paiement
                 .build();
+        org.mockito.Mockito.doThrow(new BadRequestException("Le numéro de transaction reçu par SMS est obligatoire."))
+                .when(paiementDeclareService).declarerMobileMoney(any(), any(), any(), any(), any());
 
         when(populationAuthService.getCurrentPopulationUser()).thenReturn(currentUser);
         when(panierRepository.findByUtilisateurId(10L)).thenReturn(Optional.of(panier));
@@ -279,7 +296,7 @@ class PopulationCommandeServiceImplTest {
 
         assertThatThrownBy(() -> commandeService.passerCommande(request))
                 .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("Le règlement via Mobile Money a échoué");
+                .hasMessageContaining("numéro de transaction");
 
         // Vérification stricte : aucun stock modifié, aucune commande sauvée, panier non vidé
         assertThat(disponibilite.getQuantiteStock()).isEqualTo(50);
@@ -405,17 +422,14 @@ class PopulationCommandeServiceImplTest {
 
         when(populationAuthService.getCurrentPopulationUser()).thenReturn(currentUser);
         when(commandeRepository.findByIdAndUtilisateurId(1L, 10L)).thenReturn(Optional.of(c));
-        when(disponibiliteProduitRepository.findByPharmacopeeIdAndProduitId(1L, 5L))
-                .thenReturn(Optional.of(disponibilite));
         when(commandeRepository.save(any(Commande.class))).thenReturn(c);
 
-        disponibilite.setQuantiteStock(48);
         PopulationCommandeDetailResponse response = commandeService.annulerCommande(1L);
 
         assertThat(response).isNotNull();
         assertThat(c.getStatut()).isEqualTo(StatutCommande.ANNULEE);
-        assertThat(disponibilite.getQuantiteStock()).isEqualTo(50); // réintégré +2
-        verify(disponibiliteProduitRepository).save(disponibilite);
+        verify(commandeStockCaisseService).reintegrerStock(c, null);
+        verify(commandeStockCaisseService).annulerEncaissement(c, null);
         verify(commandeRepository).save(c);
     }
 

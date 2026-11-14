@@ -23,7 +23,10 @@ import com.pharmacopee.ladafura.dto.admin.pharmacopee.AdminPharmacopeeDetailResp
 import com.pharmacopee.ladafura.dto.admin.pharmacopee.AdminPharmacopeeSummaryResponse;
 import com.pharmacopee.ladafura.dto.admin.pharmacopee.AdminUpdatePharmacopeeRequest;
 import com.pharmacopee.ladafura.enums.StatutPharmacopee;
+import com.pharmacopee.ladafura.dto.pharmacopee.membre.MembreResponse;
+import com.pharmacopee.ladafura.dto.pharmacopee.membre.TransfertProprieteRequest;
 import com.pharmacopee.ladafura.services.interfaces.IAdminPharmacopeeService;
+import com.pharmacopee.ladafura.services.interfaces.IPharmacopeeMembreService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -39,6 +42,7 @@ import lombok.RequiredArgsConstructor;
 public class AdminPharmacopeeController {
 
     private final IAdminPharmacopeeService pharmacopeeService;
+    private final IPharmacopeeMembreService membreService;
 
     @GetMapping
     @Operation(summary = "Lister les pharmacopées avec pagination et filtre par statut", description = "Permet de lister les structures selon leur état (EN_ATTENTE, VALIDEE, SUSPENDUE, REJETEE).")
@@ -87,11 +91,28 @@ public class AdminPharmacopeeController {
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Supprimer une pharmacopée", description = "Supprime définitivement une structure de pharmacopée du système national.")
-    @ApiResponse(responseCode = "204", description = "Pharmacopée supprimée")
+    @ApiResponse(responseCode = "409", description = "Suppression refusée : suspendre ou rejeter la pharmacopée")
+    @Operation(summary = "Supprimer une pharmacopée", description = "Toujours refusé : l'abonnement, les caisses et l'audit sont conservés. Suspendre ou rejeter la pharmacopée.")
     @ApiResponse(responseCode = "404", description = "Pharmacopée introuvable")
     public ResponseEntity<Void> deletePharmacopee(@PathVariable Long id) {
         pharmacopeeService.deletePharmacopee(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{id}/membres")
+    @Operation(summary = "Membres d'une pharmacopée", description = "Permet de choisir le nouveau gérant lors d'un transfert de propriété.")
+    @ApiResponse(responseCode = "200", description = "Membres récupérés")
+    @ApiResponse(responseCode = "404", description = "Pharmacopée introuvable")
+    public ResponseEntity<Page<MembreResponse>> getMembres(@PathVariable Long id, @ParameterObject Pageable pageable) {
+        return ResponseEntity.ok(membreService.getMembresParAdmin(id, pageable));
+    }
+
+    @PostMapping("/{id}/transfert-propriete")
+    @Operation(summary = "Transférer la propriété d'une pharmacopée", description = "En cas de litige ou de gérant indisponible. Opération tracée.")
+    @ApiResponse(responseCode = "200", description = "Propriété transférée")
+    @ApiResponse(responseCode = "404", description = "Pharmacopée ou membre introuvable")
+    @ApiResponse(responseCode = "409", description = "Le membre n'est pas actif ou est déjà gérant")
+    public ResponseEntity<MembreResponse> transfererPropriete(@PathVariable Long id, @Valid @RequestBody TransfertProprieteRequest request) {
+        return ResponseEntity.ok(membreService.transfererProprieteParAdmin(id, request));
     }
 }

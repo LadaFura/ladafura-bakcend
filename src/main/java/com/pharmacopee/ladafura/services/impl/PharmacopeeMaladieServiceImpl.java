@@ -12,7 +12,7 @@ import com.pharmacopee.ladafura.Models.Maladie;
 import com.pharmacopee.ladafura.dto.pharmacopee.maladie.CreatePharmacopeeMaladieRequest;
 import com.pharmacopee.ladafura.dto.pharmacopee.maladie.PharmacopeeMaladieDto;
 import com.pharmacopee.ladafura.repository.MaladieRepository;
-import com.pharmacopee.ladafura.services.interfaces.IPharmacopeeAuthService;
+import com.pharmacopee.ladafura.services.interfaces.IPharmacopeeContexteService;
 import com.pharmacopee.ladafura.services.interfaces.IPharmacopeeMaladieService;
 
 import lombok.RequiredArgsConstructor;
@@ -24,7 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 public class PharmacopeeMaladieServiceImpl implements IPharmacopeeMaladieService {
 
     private final MaladieRepository maladieRepository;
-    private final IPharmacopeeAuthService pharmacopeeAuthService;
+    private final IPharmacopeeContexteService contexteService;
 
     @Override
     @Transactional(readOnly = true)
@@ -58,8 +58,7 @@ public class PharmacopeeMaladieServiceImpl implements IPharmacopeeMaladieService
     @Override
     @Transactional
     public PharmacopeeMaladieDto createMaladie(CreatePharmacopeeMaladieRequest request) {
-        pharmacopeeAuthService.verifyPharmacopeeValidated();
-        pharmacopeeAuthService.verifyPraticienPrincipal();
+        contexteService.verifierOperationCommerciale(IPharmacopeeContexteService.PRODUITS_GERER);
 
         String nom = request.getNom().trim();
 

@@ -3,7 +3,7 @@ package com.pharmacopee.ladafura.exceptions;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
-@ResponseStatus(HttpStatus.FORBIDDEN)
+@ResponseStatus(HttpStatus.TOO_MANY_REQUESTS)
 public class QuotaExceededException extends RuntimeException {
 
     public QuotaExceededException(String message) {

@@ -20,6 +20,12 @@ public interface PaiementRepository extends JpaRepository<Paiement, Long> {
 
     Optional<Paiement> findByReference(String reference);
 
+    /** Un même numéro de transaction ne couvre qu'un paiement ; un paiement rejeté libère son numéro. */
+    @Query("select count(p) > 0 from Paiement p where p.caisse.id = :caisseId and p.reference = :reference "
+            + "and p.statut <> :statutExclu and (:paiementId is null or p.id <> :paiementId)")
+    boolean referenceDejaDeclaree(@Param("caisseId") Long caisseId, @Param("reference") String reference,
+            @Param("statutExclu") StatutPaiement statutExclu, @Param("paiementId") Long paiementId);
+
     List<Paiement> findByStatut(StatutPaiement statut);
 
     Page<Paiement> findByStatut(StatutPaiement statut, Pageable pageable);

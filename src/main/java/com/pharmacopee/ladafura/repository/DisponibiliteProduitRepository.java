@@ -19,6 +19,30 @@ public interface DisponibiliteProduitRepository extends JpaRepository<Disponibil
 
     Page<DisponibiliteProduit> findByPharmacopeeIdAndDisponible(Long pharmacopeeId, Boolean disponible, Pageable pageable);
 
+    /**
+     * Produits d'une pharmacopée, filtres facultatifs (null = pas de filtre).
+     * Catégorie en jointure externe : un produit sans catégorie reste listé quand aucune catégorie n'est demandée.
+     */
+    @org.springframework.data.jpa.repository.Query(
+           value = "SELECT d FROM DisponibiliteProduit d JOIN d.produit p LEFT JOIN p.categorie c " +
+                   "WHERE d.pharmacopee.id = :pharmacopeeId " +
+                   "AND (:disponible IS NULL OR d.disponible = :disponible) " +
+                   "AND (:categorieId IS NULL OR c.id = :categorieId) " +
+                   "AND (:keyword IS NULL OR LOWER(p.nom) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+                   "     OR LOWER(p.forme) LIKE LOWER(CONCAT('%', :keyword, '%')))",
+           countQuery = "SELECT COUNT(d) FROM DisponibiliteProduit d JOIN d.produit p LEFT JOIN p.categorie c " +
+                   "WHERE d.pharmacopee.id = :pharmacopeeId " +
+                   "AND (:disponible IS NULL OR d.disponible = :disponible) " +
+                   "AND (:categorieId IS NULL OR c.id = :categorieId) " +
+                   "AND (:keyword IS NULL OR LOWER(p.nom) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+                   "     OR LOWER(p.forme) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+    Page<DisponibiliteProduit> rechercherParPharmacopee(
+            @org.springframework.data.repository.query.Param("pharmacopeeId") Long pharmacopeeId,
+            @org.springframework.data.repository.query.Param("keyword") String keyword,
+            @org.springframework.data.repository.query.Param("categorieId") Long categorieId,
+            @org.springframework.data.repository.query.Param("disponible") Boolean disponible,
+            Pageable pageable);
+
     List<DisponibiliteProduit> findByProduitId(Long produitId);
 
     List<DisponibiliteProduit> findByProduitIdAndDisponibleTrue(Long produitId);
@@ -29,6 +53,21 @@ public interface DisponibiliteProduitRepository extends JpaRepository<Disponibil
     Optional<DisponibiliteProduit> findByPharmacopeeIdAndProduitId(Long pharmacopeeId, Long produitId);
 
     boolean existsByPharmacopeeIdAndProduitId(Long pharmacopeeId, Long produitId);
+
+    Optional<DisponibiliteProduit> findByIdAndPharmacopeeId(Long id, Long pharmacopeeId);
+
+    /** Verrou : sérialise les écritures de stock et de lots d'une même fiche. */
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @org.springframework.data.jpa.repository.Query("SELECT d FROM DisponibiliteProduit d WHERE d.id = :id AND d.pharmacopee.id = :pharmacopeeId")
+    Optional<DisponibiliteProduit> findByIdAndPharmacopeeIdForUpdate(
+            @org.springframework.data.repository.query.Param("id") Long id,
+            @org.springframework.data.repository.query.Param("pharmacopeeId") Long pharmacopeeId);
+
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @org.springframework.data.jpa.repository.Query("SELECT d FROM DisponibiliteProduit d WHERE d.pharmacopee.id = :pharmacopeeId AND d.produit.id = :produitId")
+    Optional<DisponibiliteProduit> findByPharmacopeeIdAndProduitIdForUpdate(
+            @org.springframework.data.repository.query.Param("pharmacopeeId") Long pharmacopeeId,
+            @org.springframework.data.repository.query.Param("produitId") Long produitId);
 
     long countByPharmacopeeId(Long pharmacopeeId);
 

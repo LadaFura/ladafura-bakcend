@@ -69,6 +69,9 @@ public class PopulationCommandeDetailResponse {
     @Schema(description = "Statut du paiement rattaché (ex: EN_ATTENTE, REUSSI, ECHOUE)", example = "REUSSI")
     private String statutPaiement;
 
+    @Schema(description = "Motif du rejet du paiement par la pharmacopée", example = "Aucun paiement reçu avec ce numéro")
+    private String motifRejetPaiement;
+
     @Schema(description = "Identifiant unique de la transaction de paiement", example = "55")
     private Long paiementId;
 

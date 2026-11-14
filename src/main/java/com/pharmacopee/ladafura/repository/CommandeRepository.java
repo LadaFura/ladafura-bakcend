@@ -51,6 +51,11 @@ public interface CommandeRepository extends JpaRepository<Commande, Long> {
     @Query("SELECT COALESCE(SUM(c.montantTotal), 0.0) FROM Commande c WHERE c.pharmacopee.id = :pharmacopeeId AND c.statut IN (:statuts)")
     Double sumMontantTotalByPharmacopeeIdAndStatuts(@Param("pharmacopeeId") Long pharmacopeeId, @Param("statuts") List<StatutCommande> statuts);
 
+    /** Chiffre d'affaires des commandes en ligne d'une pharmacopée sur une période. */
+    @Query("SELECT COALESCE(SUM(c.montantTotal), 0.0) FROM Commande c WHERE c.pharmacopee.id = :pharmacopeeId AND c.statut IN (:statuts) AND c.dateCommande BETWEEN :debut AND :fin")
+    Double sumMontantTotalParPeriode(@Param("pharmacopeeId") Long pharmacopeeId, @Param("statuts") List<StatutCommande> statuts,
+                                     @Param("debut") java.time.LocalDateTime debut, @Param("fin") java.time.LocalDateTime fin);
+
     @Query("SELECT COALESCE(SUM(c.montantTotal), 0.0) FROM Commande c WHERE c.statut = :statut")
     Double sumMontantTotalByStatut(@Param("statut") StatutCommande statut);
 

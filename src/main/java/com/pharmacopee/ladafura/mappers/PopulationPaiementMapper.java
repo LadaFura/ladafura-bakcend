@@ -18,11 +18,11 @@ public class PopulationPaiementMapper {
         return List.of(
                 PopulationMethodePaiementInfoDto.builder()
                         .code(MethodePaiement.MOBILE_MONEY)
-                        .libelle("Mobile Money (Orange Money, Moov Money, Wave)")
-                        .description("Règlement instantané et sécurisé par portefeuille mobile au Mali.")
+                        .libelle("Mobile Money")
+                        .description("Payez sur le compte de la pharmacopée, puis indiquez le numéro de transaction reçu par SMS.")
                         .disponible(true)
-                        .operateurs(List.of("Orange Money Mali", "Moov Africa Malitel", "Wave Mali"))
-                        .instructions("Saisissez votre numéro de téléphone et validez le prélèvement via le code USSD (#144# / *166#) ou l'application de votre opérateur.")
+                        .operateurs(List.of())
+                        .instructions("La pharmacopée vérifie la réception de votre paiement, puis confirme votre commande.")
                         .build(),
                 PopulationMethodePaiementInfoDto.builder()
                         .code(MethodePaiement.CASH)
@@ -35,10 +35,10 @@ public class PopulationPaiementMapper {
                 PopulationMethodePaiementInfoDto.builder()
                         .code(MethodePaiement.CARTE_BANCAIRE)
                         .libelle("Carte bancaire (Visa, Mastercard, GIM-UEMOA)")
-                        .description("Paiement sécurisé par carte bancaire nationale ou internationale.")
-                        .disponible(true)
+                        .description("Bientôt disponible.")
+                        .disponible(false)
                         .operateurs(List.of("Visa", "Mastercard", "GIM-UEMOA"))
-                        .instructions("Paiement sécurisé par authentification 3D-Secure.")
+                        .instructions("Ce moyen de paiement n'est pas encore disponible.")
                         .build()
         );
     }
